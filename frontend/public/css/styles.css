@@ -1,0 +1,96 @@
+/* General body styling */
+body {
+    background: linear-gradient(to right, #FFE873, #306998);
+    font-family: 'Arial', sans-serif;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    flex-direction: column;
+}
+
+/* Quiz container */
+#quiz-container {
+    width: 80%;
+    max-width: 600px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+    text-align: center;
+}
+
+/* Header styling */
+h1 {
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+
+/* Question styling */
+#question {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+/* Code block styling */
+#question-code {
+    font-size: 18px;
+    margin-bottom: 20px;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+/* Options styling */
+#options select {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+/* Result message */
+#result {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 20px 0;
+}
+
+/* Button container styling */
+#button-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Buttons styling */
+#button-container button {
+    padding: 12px 20px;
+    font-size: 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #2575fc;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#button-container button:hover {
+    background-color: #306998;
+}
+
+#button-container button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
+#stats {
+    font-size: 20px; /* Change the font size as per your need */
+    padding: 20px;
+    font-weight: bold;
+    color: #fff;
+}
+

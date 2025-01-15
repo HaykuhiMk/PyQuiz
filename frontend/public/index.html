@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyQuiz</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/themes/prism-okaidia.min.css">
+</head>
+<body>
+    <div id="quiz-container">
+        <h1>PyQuiz</h1>
+        <div id="question"></div>
+        <pre><code id="question-code" class="language-python"></code></pre> <!-- Code block -->
+        <div id="options"></div> <!-- Answer options -->
+        <div id="result"></div>
+        <div id="button-container">
+            <button id="submit-btn">Submit</button>
+            <button id="next-btn">Next Question</button>
+            <button id="another-question-btn" style="display: none;">Another Question</button>
+            <button id="give-up-btn" style="display: none;">I Give Up, Show Me the Answer</button>
+        </div>
+        <div id="stats"></div> <!-- Statistics -->
+    </div>
+    <script src="js/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/prism.min.js"></script>
+</body>
+</html>
