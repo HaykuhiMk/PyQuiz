@@ -36,15 +36,16 @@ form.addEventListener('submit', function (event) {
 
     // Send login data to the server using fetch
     fetch('http://localhost:5000/api/auth/login', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-        email: email,
-        password: password
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            email: email,
+            password: password
+        })
     })
-    })
+
     .then(response => response.json())
     .then(data => {
         if (data.token) {
@@ -52,7 +53,7 @@ form.addEventListener('submit', function (event) {
             localStorage.setItem('token', data.token);
             alert('Login successful!');
             // Redirect user to the home page or dashboard
-            window.location.href = '/dashboard.html'; // Adjust this URL as needed
+            window.location.href = '/account.html'; // Adjust this URL as needed
         } else {
             showError(data.error || 'Login failed!');
         }

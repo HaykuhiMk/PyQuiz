@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account - PyQuiz</title>
+    <link rel="stylesheet" href="./css/account.css">
+</head>
+<body style="display: none;">
+    <div class="account-container">
+        <h2>Welcome, <span id="username"></span>!</h2>
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Answered Questions</h3>
+                <p id="answered-count">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Unanswered Questions</h3>
+                <p id="unanswered-count">0</p>
+            </div>
+        </div>
+        <div class="progress-container">
+            <h3>Quiz Progress</h3>
+            <div class="progress-bar">
+                <div id="progress-fill"></div>
+            </div>
+        </div>
+        <button id="logout">Logout</button>
+    </div>
+
+    <script src="./js/account.js"></script>
+</body>
+</html>

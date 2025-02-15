@@ -1,0 +1,141 @@
+/* Import Google Font for a modern, sleek look */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+/* General body styling */
+body {
+    background: linear-gradient(135deg, #FFE873, #306998);
+    font-family: 'Poppins', sans-serif;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    flex-direction: column;
+    text-align: center;
+    transition: background 0.5s ease-in-out;
+}
+
+/* Home container - Enhanced Glassmorphism effect */
+#home-container {
+    width: 90%;
+    max-width: 500px;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(15px);
+    border-radius: 18px;
+    padding: 35px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+#home-container:hover {
+    transform: scale(1.03);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Header styling with enhanced glow effect */
+h1 {
+    font-size: 2.4rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #FFD700;
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.9);
+    animation: glow 1.8s infinite alternate ease-in-out;
+}
+
+/* Glow animation */
+@keyframes glow {
+    from {
+        text-shadow: 0 0 7px rgba(255, 215, 0, 0.7);
+    }
+    to {
+        text-shadow: 0 0 18px rgba(255, 215, 0, 1);
+    }
+}
+
+/* Description text */
+p {
+    font-size: 1rem;
+    font-weight: 300;
+    margin-bottom: 20px;
+    opacity: 0.9;
+}
+
+/* Button container */
+#button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+    margin-top: 25px;
+}
+
+/* Buttons styling - Modern gradient effect */
+#button-container button {
+    width: 80%;
+    padding: 14px 20px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #2575fc, #6a11cb);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 5px 12px rgba(37, 117, 252, 0.6);
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.5px;
+}
+
+/* Button hover effects */
+#button-container button:hover {
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    transform: scale(1.07);
+    box-shadow: 0 6px 18px rgba(37, 117, 252, 0.8);
+}
+
+/* Ripple effect on click */
+#button-container button::before {
+    content: "";
+    position: absolute;
+    width: 300%;
+    height: 300%;
+    top: 50%;
+    left: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 10%, transparent 10%);
+    transition: all 0.6s ease-out;
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.6;
+}
+
+#button-container button:active::before {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+}
+
+/* Guest information */
+#guest-info {
+    font-size: 0.9rem;
+    font-style: italic;
+    margin-top: 15px;
+    opacity: 0.85;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    #home-container {
+        padding: 25px;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    #button-container button {
+        font-size: 16px;
+        padding: 12px 18px;
+    }
+}

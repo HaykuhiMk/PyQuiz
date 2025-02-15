@@ -6,23 +6,30 @@ const submitBtn = document.getElementById('submit-btn');
 const nextBtn = document.getElementById('next-btn');
 const giveUpBtn = document.getElementById('give-up-btn');
 const statsContainer = document.getElementById('stats');
+const guestWarning = document.getElementById('guest-warning');
 
 let currentQuestion = null;
 let selectedOption = null;
 let attempts = 0;
 
-// Statistics
+// Check if user is in Guest Mode
+const isGuest = localStorage.getItem("guestMode") === "true";
+if (isGuest) {
+    guestWarning.style.display = "block"; // Show guest warning
+}
+
+// Statistics (only track if not guest)
 let totalQuestions = 46; // Placeholder
 let correctAnswers = 0;
-const answeredQuestions = new Set(); // To track answered questions
+const answeredQuestions = isGuest ? null : new Set(); // Track answered questions only if logged in
 
 // Fetch random question
 async function fetchQuestion() {
     const response = await fetch('http://localhost:5000/api/questions/random');
     currentQuestion = await response.json();
 
-    // Skip already answered questions
-    if (answeredQuestions.has(currentQuestion.id)) {
+    // Skip already answered questions (only for logged-in users)
+    if (!isGuest && answeredQuestions.has(currentQuestion.id)) {
         fetchQuestion();
         return;
     }
@@ -33,7 +40,7 @@ async function fetchQuestion() {
 
 // Escape HTML to prevent XSS vulnerabilities
 function escapeHTML(str) {
-    return str.replace(/[&<>"']/g, (match) => {
+    return str.replace(/[&<>\"']/g, (match) => {
         const escapeMap = {
             '&': '&amp;',
             '<': '&lt;',
@@ -96,7 +103,7 @@ submitBtn.onclick = () => {
     if (parseInt(selectedOption) === correctAnswerIndex) {
         correctAnswers++;
         resultContainer.innerText = 'Correct!';
-        answeredQuestions.add(currentQuestion.id);
+        if (!isGuest) answeredQuestions.add(currentQuestion.id); // Track only if not guest
         submitBtn.disabled = true; // Disable submit button after correct answer
     } else {
         attempts++;
@@ -112,8 +119,8 @@ giveUpBtn.onclick = () => {
     const correctAnswerIndex = currentQuestion.options.indexOf(currentQuestion.answer);
     resultContainer.innerText = `The correct answer is: ${currentQuestion.answer}`;
     submitBtn.disabled = true; // Disable submit button after giving up
-    giveUpBtn.style.display = 'none'; // Hide the give up button after it's clicked
-    answeredQuestions.add(currentQuestion.id); // Mark question as answered
+    giveUpBtn.style.display = 'none'; // Hide the give-up button after it's clicked
+    if (!isGuest) answeredQuestions.add(currentQuestion.id); // Track only if not guest
     updateStats();
 };
 
@@ -132,7 +139,11 @@ function resetUI() {
 
 // Update statistics
 function updateStats() {
-    statsContainer.innerText = `You've answered ${correctAnswers} of ${totalQuestions} questions correctly.`;
+    if (!isGuest) {
+        statsContainer.innerText = `You've answered ${correctAnswers} of ${totalQuestions} questions correctly.`;
+    } else {
+        statsContainer.innerText = "Guest Mode: Your progress is not saved.";
+    }
 }
 
 // Load initial question

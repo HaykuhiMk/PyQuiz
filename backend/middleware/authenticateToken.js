@@ -1,23 +1,21 @@
-// Create a directory 'middleware' (if not already created) and then create the 'authenticateToken.js' file inside it.
 const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret'; 
 
-// Middleware to verify JWT token
+// Middleware to authenticate token
 function authenticateToken(req, res, next) {
-    // Check for the token in the 'Authorization' header (Bearer token format)
     const token = req.header('Authorization') && req.header('Authorization').split(' ')[1];
-    
-    // If no token, deny access
-    if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
 
-    // Verify the token
-    jwt.verify(token, 'your_jwt_secret', (err, user) => {
-        if (err) return res.status(403).json({ error: 'Invalid token.' });
+    if (!token) {
+        return res.status(401).json({ error: 'Access denied. No token provided.' });
+    }
 
-        // Attach the decoded user to the request object
-        req.user = user;
-        
-        // Continue to the next middleware or route handler
-        next();
+    // Verify token
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Invalid token.' });
+        }
+        req.user = user;  // Attach the decoded user data to the request object
+        next();  // Proceed to the next middleware or route handler
     });
 }
 

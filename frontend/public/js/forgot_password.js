@@ -16,13 +16,10 @@ function clearError() {
 
 // Form submission handler
 forgotPasswordForm.addEventListener('submit', function (event) {
-    // Prevent default form submission behavior
     event.preventDefault();
 
-    // Get input values
     const email = emailInput.value.trim();
 
-    // Validate inputs
     if (!email) {
         showError('Email is required.');
         return;
@@ -35,7 +32,6 @@ forgotPasswordForm.addEventListener('submit', function (event) {
         return;
     }
 
-    // Clear previous errors
     clearError();
 
     // Send the email to the server using fetch
@@ -46,8 +42,9 @@ forgotPasswordForm.addEventListener('submit', function (event) {
         },
         body: JSON.stringify({ email })
     })
+
     .then(response => {
-        // Check if the response is okay
+        // Handle both success and failure responses
         if (!response.ok) {
             return response.json().then(data => {
                 throw new Error(data.error || 'Something went wrong.');
@@ -56,13 +53,9 @@ forgotPasswordForm.addEventListener('submit', function (event) {
         return response.json();
     })
     .then(data => {
-        // Handle the success response
-        if (data.message) {
-            alert('Password reset link has been sent to your email!');
-            window.location.href = 'http://localhost:5000/password_reset_link_success.html';
-        } else {
-            showError(data.error || 'Something went wrong. Please try again.');
-        }
+        // Handle success response
+        alert('Password reset link has been sent to your email!');
+        window.location.href = 'http://localhost:5000/password_reset_link_success.html';
     })
     .catch(error => {
         console.error('Error:', error);
