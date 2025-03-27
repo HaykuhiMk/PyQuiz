@@ -1,96 +1,215 @@
-/* General body styling */
-body {
-    background: linear-gradient(to right, #FFE873, #306998);
-    font-family: 'Arial', sans-serif;
-    color: #fff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+/* @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap'); */
+
+:root {
+    --primary-color: #3776ab;
+    --secondary-color: #ffd43b;
+    --accent-color: #ff6f61;
+    --text-color: #333;
+    --bg-gradient: linear-gradient(to right, #e0eafc, #cfdef3);
+    --button-bg-color: #3776ab; 
+    --button-hover: #ffcc00;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --input-bg-color: #f2f4f7;
+    --input-border-color: #ddd;
+    --input-hover-color: #3776ab;
+}
+
+* {
     margin: 0;
-    flex-direction: column;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-/* Quiz container */
-#quiz-container {
-    width: 80%;
-    max-width: 600px;
-    background-color: rgba(0, 0, 0, 0.7);
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
-    text-align: center;
-}
-
-/* Header styling */
-h1 {
-    font-size: 36px;
-    margin-bottom: 20px;
-}
-
-/* Question styling */
-#question {
-    font-size: 24px;
-    margin-bottom: 20px;
-}
-
-/* Code block styling */
-#question-code {
-    font-size: 18px;
-    margin-bottom: 20px;
-    font-family: 'Courier New', Courier, monospace;
-}
-
-/* Options styling */
-#options select {
-    width: 100%;
-    padding: 10px;
-    font-size: 16px;
-    margin-bottom: 20px;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-}
-
-/* Result message */
-#result {
-    font-size: 18px;
-    font-weight: bold;
-    margin: 20px 0;
-}
-
-/* Button container styling */
-#button-container {
+body {
+    background: var(--bg-gradient);
+    color: var(--text-color);
     display: flex;
+    flex-direction: column;
+    min-height: 100vh; 
+    text-align: left;
+    justify-content: space-between; 
+    align-items: center;     
+    font-size: 16px;
+    font-family: 'Poppins', sans-serif;
+}
+
+#quiz-container {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 8px 16px var(--shadow-color);
+    width: 100%;
+    max-width: 800px;
+    margin-top: 100px; 
+    margin-bottom: 100px; 
+    text-align: center;
+    position: relative;
+    flex-direction: column;
     justify-content: center;
-    gap: 10px;
-    margin-top: 20px;
+    backdrop-filter: blur(10px);
 }
 
-/* Buttons styling */
-#button-container button {
-    padding: 12px 20px;
-    font-size: 20px;
-    border: none;
-    border-radius: 5px;
-    background-color: #2575fc;
-    color: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
+h1 {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    font-weight: 600;
+    font-family: 'Poppins', sans-serif;
 }
 
-#button-container button:hover {
-    background-color: #306998;
-}
-
-#button-container button:disabled {
-    background-color: #555;
-    cursor: not-allowed;
-}
-
-#stats {
-    font-size: 20px; /* Change the font size as per your need */
-    padding: 20px;
+#guest-warning {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
     font-weight: bold;
-    color: #fff;
+    color: #ff4d4d;
+    font-family: 'Poppins', sans-serif;
 }
 
+#question {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.6rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+#difficulty,
+#topics {
+    font-size: 1.1rem;
+    color: var(--primary-color);
+    margin-top: 20px;
+    font-family: 'Poppins', sans-serif;
+}
+
+pre {
+    background: #282c34;
+    padding: 15px;
+    border-radius: 8px;
+    overflow-x: auto;
+    max-height: 300px;
+    margin-top: 20px;
+    font-family: 'Poppins', sans-serif;
+}
+
+code {
+    color: #f5f5f5;
+}
+
+#options {
+    width: 100%;  
+    margin-top: 20px;
+    font-family: 'Poppins', sans-serif;
+}
+
+select {
+    font-size: 1.1rem;
+    padding: 10px;
+    border-radius: 8px;
+    border: 2px solid var(--input-border-color);
+    background-color: var(--input-bg-color);
+    color: var(--text-color);
+    outline: none;
+    width: 100%;
+    max-width: 600px;
+    margin: 10px 0;
+    transition: all 0.3s ease;
+    font-family: 'Poppins', sans-serif;
+}
+
+select:focus {
+    border-color: var(--primary-color);
+    background-color: #fff;
+}
+
+option {
+    background-color: #fff;
+    padding: 10px;
+}
+
+button {
+    font-family: 'Poppins', sans-serif;
+    background: var(--button-bg-color);
+    color: var(--button-text-color);
+    border: none;
+    padding: 12px 24px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    margin: 10px;
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+button:hover {
+    background: var(--button-hover);
+    transform: scale(1.05);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+#button-container {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;  
+    flex-wrap: wrap; 
+    gap: 15px; 
+}
+
+#next-btn,
+#give-up-btn {
+    display: inline-block;
+}
+
+#give-up-btn {
+    background: var(--secondary-color);
+    color: var(--primary-color);
+}
+
+#result {
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin-top: 20px;
+    font-family: 'Poppins', sans-serif;
+}
+
+#explanation {
+    margin-top: 20px;
+    font-size: 1.1rem;
+    color: #777;
+    font-style: italic;
+    text-align: left;  
+    margin-left: 20px;  
+    font-family: 'Poppins', sans-serif;
+}
+
+
+#back-container {
+    margin-top: 30px;
+    font-family: 'Poppins', sans-serif;
+}
+
+#back-to-account-btn {
+    background: var(--secondary-color);
+    color: var(--primary-color);
+    border: none;
+    padding: 12px 24px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+#back-to-account-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+#submit-btn {
+    background: var(--button-bg-color); 
+}
+
+#submit-btn:hover {
+    background: var(--button-hover);
+}

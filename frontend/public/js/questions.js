@@ -1,150 +1,222 @@
-const questionContainer = document.getElementById('question');
-const questionCode = document.getElementById('question-code');
-const optionsContainer = document.getElementById('options');
-const resultContainer = document.getElementById('result');
-const submitBtn = document.getElementById('submit-btn');
-const nextBtn = document.getElementById('next-btn');
-const giveUpBtn = document.getElementById('give-up-btn');
-const statsContainer = document.getElementById('stats');
-const guestWarning = document.getElementById('guest-warning');
+import API_BASE_URL from "./config.js";
 
-let currentQuestion = null;
-let selectedOption = null;
-let attempts = 0;
+document.addEventListener("DOMContentLoaded", () => {
+    const questionContainer = document.getElementById("question");
+    const questionCode = document.getElementById("question-code");
+    const optionsContainer = document.getElementById("options");
+    const resultContainer = document.getElementById("result");
+    const difficultyContainer = document.getElementById("difficulty");
+    const topicsContainer = document.getElementById("topics");
+    const explanationContainer = document.getElementById("explanation");
+    const submitBtn = document.getElementById("submit-btn");
+    const nextBtn = document.getElementById("next-btn");
+    const giveUpBtn = document.getElementById("give-up-btn");
+    const guestWarning = document.getElementById("guest-warning");
+    const backToAccountBtn = document.getElementById("back-to-account-btn");
 
-// Check if user is in Guest Mode
-const isGuest = localStorage.getItem("guestMode") === "true";
-if (isGuest) {
-    guestWarning.style.display = "block"; // Show guest warning
-}
+    let currentQuestion = null;
+    let selectedOption = null;
+    let attempts = 0;
+    const totalQuestions = 146;
+    const isGuest = getCookie("guestMode") === "true";
+    const answeredQuestions = isGuest ? null : new Set();
 
-// Statistics (only track if not guest)
-let totalQuestions = 46; // Placeholder
-let correctAnswers = 0;
-const answeredQuestions = isGuest ? null : new Set(); // Track answered questions only if logged in
-
-// Fetch random question
-async function fetchQuestion() {
-    const response = await fetch('http://localhost:5000/api/questions/random');
-    currentQuestion = await response.json();
-
-    // Skip already answered questions (only for logged-in users)
-    if (!isGuest && answeredQuestions.has(currentQuestion.id)) {
-        fetchQuestion();
-        return;
-    }
-
-    displayQuestion(currentQuestion);
-    resetUI();
-}
-
-// Escape HTML to prevent XSS vulnerabilities
-function escapeHTML(str) {
-    return str.replace(/[&<>\"']/g, (match) => {
-        const escapeMap = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;',
-        };
-        return escapeMap[match];
-    });
-}
-
-// Display question and options
-function displayQuestion(question) {
-    questionContainer.innerText = question.question;
-
-    // Display code block
-    if (question.code) {
-        const formattedCode = escapeHTML(question.code);
-        questionCode.innerHTML = `<pre><code class="language-python">${formattedCode}</code></pre>`;
+    if (isGuest) {
+        guestWarning.style.display = "block";
+        backToAccountBtn.innerText = "Back to Menu";
+        backToAccountBtn.onclick = () => window.location.href = "./index.html"; 
     } else {
-        questionCode.innerHTML = '';
+        backToAccountBtn.innerText = "Back to Account";
+        backToAccountBtn.onclick = () => window.location.href = "./account.html"; 
     }
 
-    // Syntax highlighting
-    Prism.highlightAll();
+    async function fetchQuestion(retries = 5) {
+        try {
+            if (!isGuest) {
+                await fetchUserProgress();
+            }
 
-    // Display options as dropdown
-    optionsContainer.innerHTML = '';
-    const selectElement = document.createElement('select');
-    selectElement.onchange = () => {
-        selectedOption = selectElement.value;
+            const response = await fetch(`${API_BASE_URL}/api/questions/random`, {
+                method: "GET",
+                credentials: "include",  
+            });
+            
+            if (!response.ok) throw new Error("Failed to fetch question");
+            currentQuestion = await response.json();
+            if (!isGuest && answeredQuestions.has(currentQuestion._id)) {
+                if (answeredQuestions.size >= totalQuestions || retries <= 0) {
+                    resultContainer.innerText = "You've answered all available questions!";
+                    return;
+                }
+                return fetchQuestion(retries - 1);
+            }
+
+            displayQuestion(currentQuestion);
+            resetUI();
+        } catch (error) {
+            console.error("Error fetching question:", error);
+            resultContainer.innerText = "Error loading question. Try again later.";
+        }
+    }
+
+    async function fetchUserProgress() {
+        try {
+            const token = getCookie("token");
+            if (!token) return;
+
+            const response = await fetch(`${API_BASE_URL}/api/users/user-progress`, {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!response.ok) throw new Error("Failed to fetch user progress");
+
+            const data = await response.json();
+            if (data.answeredQuestions) {
+                answeredQuestions.clear();
+                data.answeredQuestions.forEach(q => answeredQuestions.add(q));
+            }
+        } catch (error) {
+            console.error("Error fetching user progress:", error);
+        }
+    }
+
+    function showExplanation() {
+        if (currentQuestion.explanation) {
+            explanationContainer.innerText = currentQuestion.explanation;
+            explanationContainer.style.display = "block";
+            explanationContainer.classList.add("show");
+        } else {
+            explanationContainer.style.display = "none"; 
+        }
+    }
+
+    function displayQuestion(question) {
+        questionContainer.innerText = question.question;
+
+        if (difficultyContainer) {
+            difficultyContainer.innerText = question.difficulty || "Unknown";
+        }
+
+        if (topicsContainer) {
+            topicsContainer.innerText = question.topics?.join(", ") || "None";
+        }
+
+        if (question.code) {
+            questionCode.innerHTML = `<pre><code class="language-python">${escapeHTML(question.code.trim())}</code></pre>`;
+        } else {
+            questionCode.innerHTML = "";
+        }
+
+        Prism.highlightAll();
+
+        optionsContainer.innerHTML = "";
+        const selectElement = document.createElement("select");
+        selectElement.onchange = () => {
+            selectedOption = parseInt(selectElement.value);
+        };
+
+        const placeholderOption = document.createElement("option");
+        placeholderOption.value = "";
+        placeholderOption.innerText = "Select an answer...";
+        placeholderOption.disabled = true;
+        placeholderOption.selected = true;
+        selectElement.appendChild(placeholderOption);
+
+        question.options.forEach((option, index) => {
+            const optionElement = document.createElement("option");
+            optionElement.value = index;
+            optionElement.innerText = option;
+            selectElement.appendChild(optionElement);
+        });
+
+        optionsContainer.appendChild(selectElement);
+    }
+
+    submitBtn.onclick = async () => {
+        if (selectedOption === null) {
+            resultContainer.innerText = "Please select an option.";
+            return;
+        }
+
+        const correctAnswerIndex = currentQuestion.options.indexOf(currentQuestion.answer);
+
+        if (selectedOption === correctAnswerIndex) {
+            resultContainer.innerText = "✅ Correct!";
+            submitBtn.disabled = true;
+            showExplanation();
+
+            if (!isGuest) {
+                answeredQuestions.add(currentQuestion._id);
+                await updateUserProgress(currentQuestion._id);
+            }
+        } else {
+            attempts++;
+            resultContainer.innerText = "❌ Wrong! Try again.";
+            if (attempts >= 3) giveUpBtn.style.display = "block";
+        }
     };
 
-    const placeholderOption = document.createElement('option');
-    placeholderOption.value = '';
-    placeholderOption.innerText = 'Select an answer...';
-    placeholderOption.disabled = true;
-    placeholderOption.selected = true;
-    selectElement.appendChild(placeholderOption);
+    giveUpBtn.onclick = () => {
+        resultContainer.innerHTML = `<strong>Correct Answer:</strong> ${currentQuestion.answer}`;
+        submitBtn.disabled = true;
+        giveUpBtn.style.display = "none";
+        showExplanation();
 
-    question.options.forEach((option, index) => {
-        const optionElement = document.createElement('option');
-        optionElement.value = index;
-        optionElement.innerText = option;
-        selectElement.appendChild(optionElement);
-    });
+        if (!isGuest) {
+            answeredQuestions.add(currentQuestion._id);
+            updateUserProgress(currentQuestion._id);
+        }
+    };
 
-    optionsContainer.appendChild(selectElement);
-}
+    nextBtn.onclick = fetchQuestion;
 
-// Submit answer
-submitBtn.onclick = () => {
-    if (!selectedOption) {
-        resultContainer.innerText = 'Please select an option.';
-        return;
+    function resetUI() {
+        resultContainer.innerText = "";
+        
+        explanationContainer.style.display = "none";
+        explanationContainer.classList.remove("show");
+        explanationContainer.innerText = "";
+
+        selectedOption = null;
+        attempts = 0;
+        giveUpBtn.style.display = "none";
+        submitBtn.disabled = false;
     }
 
-    const correctAnswerIndex = currentQuestion.options.indexOf(currentQuestion.answer);
-
-    if (parseInt(selectedOption) === correctAnswerIndex) {
-        correctAnswers++;
-        resultContainer.innerText = 'Correct!';
-        if (!isGuest) answeredQuestions.add(currentQuestion.id); // Track only if not guest
-        submitBtn.disabled = true; // Disable submit button after correct answer
-    } else {
-        attempts++;
-        resultContainer.innerText = 'Wrong! Try again.';
-        if (attempts >= 3) giveUpBtn.style.display = 'block';
+    async function updateUserProgress(questionId) {
+        try {
+            await fetch(`${API_BASE_URL}/api/users/user-progress`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Authorization": `Bearer ${getCookie("token")}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ questionId })
+            });
+        } catch (error) {
+            console.error("Failed to update user progress:", error);
+        }
     }
 
-    updateStats();
-};
-
-// Show the correct answer when the user gives up
-giveUpBtn.onclick = () => {
-    const correctAnswerIndex = currentQuestion.options.indexOf(currentQuestion.answer);
-    resultContainer.innerText = `The correct answer is: ${currentQuestion.answer}`;
-    submitBtn.disabled = true; // Disable submit button after giving up
-    giveUpBtn.style.display = 'none'; // Hide the give-up button after it's clicked
-    if (!isGuest) answeredQuestions.add(currentQuestion.id); // Track only if not guest
-    updateStats();
-};
-
-// Next question (always visible)
-nextBtn.onclick = fetchQuestion;
-
-// Reset UI and enable submit button for the next question
-function resetUI() {
-    resultContainer.innerText = '';
-    selectedOption = null;
-    attempts = 0;
-    giveUpBtn.style.display = 'none';
-    submitBtn.disabled = false; // Enable submit button when loading a new question
-    updateStats();
-}
-
-// Update statistics
-function updateStats() {
-    if (!isGuest) {
-        statsContainer.innerText = `You've answered ${correctAnswers} of ${totalQuestions} questions correctly.`;
-    } else {
-        statsContainer.innerText = "Guest Mode: Your progress is not saved.";
+    function escapeHTML(str) {
+        return str.replace(/[&<>\"']/g, match => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        }[match]));
     }
-}
 
-// Load initial question
-fetchQuestion();
+    function getCookie(name) {
+        return document.cookie.split("; ").find(row => row.startsWith(name + "="))?.split("=")[1] || null;
+    }
+
+    fetchQuestion();
+});

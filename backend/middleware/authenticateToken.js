@@ -1,22 +1,26 @@
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret'; 
 
-// Middleware to authenticate token
-function authenticateToken(req, res, next) {
-    const token = req.header('Authorization') && req.header('Authorization').split(' ')[1];
+const authenticate = (req, res, next) => {
+    console.log("Inside authenticate middleware");  
+
+    const token =
+        (req.cookies && req.cookies.token) ||
+        (req.headers.authorization && req.headers.authorization.split(" ")[1]);
+    console.log("Token from cookies or header:", token);
 
     if (!token) {
-        return res.status(401).json({ error: 'Access denied. No token provided.' });
+        return res.status(401).json({ error: "Unauthorized. No token provided." });
     }
 
-    // Verify token
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.status(403).json({ error: 'Invalid token.' });
-        }
-        req.user = user;  // Attach the decoded user data to the request object
-        next();  // Proceed to the next middleware or route handler
-    });
-}
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        console.log("Decoded Token:", decoded); 
+        req.user = decoded;
+        next(); 
+    } catch (error) {
+        console.error("JWT Verification Error:", error.message);
+        return res.status(401).json({ error: "Unauthorized. Invalid token." });
+    }
+};
 
-module.exports = authenticateToken;
+module.exports = authenticate;

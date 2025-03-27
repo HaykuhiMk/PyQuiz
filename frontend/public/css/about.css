@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary-color: #3776ab;
+    --secondary-color: #ffd43b;
+    --text-color: #333;
+    --button-hover: #ffcc00;
+    --bg-gradient: linear-gradient(to right, #f5f7fa, #c3cfe2);
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;    
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(to right, #1e3c72, #2a5298);
+    color: white;
+    text-align: center;
+    flex-direction: column;
+    min-height: 100vh;
+    justify-content: space-between; 
+    align-items: center;     
+
+}
+
+#about {
+    padding: 80px 20px;
+    max-width: 1000px;
+    margin: auto;
+}
+
+#faq {
+    padding: 0px 20px;
+    max-width: 1000px;
+    margin: auto;
+}
+
+h1 {
+    font-size: 2.8rem;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    font-weight: bold;
+    text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+p {
+    font-size: 1.2rem;
+    max-width: 800px;
+    margin: 0 auto 40px;
+    line-height: 1.6;
+}
+
+.about-content, .faq-box {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+}
+
+.about-box {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 600px;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    margin: auto;
+}
+
+.faq-box {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 600px;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    margin: 20px auto;
+}
+
+.about-box:hover, .faq-box:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+}
+
+.about-box h2, .faq-box h2 {
+    font-size: 1.6rem;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    color: #ffcc00;
+}
+
+.about-box p, .faq-box p {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+    .about-content, .faq-box {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .about-box, .faq-box {
+        width: 95%;
+    }
+}

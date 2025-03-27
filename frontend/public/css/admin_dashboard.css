@@ -1,0 +1,153 @@
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    background-color: #f4f7fc;
+    color: #333;
+}
+
+#sidebar {
+    width: 250px;
+    background: #2d3e50;
+    color: white;
+    height: 100%;
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+#sidebar h2 {
+    font-size: 1.8rem;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #f4f7fc;
+}
+
+#sidebar nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+#sidebar nav ul li {
+    margin: 10px 0;
+}
+
+#sidebar nav ul li a {
+    color: white;
+    text-decoration: none;
+    display: block;
+    padding: 12px;
+    font-size: 1.1rem;
+    transition: background 0.3s;
+}
+
+#sidebar nav ul li a:hover, #sidebar nav ul li a.active {
+    background: #1f2a44;
+    border-radius: 5px;
+}
+
+#logout-btn {
+    width: 100%;
+    background: #ff4c4c;
+    border: none;
+    padding: 12px;
+    color: white;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+#logout-btn:hover {
+    background: #cc3939;
+}
+
+#main-content {
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(100% - 270px);
+}
+
+header h1 {
+    font-size: 2rem;
+    color: #2d3e50;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+#question-management {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 700px;
+    margin: auto;
+}
+
+h2 {
+    text-align: center;
+    color: #1f2a44;
+    font-size: 1.8rem;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input, .form-group textarea, .form-group select {
+    width: 97%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: border 0.3s;
+}
+
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+    border-color: #1f2a44;
+}
+
+.submit-btn {
+    width: 100%;
+    background: #2d89ff;
+    color: white;
+    border: none;
+    padding: 12px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+
+.submit-btn:hover {
+    background: #1a6ae4;
+}
+
+.success-message {
+    color: green;
+    font-size: 1rem;
+    text-align: center;
+    margin-top: 10px;
+}
+
+@media (max-width: 768px) {
+    #sidebar {
+        width: 200px;
+    }
+
+    #main-content {
+        margin-left: 220px;
+        width: calc(100% - 220px);
+    }
+
+    #question-management {
+        max-width: 90%;
+    }
+}

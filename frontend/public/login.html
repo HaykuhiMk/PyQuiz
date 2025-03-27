@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Login - PyQuiz</title>
     <link rel="stylesheet" href="./css/login_styles.css">
+    <link rel="stylesheet" href="./css/header_footer.css">
 </head>
 <body>
+    <div id="header-container"></div>
     <div id="login-container">
         <h2>Login</h2>
         <form id="login-form">
@@ -24,24 +26,11 @@
             </div>
         </form>
         <div id="helper-text"></div>
-
     </div>
+    <div id="footer-container"></div>
 
-    <script src="./js/login.js"></script>
-    
-    <script>
-        function togglePasswordVisibility() {
-            const passwordInput = document.getElementById('password');
-            const toggleIcon = document.getElementById('toggle-password');
+    <script type="module" src="./js/login.js" defer></script>
+    <script type="module" src="./js/load_header_footer.js"></script>
 
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                toggleIcon.src = './images/hide-password.png'; // Change to the 'hide' icon
-            } else {
-                passwordInput.type = 'password';
-                toggleIcon.src = './images/show-password.png'; // Change back to the 'show' icon
-            }
-        }
-    </script>
 </body>
 </html>

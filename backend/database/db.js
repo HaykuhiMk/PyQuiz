@@ -1,12 +1,27 @@
-const fs = require('fs');
-const path = require('path');
+const { MongoClient } = require("mongodb");
 
-const dbFilePath = path.join(__dirname, 'questions.json');
+const mongoURI = "mongodb://localhost:27017"; 
+const dbName = "pyquiz";
+const collectionName = "questions"; 
 
-function readQuestions() {
-    const data = fs.readFileSync(dbFilePath);
-    return JSON.parse(data);
+async function readQuestions() {
+    const client = new MongoClient(mongoURI);
+
+    try {
+        await client.connect();
+        console.log("✅ Connected to MongoDB!");
+        const db = client.db(dbName);
+        const questionsCollection = db.collection(collectionName);
+        const questions = await questionsCollection.find().toArray();
+        return questions;
+
+    } catch (error) {
+        console.error("❌ Error reading questions:", error);
+        return [];
+    } finally {
+        await client.close();
+        console.log("🔌 Disconnected from MongoDB.");
+    }
 }
 
 module.exports = { readQuestions };
-

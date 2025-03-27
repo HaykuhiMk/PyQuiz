@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 10%;
+    background: #fff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    position: fixed;
+    max-width:inherit;
+    width: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    height: 70px; 
+}
+
+nav .logo {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    transition: color 0.3s ease;
+}
+
+nav .logo:hover {
+    color: var(--button-hover);
+}
+
+nav .logo a {
+    text-decoration: none;
+    color: inherit;
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    white-space: nowrap;
+    overflow: visible;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: #222;
+    font-size: 1.2rem;
+    transition: color 0.3s ease;
+}
+
+nav ul li a:hover {
+    color: var(--primary-color);
+}
+
+#footer-container {
+    background-color: #ffffff;
+    text-align: center;
+    padding: 10px 0;
+    position: relative;
+    bottom: 0;
+    width: 100%;
+    color: #000000; 
+}
+
+#footer-container p {
+    font-size: 16px;
+}
+
+#footer-container a {
+    color: #f1f1f1;
+    text-decoration: none;
+}
+
+#footer-container a:hover {
+    text-decoration: underline;
+}

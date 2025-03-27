@@ -5,27 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PyQuiz</title>
     <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/themes/prism-okaidia.min.css">
+    <link rel="stylesheet" href="css/header_footer.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/PrismJS/prism-themes/themes/prism-one-dark.css">
 </head>
 <body>
+    <div id="header-container"></div>
     <div id="quiz-container">
         <h1>PyQuiz</h1>
         <div id="guest-warning" style="display: none; color: red; font-size: 18px;">
             You are in Guest Mode. Your progress will not be saved.
         </div>
+
         <div id="question"></div>
-        <pre><code id="question-code" class="language-python"></code></pre> <!-- Code block -->
-        <div id="options"></div> <!-- Answer options -->
-        <div id="result"></div>
+        <p><strong>Difficulty:</strong> <span id="difficulty"></span></p>
+        <p><strong>Topics:</strong> <span id="topics"></span></p>
+        <pre><code id="question-code" class="language-python"></code></pre>
+        <div id="options"></div>
+        <div id="result" style="display:contents"></div>
+        <p id="explanation" style="display: none;"></p>
+        
         <div id="button-container">
             <button id="submit-btn">Submit</button>
             <button id="next-btn">Next Question</button>
-            <button id="another-question-btn" style="display: none;">Another Question</button>
             <button id="give-up-btn" style="display: none;">I Give Up, Show Me the Answer</button>
         </div>
-        <div id="stats"></div> <!-- Statistics -->
+        
+        <div id="back-container">
+            <button id="back-to-account-btn" onclick="window.location.href='./account.html'">Back to Account</button>
+        </div>
     </div>
-    <script src="js/questions.js"></script>
+    <div id="footer-container"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/components/prism-python.min.js"></script>
+    <script type="module" src="js/questions.js"></script>
+    <script type="module" src="./js/load_header_footer.js"></script>
+
 </body>
 </html>

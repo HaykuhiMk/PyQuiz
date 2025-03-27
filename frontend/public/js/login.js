@@ -1,66 +1,87 @@
-// Get the login form and its elements
-const form = document.getElementById('login-form');
-const emailInput = document.getElementById('email');
-const passwordInput = document.getElementById('password');
-const helperText = document.getElementById('helper-text');
+import API_BASE_URL from "./config.js";
 
-// Helper function to display error messages
+const form = document.getElementById("login-form");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const helperText = document.getElementById("helper-text");
+
 function showError(message) {
     helperText.textContent = message;
-    helperText.style.color = 'red';
+    helperText.style.color = "red";
 }
 
-// Helper function to clear error messages
 function clearError() {
-    helperText.textContent = '';
-    helperText.style.color = 'white';
+    helperText.textContent = "";
 }
 
-// Form submission handler
-form.addEventListener('submit', function (event) {
-    // Prevent default form submission behavior
-    event.preventDefault();
+function setCookie(name, value, hours) {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + hours * 60 * 60 * 1000); 
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax;Secure`;
+}
 
-    // Get input values
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.indexOf(nameEQ) === 0) {
+            return cookie.substring(nameEQ.length);
+        }
+    }
+    return null;
+}
+
+form.addEventListener("submit", (event) => {
+    event.preventDefault(); 
+
     const email = emailInput.value.trim();
     const password = passwordInput.value.trim();
 
-    // Validate inputs
     if (!email || !password) {
-        showError('Both fields are required.');
+        showError("Email and password are required.");
         return;
     }
 
-    // Clear previous errors
-    clearError();
-
-    // Send login data to the server using fetch
-    fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            email: email,
-            password: password
-        })
+    fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
     })
-
-    .then(response => response.json())
+    .then(response => {
+        return response.json().then(data => {
+            console.log("📡 Server Response:", response.status, data); 
+            if (!response.ok) {
+                throw new Error(data.error || `HTTP ${response.status}`);
+            }
+            return data;
+        });
+    })
     .then(data => {
-        if (data.token) {
-            // Store token in localStorage or sessionStorage if successful
-            localStorage.setItem('token', data.token);
-            alert('Login successful!');
-            // Redirect user to the home page or dashboard
-            window.location.href = '/account.html'; // Adjust this URL as needed
-        } else {
-            showError(data.error || 'Login failed!');
-        }
+        setCookie("token", data.token, 1);
+        document.cookie = "guestMode=false; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT";
+        document.cookie = "guestMode=; path=/frontend/public; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+
+        window.location.href = "./account.html";
     })
     .catch(error => {
-        console.error('Error:', error);
-        showError('An error occurred during login.');
+        console.error("🚨 Login Error:", error.message);  
+        showError(error.message || "An error occurred during login.");
     });
-
 });
+
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('password');
+    const toggleIcon = document.getElementById('toggle-password');
+
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.src = './images/hide-password.png'; 
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.src = './images/show-password.png';
+    }
+}
+
+window.togglePasswordVisibility = togglePasswordVisibility;

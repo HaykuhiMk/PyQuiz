@@ -11,11 +11,17 @@ router.get('/reset_password/:resetKey', (req, res) => {
     res.sendFile(filePath);
 });
 
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$/;
 
-// Reset Password Route using resetKey
 router.post('/reset_password/:resetKey', async (req, res) => {
     const { resetKey } = req.params;
     const { password } = req.body;
+
+    if (!passwordRegex.test(password)) {
+        return res.status(400).json({
+            error: 'Password must be at least 8 characters long, contain at least one uppercase letter, one number, and one special character (@, $, !, %, *, ?, &, _).'
+        });
+    }
 
     try {
         const resetEntry = await ResetPassword.findOne({ resetKey });
@@ -28,14 +34,10 @@ router.post('/reset_password/:resetKey', async (req, res) => {
             return res.status(404).json({ error: 'User not found.' });
         }
 
-        // Hash new password and update user
         const hashedPassword = await bcrypt.hash(password, 10);
         user.password = hashedPassword;
         await user.save();
-
-        // Remove the resetKey entry after successful reset
         await ResetPassword.deleteOne({ resetKey });
-
         res.status(200).json({ message: 'Password successfully reset.' });
 
     } catch (error) {

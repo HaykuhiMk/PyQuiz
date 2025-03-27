@@ -1,150 +1,141 @@
-/* General body styling */
-body {
-    background: linear-gradient(to right, #FFE873, #306998);
-    font-family: 'Arial', sans-serif;
-    color: #fff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-    flex-direction: column;
-    overflow: hidden;
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+:root {
+    --primary-color: #3776ab;
+    --secondary-color: #ffd43b; 
+    --text-color: #333;
+    --button-hover: #ffcc00;
+    --bg-gradient: linear-gradient(to right, #f5f7fa, #c3cfe2);
+    --shadow-color: rgba(0, 0, 0, 0.1);
 }
 
-/* Registration form container */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background: var(--bg-gradient);
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between; 
+    align-items: center; 
+    min-height: 100vh;
+    text-align: center;
+    flex-direction: column;
+
+}
+
+#header-container {
+    width: 100%;
+    background-color: var(--primary-color);
+    padding: 20px 0;
+    position: absolute;
+    top: 0;
+}
+
 #registration-container {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 6px 12px var(--shadow-color);
+    backdrop-filter: blur(8px);
     width: 90%;
     max-width: 500px;
-    background-color: rgba(0, 0, 0, 0.7);
-    border-radius: 10px;
-    padding: 30px;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
-    text-align: center;
-    position: relative;
-    z-index: 10;
-    transition: transform 0.3s ease-out;
+    margin: auto;
 }
 
-/* Hover effect for the container */
-#registration-container:hover {
-    transform: translateY(-10px);
-}
-
-/* Header styling */
 h1 {
-    font-size: 32px;
-    margin-bottom: 20px;
-    font-weight: 600;
-    color: #fff;
-    letter-spacing: 1px;
-    transition: color 0.3s ease;
+    font-size: 2.8rem;
+    color: var(--primary-color);
 }
 
-h1:hover {
-    color: #306998;
-}
-
-/* Form input fields styling */
-form input[type="text"],
-form input[type="email"],
-form input[type="password"] {
-    width: 100%;
-    max-width: 450px; /* Limit width of the input fields */
-    padding: 10px 15px; /* Reduce padding to make the input smaller */
-    font-size: 16px;
-    margin-bottom: 15px; /* Reduce space between inputs */
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    background-color: #fff;
-    color: #333;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease-in-out;
-    margin-left: auto;
-    margin-right: auto; /* Center input fields */
-}
-
-/* Input focus effect */
-form input[type="text"]:focus,
-form input[type="email"]:focus,
-form input[type="password"]:focus {
-    border-color: #2575fc;
-    box-shadow: 0 0 10px rgba(37, 117, 252, 0.8);
-    outline: none;
-}
-
-/* Button styling */
-form button {
-    padding: 12px 20px;
-    font-size: 18px;
-    font-weight: bold;
-    border: none;
-    border-radius: 8px;
-    background-color: #2575fc;
-    color: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    width: 100%;
-    letter-spacing: 1px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-/* Button hover effect */
-form button:hover {
-    background-color: #306998;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-    transform: translateY(-2px);
-}
-
-/* Disabled button styling */
-form button:disabled {
-    background-color: #555;
-    cursor: not-allowed;
-}
-
-/* Form labels */
-form label {
-    font-size: 18px;
-    display: block;
-    margin-bottom: 5px;
+.input-container {
+    display: flex;
+    flex-direction: column;
     text-align: left;
+    margin: 15px 0;
 }
 
-/* Helper text styling */
-#helper-text {
-    font-size: 16px;
-    margin-top: 10px;
-    color: #f8d347;
-}
-
-/* Success or error messages */
-#status-message {
-    font-size: 18px;
+label {
     font-weight: bold;
-    margin: 20px 0;
-    color: #00ff00; /* Green for success */
+    margin-bottom: 5px;
 }
 
-/* Animation for the form's appearance */
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(50px);
+input {
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+}
+
+.password-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    margin: 15px 0;
+}
+
+.password-container img {
+    position: absolute;
+    right: 10px;
+    top: 65%;
+    transform: translateY(-50%);
+    width: 20px;
+    cursor: pointer;
+}
+
+button {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 14px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 8px var(--shadow-color);
+    width: 100%;
+    margin-top: 20px;
+}
+
+button:hover {
+    background: var(--button-hover);
+    transform: scale(1.08);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+#helper-text {
+    margin-top: 10px;
+    font-size: 1rem;
+    color: #555;
+}
+
+@media (max-width: 768px) {
+    header nav {
+        flex-direction: column;
+        gap: 10px;
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+
+    header ul {
+        flex-direction: column;
+        gap: 15px;
     }
-}
 
-#registration-container {
-    animation: slideUp 0.6s ease-out;
-}
+    #registration-container {
+        padding: 25px;
+    }
 
-/* Input field scale effect when focused */
-form input[type="text"]:focus,
-form input[type="email"]:focus,
-form input[type="password"]:focus {
-    transform: scale(1.05);
-    transition: transform 0.3s ease;
+    h1 {
+        font-size: 2.2rem;
+    }
+
+    button {
+        padding: 12px;
+        font-size: 1rem;
+    }
 }

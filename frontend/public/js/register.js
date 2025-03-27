@@ -1,94 +1,100 @@
-// Get the registration form and its elements
-const form = document.getElementById('registration-form');
-const usernameInput = document.getElementById('username');
-const emailInput = document.getElementById('email');
-const passwordInput = document.getElementById('password');
-const repeatPasswordInput = document.getElementById('repeat-password');
-const helperText = document.getElementById('helper-text');
+import API_BASE_URL from "./config.js";
 
-// Helper function to validate email format
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-}
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById('registration-form');
+    const usernameInput = document.getElementById('username');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const repeatPasswordInput = document.getElementById('repeat-password');
+    const helperText = document.getElementById('helper-text');
 
-// Helper function to display error messages
-function showError(message) {
-    helperText.textContent = message;
-    helperText.style.color = 'red';
-}
-
-// Helper function to clear error messages
-function clearError() {
-    helperText.textContent = 'All fields are required';
-    helperText.style.color = 'white';
-}
-// Form submission handler
-form.addEventListener('submit', function (event) {
-    // Prevent default form submission behavior
-    event.preventDefault();
-
-    // Get input values
-    const username = usernameInput.value.trim();
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
-    const repeatPassword = repeatPasswordInput.value.trim();
-
-    // Validate inputs
-    if (!username || !email || !password || !repeatPassword) {
-        showError('All fields must be filled out.');
-        return;
+    function isValidEmail(email) {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        return emailRegex.test(email);
     }
 
-    if (!isValidEmail(email)) {
-        showError('Please enter a valid email address.');
-        return;
+    function isValidPassword(password) {
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$/;
+        return passwordRegex.test(password);
     }
 
-    if (password.length < 6) {
-        showError('Password must be at least 6 characters long.');
-        return;
+    function showError(message) {
+        helperText.textContent = message;
+        helperText.style.color = 'red';
     }
 
-    if (password !== repeatPassword) {
-        showError('Passwords do not match.');
-        return;
+    function clearError() {
+        helperText.textContent = 'All fields are required';
+        helperText.style.color = 'white';
     }
 
-    // Clear errors
-    clearError();
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
 
-    // Send registration data to the server using fetch
-    fetch('http://localhost:5000/api/users/register', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            username: username,
-            email: email,
-            password: password
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Handle the response
-        if (data.message) {
-            // Show success message
-            alert('Registration successful!');
-            // Redirect to the login page
-            window.location.href = './login.html'; // Adjust the path if needed
-        } else if (data.error) {
-            // Show error message if something went wrong
-            showError(data.error);
+        const username = usernameInput.value.trim();
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+        const repeatPassword = repeatPasswordInput.value.trim();
+
+        if (!username || !email || !password || !repeatPassword) {
+            showError('All fields must be filled out.');
+            return;
         }
-    })
-    .catch(error => {
-        // Catch any errors during the fetch
-        console.error('Error:', error);
-        showError('An error occurred during registration.');
+
+        if (!isValidEmail(email)) {
+            showError('Please enter a valid email address.');
+            return;
+        }
+
+        if (!isValidPassword(password)) {
+            showError('Password must be at least 8 characters long, contain at least one uppercase letter, one number, and one special character (@, $, !, %, *, ?, &, _).');
+            return;
+        }
+
+        if (password !== repeatPassword) {
+            showError('Passwords do not match.');
+            return;
+        }
+
+        clearError();
+
+        fetch(`${API_BASE_URL}/api/users/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: username,
+                email: email,
+                password: password
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                window.location.href = './login.html';
+            } else if (data.error) {
+                showError(data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('An error occurred during registration.');
+        });
+
+        form.reset();
     });
 
-    // Optionally, reset the form
-    form.reset();
+    window.togglePasswordVisibility = function (fieldId) {
+        const passwordInput = document.getElementById(fieldId);
+        const toggleIcon = document.getElementById(`toggle-${fieldId}`);
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.src = './images/hide-password.png';
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.src = './images/show-password.png';
+        }
+    };
 });

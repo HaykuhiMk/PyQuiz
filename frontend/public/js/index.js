@@ -1,12 +1,21 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const token = localStorage.getItem("token");
-
-    // Redirect logged-in users to the quiz page
-    if (token) {
-        window.location.href = "index.html";
+    function getCookie(name) {
+        const cookies = document.cookie.split("; ");
+        for (const cookie of cookies) {
+            const [key, value] = cookie.split("=");
+            if (key === name) {
+                return value;
+            }
+        }
+        return null;
     }
 
-    // Redirect to login or register pages
+    const token = getCookie("token"); 
+    if (token) {
+        window.location.href = "account.html";  
+        return;
+    }
+
     document.getElementById("login-btn").addEventListener("click", () => {
         window.location.href = "login.html";
     });
@@ -15,9 +24,8 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.href = "registration.html";
     });
 
-    // Start Guest Mode (store flag and redirect)
     document.getElementById("guest-btn").addEventListener("click", () => {
-        localStorage.setItem("guestMode", "true");
+        document.cookie = "guestMode=true"; 
         window.location.href = "questions.html";
     });
 });

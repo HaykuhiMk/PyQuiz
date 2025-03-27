@@ -5,10 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Account - PyQuiz</title>
     <link rel="stylesheet" href="./css/account.css">
+    <link rel="stylesheet" href="./css/header_footer.css">
+
 </head>
-<body style="display: none;">
+<body>
+    <div id="header-container"></div>
     <div class="account-container">
-        <h2>Welcome, <span id="username"></span>!</h2>
+        <h2>Welcome, <span id="username">User</span>!</h2>
+        
+        <div class="profile-info">
+            <p><strong>Email:</strong> <span id="email">Loading...</span></p>
+            <p><strong>Rank:</strong> <span id="rank">Loading...</span></p>
+        </div>
+
         <div class="stats">
             <div class="stat-card">
                 <h3>Answered Questions</h3>
@@ -19,15 +28,31 @@
                 <p id="unanswered-count">0</p>
             </div>
         </div>
+
         <div class="progress-container">
             <h3>Quiz Progress</h3>
             <div class="progress-bar">
-                <div id="progress-fill"></div>
+                <div id="progress-fill">0%</div>
             </div>
         </div>
-        <button id="logout">Logout</button>
-    </div>
 
-    <script src="./js/account.js"></script>
+        <div class="achievements">
+            <h3>Achievements</h3>
+            <ul id="badges">
+                <li>🏅 Loading...</li>
+            </ul>
+        </div>
+
+        <div class="button-container">
+            <button id="start-quiz">Start Quiz</button>
+            <button id="dark-mode-toggle">Toggle Dark Mode</button>
+            <button id="logout">Logout</button>
+        </div>
+    </div>
+    <div id="footer-container"></div>
+
+    <script type="module" src="./js/account.js"></script>
+    <script type="module" src="./js/load_header_footer.js"></script>
+
 </body>
 </html>

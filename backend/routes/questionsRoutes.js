@@ -1,7 +1,9 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { getRandomQuestion } = require('../controllers/questionsController');
+const { getRandomQuestion, getAllQuestions, addQuestion } = require("../controllers/questionsController");
 
-router.get('/random', getRandomQuestion);
+router.get("/random", getRandomQuestion);
+router.get("/", getAllQuestions);
+router.post("/add", addQuestion);
 
 module.exports = router;
