@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const giveUpBtn = document.getElementById("give-up-btn");
     const guestWarning = document.getElementById("guest-warning");
     const backToAccountBtn = document.getElementById("back-to-account-btn");
+    const darkModeBtn = document.getElementById("dark-mode-btn");
 
     let currentQuestion = null;
     let selectedOption = null;
@@ -24,25 +25,24 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isGuest) {
         guestWarning.style.display = "block";
         backToAccountBtn.innerText = "Back to Menu";
-        backToAccountBtn.onclick = () => window.location.href = "./index.html"; 
+        backToAccountBtn.onclick = () => window.location.href = "./index.html";
     } else {
         backToAccountBtn.innerText = "Back to Account";
-        backToAccountBtn.onclick = () => window.location.href = "./account.html"; 
+        backToAccountBtn.onclick = () => window.location.href = "./account.html";
     }
 
     async function fetchQuestion(retries = 5) {
         try {
-            if (!isGuest) {
-                await fetchUserProgress();
-            }
+            if (!isGuest) await fetchUserProgress();
 
             const response = await fetch(`${API_BASE_URL}/api/questions/random`, {
                 method: "GET",
-                credentials: "include",  
+                credentials: "include",
             });
-            
+
             if (!response.ok) throw new Error("Failed to fetch question");
             currentQuestion = await response.json();
+
             if (!isGuest && answeredQuestions.has(currentQuestion._id)) {
                 if (answeredQuestions.size >= totalQuestions || retries <= 0) {
                     resultContainer.innerText = "You've answered all available questions!";
@@ -91,20 +91,14 @@ document.addEventListener("DOMContentLoaded", () => {
             explanationContainer.style.display = "block";
             explanationContainer.classList.add("show");
         } else {
-            explanationContainer.style.display = "none"; 
+            explanationContainer.style.display = "none";
         }
     }
 
     function displayQuestion(question) {
         questionContainer.innerText = question.question;
-
-        if (difficultyContainer) {
-            difficultyContainer.innerText = question.difficulty || "Unknown";
-        }
-
-        if (topicsContainer) {
-            topicsContainer.innerText = question.topics?.join(", ") || "None";
-        }
+        difficultyContainer.innerText = question.difficulty || "Unknown";
+        topicsContainer.innerText = question.topics?.join(", ") || "None";
 
         if (question.code) {
             questionCode.innerHTML = `<pre><code class="language-python">${escapeHTML(question.code.trim())}</code></pre>`;
@@ -117,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
         optionsContainer.innerHTML = "";
         const selectElement = document.createElement("select");
         selectElement.onchange = () => {
-            selectedOption = parseInt(selectElement.value);
+            selectedOption = selectElement.value ? parseInt(selectElement.value) : null;
         };
 
         const placeholderOption = document.createElement("option");
@@ -177,11 +171,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function resetUI() {
         resultContainer.innerText = "";
-        
         explanationContainer.style.display = "none";
         explanationContainer.classList.remove("show");
         explanationContainer.innerText = "";
-
         selectedOption = null;
         attempts = 0;
         giveUpBtn.style.display = "none";
@@ -216,6 +208,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function getCookie(name) {
         return document.cookie.split("; ").find(row => row.startsWith(name + "="))?.split("=")[1] || null;
+    }
+
+    function toggleDarkMode() {
+        document.body.classList.toggle("dark-mode");
+        localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
+    }
+
+    if (darkModeBtn) {
+        darkModeBtn.onclick = toggleDarkMode;
+        if (localStorage.getItem("darkMode") === "true") {
+            document.body.classList.add("dark-mode");
+        }
     }
 
     fetchQuestion();
