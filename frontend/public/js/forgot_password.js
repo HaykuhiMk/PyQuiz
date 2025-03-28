@@ -42,7 +42,7 @@ forgotPasswordForm.addEventListener('submit', function (event) {
         return response.json(); 
     })
     .then(data => {
-        console.log("Success response received:", data); // Log to check success response
+        console.log("Success response received:", data);
 
         if (data.error) {
             throw new Error(data.error);

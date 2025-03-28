@@ -21,24 +21,32 @@ router.post('/forgot_password', async (req, res) => {
             { resetKey, createdAt: Date.now() },
             { upsert: true, new: true }
         );
+
         const resetUrl = `http://127.0.0.1:5500/frontend/public/reset_password.html?resetKey=${resetKey}`;
+        
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
-            port: 587, 
+            port: 587,
             secure: false, 
             auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            } 
+                user: process.env.EMAIL_USER, 
+                pass: process.env.EMAIL_PASS  
+            }
         });
-    
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: 'Password Reset Request',
-            text: `Click the link below to reset your password:\n\n${resetUrl}\n\nIf you did not request this, ignore this email.`
-        };
 
+        const mailOptions = {
+            from: `"Support Team" <${process.env.EMAIL_USER}>`,  
+            to: email, 
+            subject: 'Password Reset Request',
+            text: `Hello,\n\nPlease click the link below to reset your password:\n\n${resetUrl}\n\nIf you did not request this password reset, please ignore this email.\n\nBest regards,\nSupport Team`,
+            html: `<p>Hello,</p>
+                   <p>Please click the link below to reset your password:</p>
+                   <a href="${resetUrl}">Reset Password</a>
+                   <p>If you did not request this password reset, please ignore this email.</p>
+                   <p>Best regards,</p>
+                   <p>Support Team</p>`,
+            replyTo: process.env.EMAIL_USER 
+        };
 
         transporter.sendMail(mailOptions, (error, info) => { 
             if (error) {
