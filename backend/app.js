@@ -56,7 +56,6 @@ app.get('/', (req, res) => {
 app.get('/password_reset_link_success.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'password_reset_link_success.html'));
 });
-const bcrypt = require("bcrypt");
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
