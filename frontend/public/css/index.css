@@ -90,8 +90,10 @@ body {
 
 .feature-box {
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
+    flex-wrap: wrap; 
     gap: 20px;
+    padding: 0 10px;
 }
 
 .feature {
@@ -100,8 +102,10 @@ body {
     border-radius: 12px;
     box-shadow: 0 4px 10px var(--shadow-color);
     text-align: center;
-    width: 30%;
+    flex: 1 1 30%;  
     transition: transform 0.3s ease-in-out;
+    min-width: 250px; 
+    max-width: 350px;  
 }
 
 .feature:hover {
@@ -119,7 +123,13 @@ body {
     font-size: 1rem;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+@media (max-width: 768px) {
+    .feature-box {
+        justify-content: center; 
+    }
+
+    .feature {
+        flex: 1 1 100%; 
+        margin-bottom: 20px; 
+    }
 }

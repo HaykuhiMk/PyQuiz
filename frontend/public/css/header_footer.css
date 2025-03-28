@@ -1,19 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
 nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 10%;
-    background: #fff;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    position: fixed;
-    max-width:inherit;
-    width: 100%;
-    top: 0;
-    left: 0;
-    z-index: 1000;
-    height: 70px; 
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 15px 10% !important;
+    background: #fff !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15) !important;
+    position: fixed !important;
+    width: 100% !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 1000 !important;
+    height: 70px !important;
 }
 
 nav .logo {
@@ -23,22 +22,22 @@ nav .logo {
     transition: color 0.3s ease;
 }
 
-nav .logo:hover {
-    color: var(--button-hover);
-}
-
 nav .logo a {
     text-decoration: none;
     color: inherit;
+}
+
+.logo-img {
+    width: 300px; 
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 nav ul {
     list-style: none;
     display: flex;
     gap: 20px;
-    flex-wrap: wrap;
-    white-space: nowrap;
-    overflow: visible;
 }
 
 nav ul li a {
@@ -59,18 +58,43 @@ nav ul li a:hover {
     position: relative;
     bottom: 0;
     width: 100%;
-    color: #000000; 
+    color: #000000;
 }
 
-#footer-container p {
-    font-size: 16px;
+.burger-menu {
+    display: none;
+    font-size: 2rem;
+    cursor: pointer;
 }
 
-#footer-container a {
-    color: #f1f1f1;
-    text-decoration: none;
+@media (max-width: 768px) {
+    nav {
+        padding: 10px 5%;
+    }
+
+    .burger-menu {
+        display: block;
+    }
+
+    nav ul {
+        display: none;
+        flex-direction: column;
+        gap: 10px;
+        background: white;
+        position: absolute;
+        top: 70px;
+        right: 0;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    nav ul.active {
+        display: flex;
+    }
+
+    nav ul li {
+        padding: 10px 0;
+    }
 }
 
-#footer-container a:hover {
-    text-decoration: underline;
-}

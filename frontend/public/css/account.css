@@ -1,12 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;    
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f4f4f4;
     color: #333;
     transition: background-color 0.3s, color 0.3s;
@@ -31,15 +32,12 @@ h2, h3 {
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: 10px;
-}
-
-h2, h3 {
     transition: color 0.3s ease;
 }
 
 body.dark-mode h2, 
 body.dark-mode h3 {
-    color: #000000;
+    color: #ffffff;
 }
 
 .account-container {
@@ -124,10 +122,6 @@ body.dark-mode h3 {
     transition: width 0.5s ease;
 }
 
-#progress-fill {
-    transition: width 0.5s ease-in-out;
-}
-
 .achievements {
     margin: 20px 0;
 }
@@ -178,6 +172,7 @@ button:hover {
 button:active {
     transform: scale(0.95);
 }
+
 body.dark-mode {
     background: #1e1e2f;  
     color: #e0e0e0;  
@@ -249,4 +244,76 @@ body.dark-mode #header-container,
 body.dark-mode #footer-container {
     background: #2a2a40;
     color: #e0e0e0;
+}
+
+@media (max-width: 768px) {
+    body {
+        font-size: 14px;
+    }
+
+    .account-container {
+        width: 100%;
+        padding: 20px;
+        margin: 15px auto;
+    }
+
+    .stats {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .stat-card {
+        width: 90%;
+        margin-bottom: 20px;
+    }
+
+    .stat-card h3 {
+        font-size: 1.2rem;
+    }
+
+    .stat-card p {
+        font-size: 1.6rem;
+    }
+
+    .button-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    button {
+        width: 100%;
+        font-size: 1.1rem;
+        padding: 10px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        font-size: 12px;
+    }
+
+    .account-container {
+        padding: 15px;
+        margin: 10px auto;
+    }
+
+    .stats {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .stat-card {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+
+    .button-container {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    button {
+        font-size: 1rem;
+        padding: 8px 0;
+    }
 }

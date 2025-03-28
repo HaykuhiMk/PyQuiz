@@ -28,13 +28,6 @@ body {
 
 }
 
-#header-container {
-    width: 100%;
-    background-color: var(--primary-color);
-    padding: 20px 0;
-    position: absolute;
-    top: 0;
-}
 
 #registration-container {
     background: rgba(255, 255, 255, 0.8);
@@ -116,15 +109,7 @@ button:hover {
 }
 
 @media (max-width: 768px) {
-    header nav {
-        flex-direction: column;
-        gap: 10px;
-    }
 
-    header ul {
-        flex-direction: column;
-        gap: 15px;
-    }
 
     #registration-container {
         padding: 25px;
