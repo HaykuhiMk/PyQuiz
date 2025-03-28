@@ -58,13 +58,6 @@ app.get('/password_reset_link_success.html', (req, res) => {
 });
 const bcrypt = require("bcrypt");
 
-(async () => {
-    const password = "haykuhiadminpython";
-    const hashedPassword = await bcrypt.hash(password, 10);
-    console.log("Hashed Password:", hashedPassword);
-})();
-
-
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🌍 Server running on http://localhost:${PORT}`);
