@@ -18,7 +18,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: ['http://127.0.0.1:5500', 'http://localhost:5500'],
+    origin: [process.env.CLIENT_URI, process.env.API_URI],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -61,6 +61,9 @@ app.get('/password_reset_link_success.html', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
-  console.log(`🌍 Server running on http://localhost:${PORT}`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🌍 Server running on ${process.env.API_URI}`);
+  }
 });
