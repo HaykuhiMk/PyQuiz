@@ -22,7 +22,7 @@ router.post('/forgot_password', async (req, res) => {
             { upsert: true, new: true }
         );
 
-        const resetUrl = `http://127.0.0.1:5500/frontend/public/reset_password.html?resetKey=${resetKey}`;
+        const resetUrl = `${process.env.CLIENT_URI}/frontend/public/reset_password.html?resetKey=${resetKey}`;
         
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
