@@ -48,7 +48,7 @@ forgotPasswordForm.addEventListener('submit', function (event) {
             throw new Error(data.error);
         }
         console.log('Redirecting to success page...');
-        window.location.href = 'http://127.0.0.1:5500/frontend/public/password_reset_link_success.html';
+        window.location.href = 'password_reset_link_success.html';
     })
     .catch(error => {
         console.error('Error:', error);

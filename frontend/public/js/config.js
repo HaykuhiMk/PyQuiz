@@ -1,2 +1,2 @@
-const API_BASE_URL = 'localhost:5001';
+const API_BASE_URL = 'https://api-pyquiz.picsartacademy.am';
 export default API_BASE_URL;
