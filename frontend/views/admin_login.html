@@ -1,35 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Login - PyQuiz</title>
-    <link rel="stylesheet" href="css/admin_login.css">
-</head>
-<body>
-
+    <link rel="stylesheet" href="/css/admin_login.css" />
+  </head>
+  <body>
     <header>
-        <h1>PyQuiz Admin Login</h1>
+      <h1>PyQuiz Admin Login</h1>
     </header>
 
     <main>
-        <section id="login-section">
-            <h2>Admin Login</h2>
-            <form id="admin-login-form">
-                <label for="admin-username">Username:</label>
-                <input type="text" id="admin-username" placeholder="Enter your username" required>
+      <section id="login-section">
+        <h2>Admin Login</h2>
+        <form id="admin-login-form">
+          <label for="admin-username">Username:</label>
+          <input
+            type="text"
+            id="admin-username"
+            placeholder="Enter your username"
+            required
+          />
 
-                <label for="admin-password">Password:</label>
-                <div class="password-container">
-                    <input type="password" id="admin-password" placeholder="Enter your password" required>
-                </div>
+          <label for="admin-password">Password:</label>
+          <div class="password-container">
+            <input
+              type="password"
+              id="admin-password"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
 
-                <button type="submit">Login</button>
-                <p id="login-error" class="error-message"></p>
-            </form>
-        </section>
+          <button type="submit">Login</button>
+          <p id="login-error" class="error-message"></p>
+        </form>
+      </section>
     </main>
 
-    <script type="module" src="js/admin_login.js"></script>
-</body>
+    <script type="module" src="/js/admin_login.js"></script>
+  </body>
 </html>

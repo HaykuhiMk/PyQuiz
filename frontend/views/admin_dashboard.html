@@ -1,81 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Dashboard - PyQuiz</title>
-    <link rel="stylesheet" href="css/admin_dashboard.css">
+    <link rel="stylesheet" href="/css/admin_dashboard.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
-</head>
-<body>
-
+  </head>
+  <body>
     <aside id="sidebar">
-        <h2>Admin Panel</h2>
-        <nav>
-            <ul>
-                <li><a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
-                <li><a href="manage-questions.html" class="active"><i class="fas fa-question-circle"></i> Manage Questions</a></li>
-                <li><a href="users.html"><i class="fas fa-users"></i> Manage Users</a></li>
-                <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
-            </ul>
-        </nav>
-        <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+      <h2>Admin Panel</h2>
+      <nav>
+        <ul>
+          <li>
+            <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+          </li>
+          <li>
+            <a href="manage-questions.html" class="active"
+              ><i class="fas fa-question-circle"></i> Manage Questions</a
+            >
+          </li>
+          <li>
+            <a href="users.html"><i class="fas fa-users"></i> Manage Users</a>
+          </li>
+          <li>
+            <a href="analytics.html"
+              ><i class="fas fa-chart-bar"></i> Analytics</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <button id="logout-btn">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
     </aside>
 
     <main id="main-content">
-        <header>
-            <h1>PyQuiz Admin Dashboard</h1>
-        </header>
+      <header>
+        <h1>PyQuiz Admin Dashboard</h1>
+      </header>
 
-        <section id="question-management">
-            <h2>Add a New Question</h2>
-            <form id="question-form">
-                <div class="form-group">
-                    <label for="question-text"><i class="fas fa-question"></i> Question:</label>
-                    <textarea id="question-text" placeholder="Enter the question..." required></textarea>
-                </div>
+      <section id="question-management">
+        <h2>Add a New Question</h2>
+        <form id="question-form">
+          <div class="form-group">
+            <label for="question-text"
+              ><i class="fas fa-question"></i> Question:</label
+            >
+            <textarea
+              id="question-text"
+              placeholder="Enter the question..."
+              required
+            ></textarea>
+          </div>
 
-                <div class="form-group">
-                    <label for="code"><i class="fas fa-code"></i> Code Snippet (optional):</label>
-                    <textarea id="code" placeholder="Enter code snippet (if any)..."></textarea>
-                </div>
+          <div class="form-group">
+            <label for="code"
+              ><i class="fas fa-code"></i> Code Snippet (optional):</label
+            >
+            <textarea
+              id="code"
+              placeholder="Enter code snippet (if any)..."
+            ></textarea>
+          </div>
 
-                <div class="form-group">
-                    <label for="options"><i class="fas fa-list"></i> Options (Enter each option on a new line):</label>
-                    <textarea id="options" placeholder="Enter options, one per line..." required></textarea>
-                </div>
-                
+          <div class="form-group">
+            <label for="options"
+              ><i class="fas fa-list"></i> Options (Enter each option on a new
+              line):</label
+            >
+            <textarea
+              id="options"
+              placeholder="Enter options, one per line..."
+              required
+            ></textarea>
+          </div>
 
-                <div class="form-group">
-                    <label for="answer"><i class="fas fa-check"></i> Correct Answer:</label>
-                    <input type="text" id="answer" placeholder="Enter correct answer" required>
-                </div>
+          <div class="form-group">
+            <label for="answer"
+              ><i class="fas fa-check"></i> Correct Answer:</label
+            >
+            <input
+              type="text"
+              id="answer"
+              placeholder="Enter correct answer"
+              required
+            />
+          </div>
 
-                <div class="form-group">
-                    <label for="difficulty"><i class="fas fa-signal"></i> Difficulty:</label>
-                    <select id="difficulty" required>
-                        <option value="easy">Easy</option>
-                        <option value="medium">Medium</option>
-                        <option value="hard">Hard</option>
-                    </select>
-                </div>
+          <div class="form-group">
+            <label for="difficulty"
+              ><i class="fas fa-signal"></i> Difficulty:</label
+            >
+            <select id="difficulty" required>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
 
-                <div class="form-group">
-                    <label for="topics"><i class="fas fa-tags"></i> Topics (comma-separated):</label>
-                    <input type="text" id="topics" placeholder="e.g. Loops, Functions, Recursion" required>
-                </div>
+          <div class="form-group">
+            <label for="topics"
+              ><i class="fas fa-tags"></i> Topics (comma-separated):</label
+            >
+            <input
+              type="text"
+              id="topics"
+              placeholder="e.g. Loops, Functions, Recursion"
+              required
+            />
+          </div>
 
-                <div class="form-group">
-                    <label for="explanation"><i class="fas fa-info-circle"></i> Explanation:</label>
-                    <textarea id="explanation" placeholder="Provide explanation..." required></textarea>
-                </div>
+          <div class="form-group">
+            <label for="explanation"
+              ><i class="fas fa-info-circle"></i> Explanation:</label
+            >
+            <textarea
+              id="explanation"
+              placeholder="Provide explanation..."
+              required
+            ></textarea>
+          </div>
 
-                <button type="submit" class="submit-btn"><i class="fas fa-plus"></i> Add Question</button>
-                <p id="question-success" class="success-message"></p>
-            </form>
-        </section>
+          <button type="submit" class="submit-btn">
+            <i class="fas fa-plus"></i> Add Question
+          </button>
+          <p id="question-success" class="success-message"></p>
+        </form>
+      </section>
     </main>
 
     <script type="module" src="js/admin_dashboard.js"></script>
-</body>
+  </body>
 </html>
