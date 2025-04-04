@@ -3,10 +3,12 @@ PyQuiz is a fun, interactive web application designed to help users test and enh
 
 📡 Live Project
 Try out the live version here:
+
 🌍 [PyQuiz](https://pyquiz.picsartacademy.am/)
 
 ✍️ Blog Post
 Learn more about the journey and features of PyQuiz in this detailed article:
+
 👉 [Exploring PyQuiz – A Fun and Interactive Way to Test Your Python Skills](https://medium.com/@haykuhimkrtchyan09/exploring-pyquiz-a-fun-and-interactive-way-to-test-your-python-skills-c62cecd2f37c)
 
 
@@ -66,7 +68,11 @@ JWT_SECRET=your_jwt_secret
 
 **Visit [http://localhost:3000](http://localhost:3000) in your browser.**
 
+## 🙌 Contributing
+Contributions are welcome! If you have ideas for new features or improvements, feel free to open an issue or submit a PR.
 
+## 📃 License
+This project is licensed under the MIT License. See the LICENSE file for details.
 
 
 
