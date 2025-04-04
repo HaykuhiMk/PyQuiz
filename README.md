@@ -1,9 +1,14 @@
 # 🧠 PyQuiz
 PyQuiz is a fun, interactive web application designed to help users test and enhance their Python skills through various quizzes and challenges. Built with a modern tech stack and a clean user experience, PyQuiz is perfect for beginners who want to learn, as well as experienced developers who want to sharpen their knowledge.
 
-**🖥 Live Demo:** [PyQuiz](https://pyquiz.picsartacademy.am/)
+📡 Live Project
+Try out the live version here:
+🌍 [PyQuiz](https://pyquiz.picsartacademy.am/)
 
-**✍️ Read more on Medium:** [Exploring PyQuiz – A Fun and Interactive Way to Test Your Python Skills](https://medium.com/@haykuhimkrtchyan09/exploring-pyquiz-a-fun-and-interactive-way-to-test-your-python-skills-c62cecd2f37c)
+✍️ Blog Post
+Learn more about the journey and features of PyQuiz in this detailed article:
+👉 [Exploring PyQuiz – A Fun and Interactive Way to Test Your Python Skills](https://medium.com/@haykuhimkrtchyan09/exploring-pyquiz-a-fun-and-interactive-way-to-test-your-python-skills-c62cecd2f37c)
+
 
 ## 🚀 Features
 
@@ -41,7 +46,6 @@ PyQuiz is a fun, interactive web application designed to help users test and enh
 **Clone the repository:**
 ```
 git clone https://github.com/HaykuhiMk/PyQuiz.git
-
 cd PyQuiz
 ```
 
@@ -52,9 +56,7 @@ cd PyQuiz
 **Add your .env file for environment configs:**
 ```
 PORT=3000
-
 MONGO_URI=your_mongodb_uri
-
 JWT_SECRET=your_jwt_secret
 ```
 
