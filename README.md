@@ -40,9 +40,8 @@ PyQuiz is a fun, interactive web application designed to help users test and enh
 ## 📦 Installation & Setup for Developers
 **Clone the repository:**
 
-`git clone https://github.com/HaykuhiMk/PyQuiz.git`
-
-`cd PyQuiz`
+`git clone https://github.com/HaykuhiMk/PyQuiz.git 
+cd PyQuiz`
 
 **Install dependencies:**
 
@@ -60,7 +59,7 @@ PyQuiz is a fun, interactive web application designed to help users test and enh
 
 `npm start`
 
-**Visit [](http://localhost:3000) in your browser.88
+**Visit [http://localhost:3000](http://localhost:3000) in your browser.**
 
 
 
