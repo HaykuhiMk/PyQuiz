@@ -18,3 +18,17 @@ PyQuiz is a fun, interactive web application designed to help users test and enh
 **🛠 Admin Panel** – Easily manage questions and users
 
 **🌐 RESTful API** – Backend services exposed for quiz data and authentication
+
+
+## 🛠 Tech Stack
+### Frontend
+
+* HTML/CSS/JavaScript
+* EJS Templates (for server-side rendering)
+
+### Backend
+
+* Node.js
+* Express.js
+* MongoDB (Mongoose ODM)
+* JSON Web Tokens (JWT) for authentication
