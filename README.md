@@ -34,5 +34,10 @@ PyQuiz is a fun, interactive web application designed to help users test and enh
 * JSON Web Tokens (JWT) for authentication
 
 ## 🔐 Authentication
-Users sign up/login with a secure JWT-based flow. JWT tokens are used to maintain sessions and authorize access to protected routes.
+* Users sign up/login with a secure JWT-based flow.
+* JWT tokens are used to maintain sessions and authorize access to protected routes.
 
+## 📦 Installation & Setup for Developers
+Clone the repository:
+`git clone https://github.com/HaykuhiMk/PyQuiz.git`
+`cd PyQuiz`
