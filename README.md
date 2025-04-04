@@ -32,3 +32,7 @@ PyQuiz is a fun, interactive web application designed to help users test and enh
 * Express.js
 * MongoDB (Mongoose ODM)
 * JSON Web Tokens (JWT) for authentication
+
+## 🔐 Authentication
+Users sign up/login with a secure JWT-based flow. JWT tokens are used to maintain sessions and authorize access to protected routes.
+
