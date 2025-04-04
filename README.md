@@ -39,21 +39,24 @@ PyQuiz is a fun, interactive web application designed to help users test and enh
 
 ## 📦 Installation & Setup for Developers
 **Clone the repository:**
+```
+git clone https://github.com/HaykuhiMk/PyQuiz.git
 
-`git clone https://github.com/HaykuhiMk/PyQuiz.git
-
-cd PyQuiz`
+cd PyQuiz
+```
 
 **Install dependencies:**
 
 `npm install`
 
 **Add your .env file for environment configs:**
+```
+PORT=3000
 
-`PORT=3000
-MONGO_URI=your_mongodb_uri`
+MONGO_URI=your_mongodb_uri
 
-`JWT_SECRET=your_jwt_secret`
+JWT_SECRET=your_jwt_secret
+```
 
 **Start the server:**
 
