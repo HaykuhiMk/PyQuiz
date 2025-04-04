@@ -38,6 +38,33 @@ PyQuiz is a fun, interactive web application designed to help users test and enh
 * JWT tokens are used to maintain sessions and authorize access to protected routes.
 
 ## 📦 Installation & Setup for Developers
-Clone the repository:
+**Clone the repository:**
+
 `git clone https://github.com/HaykuhiMk/PyQuiz.git`
+
 `cd PyQuiz`
+
+**Install dependencies:**
+
+`npm install`
+
+**Add your .env file for environment configs:**
+
+`PORT=3000`
+
+`MONGO_URI=your_mongodb_uri`
+
+`JWT_SECRET=your_jwt_secret`
+
+**Start the server:**
+
+`npm start`
+
+**Visit [](http://localhost:3000) in your browser.88
+
+
+
+
+
+
+
