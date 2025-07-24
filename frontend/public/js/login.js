@@ -14,24 +14,6 @@ function clearError() {
     helperText.textContent = "";
 }
 
-function setCookie(name, value, hours) {
-    const expires = new Date();
-    expires.setTime(expires.getTime() + hours * 60 * 60 * 1000); 
-    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax;Secure`;
-}
-
-function getCookie(name) {
-    const nameEQ = name + "=";
-    const cookies = document.cookie.split(";");
-    for (let cookie of cookies) {
-        cookie = cookie.trim();
-        if (cookie.indexOf(nameEQ) === 0) {
-            return cookie.substring(nameEQ.length);
-        }
-    }
-    return null;
-}
-
 form.addEventListener("submit", (event) => {
     event.preventDefault(); 
 
@@ -59,10 +41,9 @@ form.addEventListener("submit", (event) => {
         });
     })
     .then(data => {
-        setCookie("token", data.token, 1);
-        document.cookie = "guestMode=false; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT";
-        document.cookie = "guestMode=; path=/frontend/public; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-
+        // Store token in localStorage for Authorization header
+        localStorage.setItem('token', data.token);
+        // The httpOnly cookie is automatically handled by the browser
         window.location.href = "./account.html";
     })
     .catch(error => {

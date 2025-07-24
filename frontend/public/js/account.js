@@ -1,7 +1,7 @@
 import API_BASE_URL from "./config.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
-    const token = getCookie("token"); 
+    const token = localStorage.getItem("token");
     if (!token) {
         console.warn("No token found. Redirecting to login...");
         redirectToLogin();
@@ -91,14 +91,8 @@ async function startQuiz(token) {
 
 async function reloadProgress() {
     console.log("Reloading progress...");
-    const token = getCookie("token");
+    const token = localStorage.getItem("token");
     if (token) await fetchUserData(token);
-}
-
-function getCookie(name) {
-    const cookies = document.cookie.split(";").map(c => c.trim());
-    const match = cookies.find(cookie => cookie.startsWith(`${name}=`));
-    return match ? match.split("=")[1] : null;
 }
 
 function getAchievements(answered) {
@@ -113,7 +107,9 @@ function updateProgressBar(progress) {
     progressFill.style.width = `${progress}%`;
     progressFill.textContent = `${Math.round(progress)}% Completed`;
 }
+
 function handleLogout() {
+    localStorage.removeItem("token");
     document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     document.cookie = "guestMode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
     document.cookie = "guestMode=; path=/frontend/public; expires=Thu, 01 Jan 1970 00:00:00 UTC;";

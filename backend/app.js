@@ -13,17 +13,16 @@ const questionsRoutes = require('./routes/questionsRoutes');
 const userRoutes = require('./routes/userRoutes');
 const dashboardRoutes = require('./routes/dashboard');
 const adminRoutes = require('./routes/adminRoutes');
+const contactRoutes = require('./routes/contact');
 
 const app = express();
 
-app.use(
-  cors({
-    origin: [process.env.CLIENT_URI, process.env.API_URI],
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  })
-);
+app.use(cors({
+  origin: ['http://localhost:3000', process.env.CLIENT_URI, process.env.API_URI],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+}));
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -49,6 +48,7 @@ app.use('/api/questions', questionsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api', dashboardRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/contact', contactRoutes);
 
 app.get('/', (req, res) => {
   res.send('🚀 Welcome to the PyQuiz backend!');
@@ -60,7 +60,7 @@ app.get('/password_reset_link_success.html', (req, res) => {
   );
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   if (process.env.NODE_ENV === 'development') {
