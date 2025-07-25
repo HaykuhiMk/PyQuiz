@@ -1,44 +1,38 @@
-const { MongoClient } = require("mongodb");
+const Question = require("../models/questionModel");
 
-const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017";
-const dbName = "pyquiz";
-const collectionName = "questions";
-
-async function fetchQuestionsFromDB() {
-    const client = new MongoClient(mongoURI);
+async function getAllTopics(req, res) {
     try {
-        await client.connect();
-        const db = client.db(dbName);
-        const questionsCollection = db.collection(collectionName);
-        return await questionsCollection.find().toArray();
+        const topics = await Question.distinct("topics");
+        res.json(topics.sort());
     } catch (error) {
-        console.error("❌ Error fetching questions:", error);
+        res.status(500).json({ error: "Failed to fetch topics" });
+    }
+}
+
+async function fetchQuestionsFromDB(selectedTopics = []) {
+    try {
+        const query = selectedTopics.length > 0 
+            ? { topics: { $in: selectedTopics } }
+            : {};
+            
+        return await Question.find(query);
+    } catch (error) {
         return [];
-    } finally {
-        await client.close();
     }
 }
 
 async function addQuestionToDB(questionData) {
-    const client = new MongoClient(mongoURI);
     try {
-        await client.connect();
-        const db = client.db(dbName);
-        const questionsCollection = db.collection(collectionName);
-        await questionsCollection.insertOne(questionData);
+        const newQuestion = new Question(questionData);
+        await newQuestion.save();
         return { success: true, message: "Question added successfully!" };
     } catch (error) {
-        console.error("❌ Error adding question:", error);
         return { success: false, message: "Failed to add question." };
-    } finally {
-        await client.close();
     }
 }
 
 async function addQuestion(req, res) {
     const questionData = req.body;
-    console.log("Received data:", req.body); 
-
     if (!questionData.question || !questionData.options || !questionData.answer) {
         return res.status(400).json({ error: "Missing required fields" });
     }
@@ -52,17 +46,31 @@ async function addQuestion(req, res) {
 }
 
 async function getAllQuestions(req, res) {
-    const questions = await fetchQuestionsFromDB();
+    const selectedTopics = req.query.topics ? req.query.topics.split(',') : [];
+    const questions = await fetchQuestionsFromDB(selectedTopics);
     res.json(questions);
 }
 
 async function getRandomQuestion(req, res) {
-    const questions = await fetchQuestionsFromDB();
-    if (questions.length === 0) {
-        return res.status(404).json({ error: "No questions found" });
+    const selectedTopics = req.query.topics ? req.query.topics.split(',') : [];
+    const query = selectedTopics.length > 0 
+        ? { topics: { $in: selectedTopics } }
+        : {};
+        
+    try {
+        const question = await Question.aggregate([
+            { $match: query },
+            { $sample: { size: 1 } }
+        ]);
+        
+        if (!question.length) {
+            return res.status(404).json({ error: "No questions found for selected topics" });
+        }
+        
+        res.json(question[0]);
+    } catch (error) {
+        res.status(500).json({ error: "Server error" });
     }
-    const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-    res.json(randomQuestion);
 }
 
-module.exports = { getAllQuestions, getRandomQuestion, addQuestion };
+module.exports = { getAllQuestions, getRandomQuestion, addQuestion, getAllTopics };

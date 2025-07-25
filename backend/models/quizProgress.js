@@ -1,4 +1,3 @@
-// models/quizProgress.js
 const mongoose = require('mongoose');
 
 const quizProgressSchema = new mongoose.Schema({

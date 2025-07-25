@@ -31,19 +31,34 @@ router.post("/login", async (req, res) => {
 
         res.cookie("token", token, {
             httpOnly: true,
-            secure: false,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Lax",
+            expires: new Date(Date.now() + 3600000),
+        });
+
+        res.cookie("auth_token", token, {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === "production",
             sameSite: "Lax",
             expires: new Date(Date.now() + 3600000),
         });
 
         res.cookie("guestMode", "", {
             httpOnly: true,
-            secure: false,
+            secure: process.env.NODE_ENV === "production",
             sameSite: "Lax",
             expires: new Date(0),
         });
 
-        res.json({ message: "Login successful", token });
+        res.json({ 
+            message: "Login successful", 
+            token,
+            user: {
+                id: user._id,
+                email: user.email,
+                username: user.username
+            }
+        });
 
     } catch (error) {
         console.error("❌ Error during login:", error);

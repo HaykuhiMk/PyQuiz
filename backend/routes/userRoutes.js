@@ -31,8 +31,6 @@ router.post('/register', async (req, res) => {
             password: hashedPassword,
             answeredQuestions: [],
         });
-
-        console.log('Saving user:', newUser);
         await newUser.save();
 
         res.status(201).json({ message: 'User registered successfully!' });
@@ -58,6 +56,7 @@ router.get("/user-progress", authenticateToken, async (req, res) => {
         res.json({
             answered: answeredCount,
             unanswered: totalQuestions - answeredCount,
+            answeredQuestions: user.answeredQuestions 
         });
     } catch (err) {
         console.error("Error fetching user progress:", err);

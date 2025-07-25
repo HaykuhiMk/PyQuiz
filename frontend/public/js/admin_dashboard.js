@@ -59,11 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
         logoutBtn.addEventListener("click", () => {
             const confirmLogout = confirm("Are you sure you want to log out?");
             if (!confirmLogout) return;
-
-            console.log("Before logout:", localStorage.getItem("adminToken"));
             localStorage.removeItem("adminToken");
-            console.log("After logout:", localStorage.getItem("adminToken"));
-
             window.location.href = "admin_login.html";
         });
     } else {

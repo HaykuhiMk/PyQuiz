@@ -33,7 +33,6 @@ form.addEventListener("submit", (event) => {
     })
     .then(response => {
         return response.json().then(data => {
-            console.log("📡 Server Response:", response.status, data); 
             if (!response.ok) {
                 throw new Error(data.error || `HTTP ${response.status}`);
             }
@@ -41,9 +40,7 @@ form.addEventListener("submit", (event) => {
         });
     })
     .then(data => {
-        // Store token in localStorage for Authorization header
         localStorage.setItem('token', data.token);
-        // The httpOnly cookie is automatically handled by the browser
         window.location.href = "./account.html";
     })
     .catch(error => {

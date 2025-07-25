@@ -37,8 +37,6 @@ router.get("/account", authenticate, async (req, res) => {
 
 router.post("/start-quiz", authenticate, async (req, res) => {
     try {
-        console.log("Authenticated user:", req.user);  
-
         if (!req.user || !req.user.email) {
             return res.status(400).json({ success: false, message: "Email is required" });
         }
@@ -65,10 +63,8 @@ router.post("/update-progress", authenticate, async (req, res) => {
     const { questionId } = req.body;
 
     if (!req.user) return res.json({ success: false, message: "Unauthorized" });
-
     try {
         const user = await User.findOne({ email: req.user.email });
-
         if (!user) return res.json({ success: false, message: "User not found" });
         if (!user.answeredQuestions.includes(questionId)) {
             user.answeredQuestions.push(questionId);

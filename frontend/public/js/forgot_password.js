@@ -42,12 +42,9 @@ forgotPasswordForm.addEventListener('submit', function (event) {
         return response.json(); 
     })
     .then(data => {
-        console.log("Success response received:", data);
-
         if (data.error) {
             throw new Error(data.error);
         }
-        console.log('Redirecting to success page...');
         window.location.href = 'password_reset_link_success.html';
     })
     .catch(error => {

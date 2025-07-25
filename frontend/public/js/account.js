@@ -64,8 +64,6 @@ function updateUI(data) {
 }
 
 async function startQuiz(token) {
-    console.log("Start Quiz button clicked!");
-
     try {
         const response = await fetch(`${API_BASE_URL}/api/start-quiz`, {
             method: "POST",
@@ -80,8 +78,6 @@ async function startQuiz(token) {
         if (!data.success) {
             throw new Error(data.message || "Failed to start quiz");
         }
-
-        console.log("Quiz started successfully!");
         window.location.href = "./questions.html"; 
     } catch (error) {
         console.error("Error starting quiz:", error);
@@ -90,7 +86,6 @@ async function startQuiz(token) {
 }
 
 async function reloadProgress() {
-    console.log("Reloading progress...");
     const token = localStorage.getItem("token");
     if (token) await fetchUserData(token);
 }
@@ -113,7 +108,6 @@ function handleLogout() {
     document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     document.cookie = "guestMode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
     document.cookie = "guestMode=; path=/frontend/public; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-    console.log("User logged out. Redirecting to login...");
     redirectToLogin();
 }
 

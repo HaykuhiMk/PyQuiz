@@ -3,18 +3,380 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PyQuiz</title>
+    <title>PyQuiz - Topic Selection</title>
     <link rel="stylesheet" href="/css/styles.css" />
     <link rel="stylesheet" href="/css/header_footer.css" />
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/PrismJS/prism-themes/themes/prism-one-dark.css"
     />
+    <link 
+      rel="stylesheet" 
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      /* Main containers */
+      #topic-selection {
+        max-width: 1000px;
+        margin: 20px auto;
+        padding: 30px;
+        background-color: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .selection-header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .selection-header h2 {
+        font-size: 2.5em;
+        color: #2c3e50;
+        margin-bottom: 10px;
+      }
+
+      .selection-header p {
+        color: #7f8c8d;
+        font-size: 1.1em;
+      }
+
+      .search-container {
+        position: relative;
+        margin: 20px 0;
+      }
+
+      .search-container input {
+        width: 100%;
+        padding: 15px 45px;
+        border: 2px solid #e0e0e0;
+        border-radius: 30px;
+        font-size: 1em;
+        transition: all 0.3s ease;
+      }
+
+      .search-container input:focus {
+        border-color: #4CAF50;
+        box-shadow: 0 0 10px rgba(76, 175, 80, 0.2);
+        outline: none;
+      }
+
+      .search-container i {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #95a5a6;
+      }
+
+      .categories-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 20px 0;
+      }
+
+      .category-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 20px;
+        background-color: #f0f0f0;
+        color: #34495e;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .category-btn:hover {
+        background-color: #e0e0e0;
+      }
+
+      .category-btn.active {
+        background-color: #4CAF50;
+        color: white;
+      }
+
+      /* Topics grid */
+      #topics-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+        max-height: 400px;
+        overflow-y: auto;
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+      }
+
+      .topic-item {
+        position: relative;
+        transition: all 0.3s ease;
+      }
+
+      .topic-checkbox {
+        display: none;
+      }
+
+      .topic-label {
+        display: block !important;
+        padding: 15px 20px;
+        background-color: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9em;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .topic-label:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .topic-checkbox:checked + .topic-label {
+        background-color: #4CAF50;
+        color: white;
+        border-color: #4CAF50;
+      }
+
+      .topic-checkbox:checked + .topic-label::before {
+        content: '✓';
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        font-size: 0.8em;
+      }
+
+      /* Selected topics counter */
+      .selected-count {
+        text-align: center;
+        margin: 20px 0;
+        font-size: 1.1em;
+        color: #2c3e50;
+      }
+
+      /* Start button */
+      #start-quiz-btn {
+        display: block;
+        width: 200px;
+        margin: 30px auto 0;
+        padding: 15px 30px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 30px;
+        font-size: 1.2em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      #start-quiz-btn:hover:not(:disabled) {
+        background-color: #45a049;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+      }
+
+      #start-quiz-btn:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .topic-item {
+        animation: fadeIn 0.3s ease-out forwards;
+      }
+
+      /* Dark mode */
+      body.dark-mode #topic-selection {
+        background-color: #2d2d2d;
+      }
+
+      body.dark-mode .selection-header h2 {
+        color: #ecf0f1;
+      }
+
+      body.dark-mode .selection-header p {
+        color: #bdc3c7;
+      }
+
+      body.dark-mode .search-container input {
+        background-color: #3d3d3d;
+        border-color: #4d4d4d;
+        color: #ecf0f1;
+      }
+
+      body.dark-mode .category-btn {
+        background-color: #3d3d3d;
+        color: #ecf0f1;
+      }
+
+      body.dark-mode .category-btn:hover {
+        background-color: #4d4d4d;
+      }
+
+      body.dark-mode #topics-list {
+        background-color: #2d2d2d;
+      }
+
+      body.dark-mode .topic-label {
+        background-color: #3d3d3d;
+        border-color: #4d4d4d;
+        color: #ecf0f1;
+      }
+
+      /* Loading animation */
+      .loading-spinner {
+        display: inline-block;
+        width: 50px;
+        height: 50px;
+        border: 3px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 3px solid #4CAF50;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      /* Scrollbar styling */
+      #topics-list::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      #topics-list::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+
+      #topics-list::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+      }
+
+      #topics-list::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+
+      .bulk-actions {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin: 20px 0;
+      }
+
+      .action-btn {
+        padding: 10px 20px;
+        border: 2px solid #4CAF50;
+        border-radius: 25px;
+        background-color: white;
+        color: #4CAF50;
+        cursor: pointer;
+        font-size: 1em;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .action-btn i {
+        font-size: 1.1em;
+      }
+
+      .action-btn:hover {
+        background-color: #4CAF50;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(76, 175, 80, 0.2);
+      }
+
+      .action-btn:active {
+        transform: translateY(0);
+      }
+
+      /* Dark mode support */
+      body.dark-mode .action-btn {
+        background-color: #2d2d2d;
+        border-color: #4CAF50;
+        color: #4CAF50;
+      }
+
+      body.dark-mode .action-btn:hover {
+        background-color: #4CAF50;
+        color: #fff;
+      }
+
+      /* Animation for the buttons */
+      @keyframes buttonPop {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+
+      .action-btn.animate {
+        animation: buttonPop 0.3s ease-out;
+      }
+    </style>
   </head>
   <body>
     <div id="header-container"></div>
 
-    <div id="quiz-container">
+    <div id="topic-selection">
+      <div class="selection-header">
+        <h2>Choose Your Python Topics</h2>
+        <p>Select the topics you'd like to practice. Mix and match to create your perfect quiz!</p>
+      </div>
+
+      <div class="search-container">
+        <i class="fas fa-search"></i>
+        <input type="text" id="topic-search" placeholder="Search topics..." />
+      </div>
+
+      <div class="categories-container">
+        <button class="category-btn active" data-category="all">All Topics</button>
+        <button class="category-btn" data-category="basics">Basics</button>
+        <button class="category-btn" data-category="data-structures">Data Structures</button>
+        <button class="category-btn" data-category="functions">Functions</button>
+        <button class="category-btn" data-category="ooad">OOAD</button>
+        <button class="category-btn" data-category="advanced">Advanced</button>
+      </div>
+
+      <div class="bulk-actions">
+        <button id="select-all-btn" class="action-btn">
+          <i class="fas fa-check-square"></i> Select All
+        </button>
+        <button id="clear-all-btn" class="action-btn">
+          <i class="fas fa-square"></i> Clear All
+        </button>
+      </div>
+
+      <div class="selected-count">
+        Selected Topics: <span id="selected-count">0</span>
+      </div>
+
+      <div id="topics-list">
+        <!-- Topics will be dynamically added here -->
+        <div class="loading-spinner"></div>
+      </div>
+
+      <button id="start-quiz-btn" disabled>Start Quiz</button>
+    </div>
+
+    <div id="quiz-container" style="display: none;">
       <h1>PyQuiz</h1>
       <div
         id="guest-warning"

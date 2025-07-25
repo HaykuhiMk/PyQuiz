@@ -10,8 +10,6 @@ async function insertQuestions() {
 
     try {
         await client.connect();
-        console.log("✅ Connected to MongoDB!");
-
         const db = client.db(dbName);
         const questionsCollection = db.collection(collectionName);
         const questionsData = JSON.parse(fs.readFileSync("questions.json", "utf-8"));
@@ -26,13 +24,10 @@ async function insertQuestions() {
             explanation: q.explanation || "No explanation provided."
         }));
         await questionsCollection.insertMany(transformedQuestions);
-        console.log(`✅ Successfully inserted ${transformedQuestions.length} questions into MongoDB!`);
-
     } catch (error) {
         console.error("❌ Error inserting questions:", error);
     } finally {
         await client.close();
-        console.log("🔌 Disconnected from MongoDB.");
     }
 }
 insertQuestions();

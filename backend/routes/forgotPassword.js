@@ -6,10 +6,7 @@ const ResetPassword = require('../models/resetPassword');
 const nodemailer = require('nodemailer');
 
 router.post('/forgot_password', async (req, res) => {
-  console.log('Received request at /api/auth/forgot_password');
-
   const { email } = req.body;
-
   try {
     const user = await User.findOne({ email });
     if (!user) {
@@ -23,7 +20,6 @@ router.post('/forgot_password', async (req, res) => {
     );
 
     const resetUrl = `${process.env.CLIENT_URI}/reset_password.html?resetKey=${resetKey}`;
-
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,

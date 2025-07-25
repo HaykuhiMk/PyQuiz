@@ -9,7 +9,6 @@ async function readQuestions() {
 
     try {
         await client.connect();
-        console.log("✅ Connected to MongoDB!");
         const db = client.db(dbName);
         const questionsCollection = db.collection(collectionName);
         const questions = await questionsCollection.find().toArray();

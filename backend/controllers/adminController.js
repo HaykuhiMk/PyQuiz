@@ -23,7 +23,6 @@ exports.adminLogin = async (req, res) => {
 
         res.json({ token });
     } catch (error) {
-        console.error("Admin login error:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 };
@@ -46,7 +45,6 @@ exports.registerAdmin = async (req, res) => {
         await newAdmin.save();
         res.status(201).json({ message: "Admin registered successfully!" });
     } catch (error) {
-        console.error("Admin registration error:", error);
         res.status(500).json({ error: "Failed to register admin" });
     }
 };

@@ -17,8 +17,15 @@ const contactRoutes = require('./routes/contact');
 
 const app = express();
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  process.env.CLIENT_URI,
+  process.env.API_URI
+].filter(Boolean); 
+
 app.use(cors({
-  origin: ['http://localhost:3000', process.env.CLIENT_URI, process.env.API_URI],
+  origin: allowedOrigins,
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -60,10 +67,8 @@ app.get('/password_reset_link_success.html', (req, res) => {
   );
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`🌍 Server running on ${process.env.API_URI}`);
-  }
+  console.log(`🌍 Server running on http://localhost:${PORT}`);
 });
