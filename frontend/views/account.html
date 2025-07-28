@@ -6,53 +6,104 @@
     <title>My Account - PyQuiz</title>
     <link rel="stylesheet" href="/css/account.css">
     <link rel="stylesheet" href="/css/header_footer.css">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div id="header-container"></div>
     <div class="account-container">
-        <h2>Welcome, <span id="username">User</span>!</h2>
+        <div class="profile-header">
+            <div class="profile-avatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="profile-title">
+                <h2>Welcome, <span id="username">User</span>!</h2>
+                <p class="subtitle">Keep learning and growing!</p>
+            </div>
+        </div>
         
         <div class="profile-info">
-            <p><strong>Email:</strong> <span id="email">Loading...</span></p>
-            <p><strong>Rank:</strong> <span id="rank">Loading...</span></p>
+            <div class="info-item">
+                <i class="fas fa-envelope"></i>
+                <span id="email">Loading...</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-crown"></i>
+                <span id="rank">Loading...</span>
+            </div>
         </div>
 
         <div class="stats">
             <div class="stat-card">
-                <h3>Answered Questions</h3>
-                <p id="answered-count">0</p>
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>Answered</h3>
+                    <p id="answered-count">0</p>
+                </div>
             </div>
             <div class="stat-card">
-                <h3>Unanswered Questions</h3>
-                <p id="unanswered-count">0</p>
+                <div class="stat-icon">
+                    <i class="fas fa-hourglass-half"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>Remaining</h3>
+                    <p id="unanswered-count">0</p>
+                </div>
             </div>
         </div>
 
-        <div class="progress-container">
-            <h3>Quiz Progress</h3>
+        <div class="progress-section">
+            <div class="progress-header">
+                <h3><i class="fas fa-chart-line"></i> Quiz Progress</h3>
+                <div class="progress-stats">
+                    <span class="progress-percentage" id="progress-percentage">0%</span>
+                    <span class="progress-fraction">
+                        (<span id="progress-completed">0</span>/<span id="progress-total">0</span> questions)
+                    </span>
+                </div>
+            </div>
             <div class="progress-bar">
-                <div id="progress-fill">0%</div>
+                <div id="progress-fill"></div>
             </div>
         </div>
 
         <div class="achievements">
-            <h3>Achievements</h3>
-            <ul id="badges">
-                <li>🏅 Loading...</li>
-            </ul>
+            <h3><i class="fas fa-trophy"></i> Achievements</h3>
+            <div class="achievements-grid" id="badges">
+                <div class="achievement-card locked">
+                    <i class="fas fa-star"></i>
+                    <span>First Quiz</span>
+                </div>
+                <div class="achievement-card locked">
+                    <i class="fas fa-fire"></i>
+                    <span>5 Day Streak</span>
+                </div>
+                <div class="achievement-card locked">
+                    <i class="fas fa-award"></i>
+                    <span>Python Master</span>
+                </div>
+            </div>
         </div>
 
-        <div class="button-container">
-            <button id="start-quiz">Start Quiz</button>
-            <button id="dark-mode-toggle">Toggle Dark Mode</button>
-            <button id="logout">Logout</button>
+        <div class="quick-actions">
+            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+            <div class="button-container">
+                <button id="start-quiz" class="primary-btn">
+                    <i class="fas fa-play"></i> Start Quiz
+                </button>
+                <button id="dark-mode-toggle" class="theme-btn">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button id="logout" class="danger-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
         </div>
     </div>
     <div id="footer-container"></div>
 
     <script type="module" src="/js/account.js"></script>
     <script type="module" src="/js/load_header_footer.js"></script>
-
 </body>
 </html>

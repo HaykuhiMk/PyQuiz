@@ -55,39 +55,33 @@ function updateUI(data) {
     document.getElementById("username").textContent = data.username;
     document.getElementById("email").textContent = data.email || "N/A";
     document.getElementById("rank").textContent = data.rank || "Newbie";
-    document.getElementById("answered-count").textContent = data.answered || 0;
-    document.getElementById("unanswered-count").textContent = data.unanswered || 0;
-    const totalQuestions = (data.answered || 0) + (data.unanswered || 0);
-    const progress = totalQuestions > 0 ? (data.answered / totalQuestions) * 100 : 0;
+    
+    const answered = data.answered || 0;
+    const unanswered = data.unanswered || 0;
+    const totalQuestions = answered + unanswered;
+    
+    // Update counts
+    document.getElementById("answered-count").textContent = answered;
+    document.getElementById("unanswered-count").textContent = unanswered;
+    
+    // Update progress
+    document.getElementById("progress-completed").textContent = answered;
+    document.getElementById("progress-total").textContent = totalQuestions;
+    
+    const progress = totalQuestions > 0 ? (answered / totalQuestions) * 100 : 0;
     updateProgressBar(progress);
-    document.getElementById("badges").innerHTML = getAchievements(data.answered || 0);
+    
+    // Update achievements
+    document.getElementById("badges").innerHTML = getAchievements(answered);
 }
 
 async function startQuiz(token) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/start-quiz`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
-            }
-        });
-
-        const data = await response.json();
-        if (!data.success) {
-            throw new Error(data.message || "Failed to start quiz");
-        }
-        window.location.href = "./questions.html"; 
+        window.location.href = "./questions.html";
     } catch (error) {
         console.error("Error starting quiz:", error);
         alert(`An error occurred: ${error.message}`);
     }
-}
-
-async function reloadProgress() {
-    const token = localStorage.getItem("token");
-    if (token) await fetchUserData(token);
 }
 
 function getAchievements(answered) {
@@ -99,8 +93,20 @@ function getAchievements(answered) {
 
 function updateProgressBar(progress) {
     const progressFill = document.getElementById("progress-fill");
-    progressFill.style.width = `${progress}%`;
-    progressFill.textContent = `${Math.round(progress)}% Completed`;
+    const progressPercentage = document.getElementById("progress-percentage");
+    const roundedProgress = Math.round(progress);
+    
+    progressFill.style.width = `${roundedProgress}%`;
+    progressPercentage.textContent = `${roundedProgress}%`;
+    
+    // Update color based on progress
+    if (progress >= 80) {
+        progressFill.style.background = 'linear-gradient(90deg, var(--success), var(--success))';
+    } else if (progress >= 50) {
+        progressFill.style.background = 'linear-gradient(90deg, var(--python-yellow), var(--dark-yellow))';
+    } else {
+        progressFill.style.background = 'linear-gradient(90deg, var(--python-blue), var(--dark-blue))';
+    }
 }
 
 function handleLogout() {
