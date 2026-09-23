@@ -1,4 +1,4 @@
-import API_BASE_URL from "./config.js";
+import { api } from "./api.js";
 
 document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById('registration-form');
@@ -58,31 +58,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
         clearError();
 
-        fetch(`${API_BASE_URL}/api/users/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                username: username,
-                email: email,
-                password: password
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
+        api.register({ username, email, password })
+        .then((data) => {
             if (data.message) {
+                form.reset();
                 window.location.href = './login.html';
-            } else if (data.error) {
-                showError(data.error);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showError('An error occurred during registration.');
+            showError(error.message || 'An error occurred during registration.');
         });
-
-        form.reset();
     });
 
     window.togglePasswordVisibility = function (fieldId) {
@@ -91,10 +77,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (passwordInput.type === 'password') {
             passwordInput.type = 'text';
-            toggleIcon.src = './images/hide-password.png';
+            toggleIcon.src = '/images/hide-password.png';
         } else {
             passwordInput.type = 'password';
-            toggleIcon.src = './images/show-password.png';
+            toggleIcon.src = '/images/show-password.png';
         }
     };
 });

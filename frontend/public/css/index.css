@@ -1,135 +1,98 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
-
-:root {
-    --primary-color: #3776ab; 
-    --secondary-color: #ffd43b; 
-    --text-color: #222;
-    --button-hover: #ffcc00;
-    --bg-gradient: linear-gradient(to right, #e0eafc, #cfdef3);
-    --shadow-color: rgba(0, 0, 0, 0.15);
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
-}
-
-body {
-    background: var(--bg-gradient);
-    color: var(--text-color);
-    text-align: center;
-    transition: all 0.3s ease-in-out;
-}
-
 #hero {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    flex-direction: column;
-    padding-top: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--nav-height));
+  padding: calc(var(--nav-height) + var(--space-12)) var(--space-6) var(--space-12);
+  text-align: center;
+}
+
+.hero-content {
+  max-width: 640px;
 }
 
 .hero-content h1 {
-    font-size: 3rem;
-    color: var(--primary-color);
-    margin-bottom: 15px;
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.hero-content p {
-    font-size: 1.3rem;
-    margin-bottom: 20px;
-    color: var(--text-color);
-    opacity: 0.9;
+  font-size: clamp(2rem, 5vw, var(--text-4xl));
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-4);
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 #slogan {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #ffcc00; 
-    margin-bottom: 20px;
-    animation: fadeIn 2s ease-in-out;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); 
+  font-size: var(--text-xl);
+  font-weight: 500;
+  color: var(--accent-yellow);
+  margin-bottom: var(--space-4);
+  max-width: none;
 }
 
-.buttons button {
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 14px 20px;
-    font-size: 1.2rem;
-    font-weight: bold;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease-in-out;
-    box-shadow: 0 4px 10px var(--shadow-color);
-    margin: 10px;
-    position: relative;
-    overflow: hidden;
+.hero-content > p {
+  margin: 0 auto var(--space-8);
+  font-size: var(--text-lg);
+  color: var(--text-secondary);
+  max-width: 48ch;
 }
 
-.buttons button:hover {
-    background: var(--button-hover);
-    transform: scale(1.08);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+.hero-buttons {
+  max-width: 520px;
+  margin: 0 auto;
 }
 
 #features {
-    padding: 60px 10%;
-    background: white;
+  padding: var(--space-12) var(--space-6);
+  max-width: var(--max-width);
+  margin: 0 auto;
 }
 
 #features h2 {
-    font-size: 2.5rem;
-    margin-bottom: 30px;
-    color: var(--primary-color);
+  text-align: center;
+  font-size: var(--text-2xl);
+  margin-bottom: var(--space-8);
 }
 
 .feature-box {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap; 
-    gap: 20px;
-    padding: 0 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
 }
 
 .feature {
-    background: var(--secondary-color);
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px var(--shadow-color);
-    text-align: center;
-    flex: 1 1 30%;  
-    transition: transform 0.3s ease-in-out;
-    min-width: 250px; 
-    max-width: 350px;  
+  padding: var(--space-6);
+  text-align: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: all var(--duration-normal) var(--ease-out);
 }
 
 .feature:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+  border-color: var(--border-default);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
 .feature h3 {
-    font-size: 1.5rem;
-    color: var(--text-color);
-    margin-bottom: 10px;
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-3);
 }
 
 .feature p {
-    font-size: 1rem;
+  margin: 0 auto;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
 }
 
 @media (max-width: 768px) {
-    .feature-box {
-        justify-content: center; 
-    }
+  .feature-box {
+    grid-template-columns: 1fr;
+  }
 
-    .feature {
-        flex: 1 1 100%; 
-        margin-bottom: 20px; 
-    }
+  .hero-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

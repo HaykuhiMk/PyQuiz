@@ -1,127 +1,89 @@
-import API_BASE_URL from "./config.js";
+import { api, getAchievementMeta, requireAuth } from './api.js';
 
-document.addEventListener("DOMContentLoaded", async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-        console.warn("No token found. Redirecting to login...");
-        redirectToLogin();
-        return;
-    }
-    try {
-        await fetchUserData(token); 
-    } catch (error) {
-        console.error("Error loading user data:", error);
-        redirectToLogin();
-        return;
-    }
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAuth()) return;
 
-    document.getElementById("logout").addEventListener("click", handleLogout);
-    document.getElementById("start-quiz").addEventListener("click", () => startQuiz(token));
-    document.getElementById("dark-mode-toggle").addEventListener("click", toggleDarkMode);
+  document.getElementById('logout').addEventListener('click', handleLogout);
 
-    if (localStorage.getItem("darkMode") === "true") {
-        document.body.classList.add("dark-mode");
-    }
+  try {
+    const profile = await api.getMe();
+    updateUI(profile);
+  } catch (error) {
+    console.error(error);
+    window.location.href = '/login.html';
+  }
 });
 
-async function fetchUserData(token) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/users/me`, {
-            method: "GET",
-            credentials: "include",
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
-            }
-        });
+function updateUI(profile) {
+  const stats = profile.stats || {};
 
-        if (!response.ok) {
-            console.warn("Unauthorized access or failed request. Redirecting...");
-            throw new Error("Unauthorized");
-        }
+  document.getElementById('username').textContent = profile.username;
+  document.getElementById('email').textContent = profile.email || 'N/A';
+  document.getElementById('rank').textContent = profile.rank || 'Beginner';
+  document.getElementById('answered-count').textContent = profile.answered || 0;
+  document.getElementById('unanswered-count').textContent = profile.unanswered || 0;
+  document.getElementById('points-count').textContent = stats.totalPoints || 0;
+  document.getElementById('streak-count').textContent = stats.currentStreak || 0;
+  document.getElementById('best-streak-count').textContent = stats.bestStreak || 0;
 
-        const data = await response.json();
-        if (!data || !data.username) {
-            throw new Error("Invalid user data");
-        }
-        updateUI(data);
-    } catch (error) {
-        console.error("Error fetching user data:", error);
-        throw error;
-    }
+  const total = (profile.answered || 0) + (profile.unanswered || 0);
+  const progress = total > 0 ? Math.round((profile.answered / total) * 100) : 0;
+  document.getElementById('progress-completed').textContent = profile.answered || 0;
+  document.getElementById('progress-total').textContent = total;
+  document.getElementById('progress-percentage').textContent = `${progress}%`;
+  document.getElementById('progress-fill').style.width = `${progress}%`;
+
+  renderAchievements(profile.achievements || []);
+  renderAvatar(profile.avatar);
+  renderDailyStatus(profile.dailyChallenge);
 }
 
-function updateUI(data) {
-    document.getElementById("username").textContent = data.username;
-    document.getElementById("email").textContent = data.email || "N/A";
-    document.getElementById("rank").textContent = data.rank || "Newbie";
-    
-    const answered = data.answered || 0;
-    const unanswered = data.unanswered || 0;
-    const totalQuestions = answered + unanswered;
-    
-    // Update counts
-    document.getElementById("answered-count").textContent = answered;
-    document.getElementById("unanswered-count").textContent = unanswered;
-    
-    // Update progress
-    document.getElementById("progress-completed").textContent = answered;
-    document.getElementById("progress-total").textContent = totalQuestions;
-    
-    const progress = totalQuestions > 0 ? (answered / totalQuestions) * 100 : 0;
-    updateProgressBar(progress);
-    
-    // Update achievements
-    document.getElementById("badges").innerHTML = getAchievements(answered);
+function renderAvatar(avatar) {
+  const img = document.getElementById('avatar-image');
+  const icon = document.getElementById('avatar-icon');
+
+  if (avatar) {
+    img.src = avatar;
+    img.hidden = false;
+    icon.hidden = true;
+  } else {
+    img.hidden = true;
+    img.removeAttribute('src');
+    icon.hidden = false;
+  }
 }
 
-async function startQuiz(token) {
-    try {
-        window.location.href = "./questions.html";
-    } catch (error) {
-        console.error("Error starting quiz:", error);
-        alert(`An error occurred: ${error.message}`);
-    }
+function renderAchievements(achievements) {
+  const allKeys = ['first_correct', 'streak_5', 'streak_10', 'points_100', 'points_500'];
+  const unlocked = new Set(achievements.map((item) => item.key));
+  document.getElementById('badges').innerHTML = allKeys
+    .map((key) => {
+      const meta = getAchievementMeta(key);
+      return `<div class="achievement-card ${unlocked.has(key) ? 'unlocked' : 'locked'}">
+        <i class="fas ${meta.icon}"></i>
+        <span>${meta.label}</span>
+      </div>`;
+    })
+    .join('');
 }
 
-function getAchievements(answered) {
-    if (answered >= 50) return "<li>🏆 Master Quizzer!</li>";
-    if (answered >= 30) return "<li>🥇 Advanced Thinker!</li>";
-    if (answered >= 10) return "<li>🎖️ Knowledge Explorer!</li>";
-    return "<li>🌱 New Learner!</li>";
+function renderDailyStatus(dailyChallenge) {
+  const today = new Date().toISOString().slice(0, 10);
+  const box = document.getElementById('daily-status');
+  if (dailyChallenge?.date === today && dailyChallenge.completedAt) {
+    box.innerHTML = `<strong>Today's challenge:</strong> ${dailyChallenge.score}/${dailyChallenge.total} completed`;
+  } else {
+    box.innerHTML = `<strong>Today's challenge:</strong> not completed yet · <a href="/daily.html">Play now</a>`;
+  }
 }
 
-function updateProgressBar(progress) {
-    const progressFill = document.getElementById("progress-fill");
-    const progressPercentage = document.getElementById("progress-percentage");
-    const roundedProgress = Math.round(progress);
-    
-    progressFill.style.width = `${roundedProgress}%`;
-    progressPercentage.textContent = `${roundedProgress}%`;
-    
-    // Update color based on progress
-    if (progress >= 80) {
-        progressFill.style.background = 'linear-gradient(90deg, var(--success), var(--success))';
-    } else if (progress >= 50) {
-        progressFill.style.background = 'linear-gradient(90deg, var(--python-yellow), var(--dark-yellow))';
-    } else {
-        progressFill.style.background = 'linear-gradient(90deg, var(--python-blue), var(--dark-blue))';
-    }
-}
-
-function handleLogout() {
-    localStorage.removeItem("token");
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie = "guestMode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-    document.cookie = "guestMode=; path=/frontend/public; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-    redirectToLogin();
-}
-
-function toggleDarkMode() {
-    document.body.classList.toggle("dark-mode");
-    localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
-}
-
-function redirectToLogin() {
-    window.location.href = "./login.html";
+async function handleLogout() {
+  try {
+    await api.logout();
+  } catch (error) {
+    console.error('Logout request failed:', error);
+  }
+  localStorage.removeItem('adminToken');
+  document.cookie = 'guestMode=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  window.location.href = '/login.html';
 }

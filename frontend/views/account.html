@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Account - PyQuiz</title>
+    <title>Dashboard - PyQuiz</title>
+    <link rel="stylesheet" href="/css/design-system.css" />
+    <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/account.css">
     <link rel="stylesheet" href="/css/header_footer.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -11,98 +13,65 @@
 <body>
     <div id="header-container"></div>
     <div class="account-container">
-        <div class="profile-header">
-            <div class="profile-avatar">
-                <i class="fas fa-user-circle"></i>
+        <div class="profile-header reveal">
+            <div class="profile-avatar" id="profile-avatar">
+                <i class="fas fa-user-circle" id="avatar-icon"></i>
+                <img id="avatar-image" alt="Profile photo" hidden />
             </div>
             <div class="profile-title">
                 <h2>Welcome, <span id="username">User</span>!</h2>
-                <p class="subtitle">Keep learning and growing!</p>
+                <p class="subtitle">Your Python learning command center</p>
             </div>
+            <a href="/settings.html" class="secondary-btn" title="Account settings">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
         </div>
-        
+
         <div class="profile-info">
-            <div class="info-item">
-                <i class="fas fa-envelope"></i>
-                <span id="email">Loading...</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-crown"></i>
-                <span id="rank">Loading...</span>
-            </div>
+            <div class="info-item"><i class="fas fa-envelope"></i><span id="email">Loading...</span></div>
+            <div class="info-item"><i class="fas fa-crown"></i><span id="rank">Loading...</span></div>
+            <div class="info-item" id="daily-status"></div>
         </div>
 
         <div class="stats">
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <div class="stat-content">
-                    <h3>Answered</h3>
-                    <p id="answered-count">0</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-hourglass-half"></i>
-                </div>
-                <div class="stat-content">
-                    <h3>Remaining</h3>
-                    <p id="unanswered-count">0</p>
-                </div>
-            </div>
+            <div class="stat-card"><div class="stat-content"><h3>Points</h3><p id="points-count">0</p></div></div>
+            <div class="stat-card"><div class="stat-content"><h3>Current Streak</h3><p id="streak-count">0</p></div></div>
+            <div class="stat-card"><div class="stat-content"><h3>Best Streak</h3><p id="best-streak-count">0</p></div></div>
+            <div class="stat-card"><div class="stat-content"><h3>Answered</h3><p id="answered-count">0</p></div></div>
+            <div class="stat-card"><div class="stat-content"><h3>Remaining</h3><p id="unanswered-count">0</p></div></div>
         </div>
 
-        <div class="progress-section">
+        <div class="progress-section card">
             <div class="progress-header">
-                <h3><i class="fas fa-chart-line"></i> Quiz Progress</h3>
-                <div class="progress-stats">
-                    <span class="progress-percentage" id="progress-percentage">0%</span>
-                    <span class="progress-fraction">
-                        (<span id="progress-completed">0</span>/<span id="progress-total">0</span> questions)
-                    </span>
-                </div>
+                <h3 class="card-heading"><i class="fas fa-chart-line"></i> Overall Progress</h3>
+                <span class="progress-percentage" id="progress-percentage">0%</span>
             </div>
-            <div class="progress-bar">
-                <div id="progress-fill"></div>
-            </div>
+            <div class="progress-bar"><div id="progress-fill"></div></div>
+            <p class="progress-fraction"><span id="progress-completed">0</span> / <span id="progress-total">0</span> questions</p>
         </div>
 
-        <div class="achievements">
-            <h3><i class="fas fa-trophy"></i> Achievements</h3>
-            <div class="achievements-grid" id="badges">
-                <div class="achievement-card locked">
-                    <i class="fas fa-star"></i>
-                    <span>First Quiz</span>
-                </div>
-                <div class="achievement-card locked">
-                    <i class="fas fa-fire"></i>
-                    <span>5 Day Streak</span>
-                </div>
-                <div class="achievement-card locked">
-                    <i class="fas fa-award"></i>
-                    <span>Python Master</span>
-                </div>
-            </div>
+        <div class="achievements card">
+            <h3 class="card-heading"><i class="fas fa-trophy"></i> Achievements</h3>
+            <div class="achievements-grid" id="badges"></div>
         </div>
 
-        <div class="quick-actions">
-            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
-            <div class="button-container">
-                <button id="start-quiz" class="primary-btn">
-                    <i class="fas fa-play"></i> Start Quiz
-                </button>
-                <button id="dark-mode-toggle" class="theme-btn">
-                    <i class="fas fa-moon"></i>
-                </button>
-                <button id="logout" class="danger-btn">
+        <div class="quick-actions card">
+            <h3 class="card-heading"><i class="fas fa-bolt"></i> Play</h3>
+            <div class="btn-row btn-row--stretch">
+                <a href="/questions.html" class="primary-btn"><i class="fas fa-play"></i> Quiz</a>
+                <a href="/daily.html" class="secondary-btn"><i class="fas fa-calendar-day"></i> Daily</a>
+                <a href="/study.html" class="secondary-btn"><i class="fas fa-book"></i> Study</a>
+                <a href="/leaderboard.html" class="secondary-btn"><i class="fas fa-trophy"></i> Leaderboard</a>
+            </div>
+            <div class="account-actions">
+                <button id="logout" class="danger-btn" type="button">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
         </div>
     </div>
     <div id="footer-container"></div>
-
     <script type="module" src="/js/account.js"></script>
     <script type="module" src="/js/load_header_footer.js"></script>
 </body>

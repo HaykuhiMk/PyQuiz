@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Contact Us - PyQuiz</title>
-    <link rel="stylesheet" href="/css/index.css" />
+    <link rel="stylesheet" href="/css/design-system.css" />
+    <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/header_footer.css" />
     <link rel="stylesheet" href="/css/contact.css" />
   </head>
@@ -35,7 +36,12 @@
             <textarea id="message" name="message" rows="5" required></textarea>
           </div>
 
-          <button type="submit" id="submit-btn">Send Message</button>
+          <div style="position: absolute; left: -9999px" aria-hidden="true">
+            <label for="website">Website</label>
+            <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
+          </div>
+
+          <button type="submit" id="submit-btn" class="primary-btn">Send Message</button>
         </form>
       </div>
     </section>

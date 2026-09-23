@@ -1,120 +1,56 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+/* Shared auth form layout — login, register, forgot, reset */
 
-:root {
-    --primary-color: #3776ab;
-    --secondary-color: #ffd43b;
-    --text-color: #333;
-    --button-hover: #ffcc00;
-    --bg-gradient: linear-gradient(to right, #f5f7fa, #c3cfe2);
-    --shadow-color: rgba(0, 0, 0, 0.1);
+#login-container,
+#registration-container,
+#forgot-password-container,
+#reset-container,
+#reset-password-container {
+  width: min(420px, 92vw);
+  margin: calc(var(--nav-height) + var(--space-12)) auto var(--space-12);
+  padding: var(--space-8);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
-}
-
-body {
-    background: var(--bg-gradient);
-    color: var(--text-color);
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    text-align: left;
-    justify-content: space-between; 
-    align-items: center;     
-}
-
-h2 {
-    font-size: 2.4rem;
-    color: var(--primary-color);
-    text-align: center;
+#login-container h2,
+#registration-container h1,
+#registration-container h2,
+#forgot-password-container h2,
+#reset-container h2,
+#reset-password-container h2 {
+  text-align: center;
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  margin-bottom: var(--space-6);
+  letter-spacing: -0.02em;
 }
 
 #helper-text {
-    text-align: center;
-    font-size: 16px;
-    margin-top: 10px;
+  text-align: center;
+  font-size: var(--text-sm);
+  margin-top: var(--space-4);
+  color: var(--text-muted);
+  max-width: none;
 }
 
-#login-container {
-    background: rgba(255, 255, 255, 0.7);
-    padding: 40px;
-    border-radius: 16px;
-    box-shadow: 0 6px 12px var(--shadow-color);
-    backdrop-filter: blur(8px);
-    width: 90%;
-    max-width: 400px;
-    margin-bottom: 20px; 
+.form-footer {
+  margin-top: var(--space-2);
+  text-align: center;
 }
 
-label {
-    display: block;
-    margin-top: 15px;
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: var(--primary-color);
+form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
-input {
-    width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    border: 1px solid var(--primary-color);
-    border-radius: 8px;
-    font-size: 1rem;
+form br {
+  display: none;
 }
 
-.password-container {
-    position: relative;
-}
-
-.password-container img {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    width: 24px;
-    height: 24px;
-}
-
-button {
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 10px;
-    font-size: 1.2rem;
-    font-weight: bold;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease-in-out;
-    width: 100%;
-    margin-top: 20px;
-    box-shadow: 0 4px 8px var(--shadow-color);
-}
-
-button:hover {
-    background: var(--button-hover);
-    transform: scale(1.05);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-#forgot-password-container {
-    margin-top: 10px;
-}
-
-#forgot-password-btn {
-    background: none;
-    color: var(--primary-color);
-    font-size: 1rem;
-    border: none;
-    cursor: pointer;
-    text-decoration: underline;
-}
-
-#forgot-password-btn:hover {
-    color: var(--button-hover);
+form .primary-btn {
+  width: 100%;
+  margin-top: var(--space-2);
 }

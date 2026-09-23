@@ -4,107 +4,210 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>About PyQuiz</title>
+    <link rel="stylesheet" href="/css/design-system.css" />
+    <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/about.css" />
     <link rel="stylesheet" href="/css/header_footer.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   </head>
   <body>
     <div id="header-container"></div>
 
-    <main>
-      <section id="about">
+    <main class="about-page">
+      <section id="about" class="about-hero reveal">
+        <p class="about-eyebrow">Built for Python learners</p>
         <h1>About PyQuiz</h1>
-        <p>
+        <p class="about-lead">
           PyQuiz is designed to make learning Python fun, engaging, and
-          challenging for all skill levels.
+          challenging for all skill levels — from your first loop to advanced
+          data structures.
         </p>
 
+        <div class="about-stats reveal-stagger">
+          <div class="stat-pill card-interactive">
+            <strong data-count-target="questions">—</strong>
+            <span>Practice questions</span>
+          </div>
+          <div class="stat-pill card-interactive">
+            <strong data-count-target="topics">—</strong>
+            <span>Topic areas</span>
+          </div>
+          <div class="stat-pill card-interactive">
+            <strong data-count="3">0</strong>
+            <span>Quiz modes</span>
+          </div>
+          <div class="stat-pill card-interactive">
+            <strong data-count="100">0</strong>
+            <span>% free to use</span>
+          </div>
+        </div>
+
+        <div class="about-cta btn-row btn-row--center btn-row--stretch">
+          <a href="/questions.html" class="primary-btn"><i class="fas fa-play"></i> Start a Quiz</a>
+          <a href="/features.html" class="secondary-btn"><i class="fas fa-star"></i> See Features</a>
+          <a href="/contact.html" class="secondary-btn"><i class="fas fa-envelope"></i> Contact Us</a>
+        </div>
+      </section>
+
+      <section class="about-mission reveal">
+        <h2 class="section-title">Our mission</h2>
         <div class="about-content">
-          <div class="about-box">
-            <h2>Who Created PyQuiz?</h2>
+          <article class="about-box card card-interactive">
+            <div class="about-box-icon"><i class="fas fa-code"></i></div>
+            <h3>Who Created PyQuiz?</h3>
             <p>
               PyQuiz was developed with the goal of helping Python learners
               practice and refine their coding skills. Contributions from Python
               enthusiasts help improve and expand the quiz content.
             </p>
-          </div>
+          </article>
 
-          <div class="about-box">
-            <h2>Want to Contribute?</h2>
+          <article class="about-box card card-interactive">
+            <div class="about-box-icon"><i class="fab fa-github"></i></div>
+            <h3>Want to Contribute?</h3>
             <p>
               If you find an error, have ideas for new questions, or want to
               improve PyQuiz, feel free to contribute on GitHub.
             </p>
+            <a href="https://github.com/HaykuhiMk/PyQuiz" class="secondary-btn about-link-btn" target="_blank" rel="noopener">
+              View on GitHub
+            </a>
+          </article>
+        </div>
+      </section>
+
+      <section class="how-it-works reveal">
+        <h2 class="section-title">How it works</h2>
+        <div class="steps-grid reveal-stagger">
+          <div class="step-card card">
+            <span class="step-num">01</span>
+            <h3>Pick your mode</h3>
+            <p>Classic, Blitz, or Survival — choose how you want to practice.</p>
+          </div>
+          <div class="step-card card">
+            <span class="step-num">02</span>
+            <h3>Select topics</h3>
+            <p>Focus on lists, loops, dictionaries, or mix topics your way.</p>
+          </div>
+          <div class="step-card card">
+            <span class="step-num">03</span>
+            <h3>Answer & learn</h3>
+            <p>Read code snippets, pick answers, and get instant explanations.</p>
+          </div>
+          <div class="step-card card">
+            <span class="step-num">04</span>
+            <h3>Track progress</h3>
+            <p>Earn points, unlock achievements, and climb the leaderboard.</p>
           </div>
         </div>
       </section>
 
-      <section id="faq">
-        <h1>Help & FAQ</h1>
+      <section id="faq" class="faq-section reveal">
+        <h2 class="section-title">Help & FAQ</h2>
+        <p class="faq-intro">Click a question to expand the answer.</p>
 
-        <div class="faq-box">
-          <h2>What is PyQuiz?</h2>
-          <p>
-            PyQuiz is an interactive online quiz that helps you test and improve
-            your knowledge of Python programming.
-          </p>
-        </div>
+        <div class="faq-list" id="faq-list">
+          <div class="faq-item card">
+            <button class="faq-question" type="button" aria-expanded="false">
+              <span>What is PyQuiz?</span>
+              <i class="fas fa-chevron-down faq-chevron"></i>
+            </button>
+            <div class="faq-answer">
+              <p>
+                PyQuiz is an interactive online quiz that helps you test and improve
+                your knowledge of Python programming.
+              </p>
+            </div>
+          </div>
 
-        <div class="faq-box">
-          <h2>How does it work?</h2>
-          <p>
-            Most questions require you to enter the correct output of a given
-            Python snippet. Some questions test your understanding of errors,
-            exceptions, or Python’s behavior—where you'll choose an answer from
-            a dropdown.
-          </p>
-        </div>
+          <div class="faq-item card">
+            <button class="faq-question" type="button" aria-expanded="false">
+              <span>How does it work?</span>
+              <i class="fas fa-chevron-down faq-chevron"></i>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Most questions require you to enter the correct output of a given
+                Python snippet. Some questions test your understanding of errors,
+                exceptions, or Python's behavior — where you'll choose an answer from
+                the options provided.
+              </p>
+            </div>
+          </div>
 
-        <div class="faq-box">
-          <h2>Which Python version is used?</h2>
-          <p>
-            PyQuiz follows Python 3.x standards. Questions and answers are based
-            on the latest Python features.
-          </p>
-        </div>
+          <div class="faq-item card">
+            <button class="faq-question" type="button" aria-expanded="false">
+              <span>Which Python version is used?</span>
+              <i class="fas fa-chevron-down faq-chevron"></i>
+            </button>
+            <div class="faq-answer">
+              <p>
+                PyQuiz follows Python 3.x standards. Questions and answers are based
+                on the latest Python features.
+              </p>
+            </div>
+          </div>
 
-        <div class="faq-box">
-          <h2>I think an answer is incorrect!</h2>
-          <p>
-            Python’s behavior can sometimes be tricky. If you believe an answer
-            is wrong, check the Python documentation. If you’re still unsure,
-            report the issue on GitHub with details.
-          </p>
-        </div>
+          <div class="faq-item card">
+            <button class="faq-question" type="button" aria-expanded="false">
+              <span>I think an answer is incorrect!</span>
+              <i class="fas fa-chevron-down faq-chevron"></i>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Python's behavior can sometimes be tricky. If you believe an answer
+                is wrong, check the Python documentation. If you're still unsure,
+                report the issue on GitHub with details.
+              </p>
+            </div>
+          </div>
 
-        <div class="faq-box">
-          <h2>What features are planned?</h2>
-          <p>
-            Check our open GitHub issues for upcoming features and improvements.
-          </p>
-        </div>
+          <div class="faq-item card">
+            <button class="faq-question" type="button" aria-expanded="false">
+              <span>What features are planned?</span>
+              <i class="fas fa-chevron-down faq-chevron"></i>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Check our open GitHub issues for upcoming features and improvements.
+              </p>
+            </div>
+          </div>
 
-        <div class="faq-box">
-          <h2>How can I help?</h2>
-          <p>
-            You can contribute by adding new questions, improving the platform,
-            or suggesting enhancements. If you're skilled in Python, JavaScript,
-            or web design, your help is welcome!
-          </p>
-        </div>
+          <div class="faq-item card">
+            <button class="faq-question" type="button" aria-expanded="false">
+              <span>How can I help?</span>
+              <i class="fas fa-chevron-down faq-chevron"></i>
+            </button>
+            <div class="faq-answer">
+              <p>
+                You can contribute by adding new questions, improving the platform,
+                or suggesting enhancements. If you're skilled in Python, JavaScript,
+                or web design, your help is welcome!
+              </p>
+            </div>
+          </div>
 
-        <div class="faq-box">
-          <h2>Do you use cookies?</h2>
-          <p>
-            Yes, but only to track your quiz progress. PyQuiz does not use
-            third-party cookies, collect personal data, or track users for
-            marketing purposes.
-          </p>
+          <div class="faq-item card">
+            <button class="faq-question" type="button" aria-expanded="false">
+              <span>Do you use cookies?</span>
+              <i class="fas fa-chevron-down faq-chevron"></i>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Yes, but only to track your quiz progress. PyQuiz does not use
+                third-party cookies, collect personal data, or track users for
+                marketing purposes.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
     </main>
 
     <div id="footer-container"></div>
 
+    <script type="module" src="/js/about.js"></script>
     <script type="module" src="/js/load_header_footer.js"></script>
   </body>
 </html>

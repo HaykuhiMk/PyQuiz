@@ -1,4 +1,4 @@
-import API_BASE_URL from "./config.js";
+import { api } from "./api.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     const loginForm = document.getElementById("admin-login-form");
@@ -16,23 +16,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/admin/admin-login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password }),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                localStorage.setItem("adminToken", data.token);
-                window.location.href = "admin_dashboard.html"; 
-            } else {
-                loginError.textContent = data.error || "Invalid login credentials!";
-            }
+            const data = await api.adminLogin({ username, password });
+            localStorage.setItem("adminToken", data.token);
+            window.location.href = "admin_dashboard.html";
         } catch (error) {
             console.error("Login error:", error);
-            loginError.textContent = "An error occurred. Please try again later.";
+            loginError.textContent = error.message || "Invalid login credentials!";
         }
     });
 });

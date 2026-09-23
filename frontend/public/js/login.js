@@ -1,4 +1,4 @@
-import API_BASE_URL from "./config.js";
+import { api } from "./api.js";
 
 const form = document.getElementById("login-form");
 const emailInput = document.getElementById("email");
@@ -25,22 +25,8 @@ form.addEventListener("submit", (event) => {
         return;
     }
 
-    fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-        credentials: "include",
-    })
-    .then(response => {
-        return response.json().then(data => {
-            if (!response.ok) {
-                throw new Error(data.error || `HTTP ${response.status}`);
-            }
-            return data;
-        });
-    })
-    .then(data => {
-        localStorage.setItem('token', data.token);
+    api.login({ email, password })
+    .then(() => {
         window.location.href = "./account.html";
     })
     .catch(error => {
@@ -55,10 +41,10 @@ function togglePasswordVisibility() {
 
     if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
-        toggleIcon.src = './images/hide-password.png'; 
+        toggleIcon.src = '/images/hide-password.png';
     } else {
         passwordInput.type = 'password';
-        toggleIcon.src = './images/show-password.png';
+        toggleIcon.src = '/images/show-password.png';
     }
 }
 

@@ -13,9 +13,12 @@ function getCookie(name) {
 }
 
 function isUserLoggedIn() {
-    const authToken = getCookie("auth_token");
+    // The auth token itself lives only in an httpOnly cookie (invisible to
+    // JS); the readable csrfToken cookie is set alongside it on login and
+    // cleared on logout, so its presence doubles as a "logged in" signal.
+    const hasSession = Boolean(getCookie("csrfToken"));
     const isGuest = getCookie("guestMode") === "true";
-    return authToken && !isGuest;
+    return hasSession && !isGuest;
 }
 
 function initializeHeaderLogic() {

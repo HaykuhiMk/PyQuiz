@@ -1,4 +1,4 @@
-import API_BASE_URL from "./config.js";
+import { api } from "./api.js";
 
 const forgotPasswordForm = document.getElementById('forgot-password-form');
 const emailInput = document.getElementById('email');
@@ -31,20 +31,8 @@ forgotPasswordForm.addEventListener('submit', function (event) {
     }
 
     clearError();
-    fetch(`${API_BASE_URL}/api/auth/forgot_password`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email })
-    })
-    .then(response => {
-        return response.json(); 
-    })
-    .then(data => {
-        if (data.error) {
-            throw new Error(data.error);
-        }
+    api.forgotPassword(email)
+    .then(() => {
         window.location.href = 'password_reset_link_success.html';
     })
     .catch(error => {

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - PyQuiz</title>
+    <link rel="stylesheet" href="/css/design-system.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/header_footer.css" />
+    <link rel="stylesheet" href="/css/settings.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="header-container"></div>
+    <main class="settings-page reveal">
+        <div class="settings-page-header">
+            <a href="/account.html" class="back-link"><i class="fas fa-arrow-left"></i> Dashboard</a>
+            <h1 class="page-title page-title--gradient"><i class="fas fa-cog"></i> Account Settings</h1>
+            <p class="page-subtitle">Manage your profile, security, and account preferences.</p>
+        </div>
+
+        <div class="settings-layout">
+            <section class="card settings-profile-card">
+                <div class="settings-profile-preview">
+                    <div class="settings-avatar" id="settings-avatar">
+                        <i class="fas fa-user-circle" id="avatar-icon"></i>
+                        <img id="avatar-image" alt="Profile photo" hidden />
+                    </div>
+                    <div>
+                        <h3 id="settings-display-name">User</h3>
+                        <p id="settings-email-readonly" class="settings-email">—</p>
+                    </div>
+                </div>
+                <div class="settings-block">
+                    <h4>Profile Photo</h4>
+                    <p class="settings-hint">JPG, PNG or WebP. Max 500KB.</p>
+                    <div class="avatar-upload-row">
+                        <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp" hidden />
+                        <button type="button" id="upload-avatar-btn" class="secondary-btn">
+                            <i class="fas fa-camera"></i> Upload Photo
+                        </button>
+                        <button type="button" id="remove-avatar-btn" class="secondary-btn" hidden>
+                            <i class="fas fa-trash"></i> Remove
+                        </button>
+                    </div>
+                    <p id="avatar-status" class="settings-status"></p>
+                </div>
+            </section>
+
+            <section class="card">
+                <h3 class="card-heading"><i class="fas fa-user"></i> Profile</h3>
+                <div class="settings-block">
+                    <h4>Display Name</h4>
+                    <form id="username-form" class="settings-form settings-form-inline">
+                        <input type="text" id="settings-username" minlength="2" maxlength="50" required />
+                        <button type="submit" class="primary-btn">Save Name</button>
+                    </form>
+                    <p id="username-status" class="settings-status"></p>
+                </div>
+                <div class="settings-block">
+                    <h4>Email</h4>
+                    <p class="settings-readonly" id="settings-email-display">—</p>
+                    <p class="settings-hint">Email cannot be changed here. Contact support if needed.</p>
+                </div>
+            </section>
+
+            <section class="card">
+                <h3 class="card-heading"><i class="fas fa-lock"></i> Security</h3>
+                <div class="settings-block">
+                    <h4>Change Password</h4>
+                    <form id="password-form" class="settings-form">
+                        <input type="password" id="current-password" placeholder="Current password" required />
+                        <input type="password" id="new-password" placeholder="New password" required />
+                        <input type="password" id="confirm-password" placeholder="Confirm new password" required />
+                        <button type="submit" class="primary-btn">Update Password</button>
+                    </form>
+                    <p id="password-status" class="settings-status"></p>
+                </div>
+            </section>
+
+            <section class="card settings-danger-card">
+                <h3 class="card-heading card-heading--danger"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
+                <div class="settings-block settings-danger">
+                    <h4>Delete Account</h4>
+                    <p class="settings-hint">This permanently removes your account, progress, and achievements.</p>
+                    <form id="delete-form" class="settings-form">
+                        <input type="password" id="delete-password" placeholder="Enter password to confirm" required />
+                        <button type="submit" class="danger-btn">Delete My Account</button>
+                    </form>
+                    <p id="delete-status" class="settings-status"></p>
+                </div>
+            </section>
+        </div>
+    </main>
+    <div id="footer-container"></div>
+    <script type="module" src="/js/settings.js"></script>
+    <script type="module" src="/js/load_header_footer.js"></script>
+</body>
+</html>

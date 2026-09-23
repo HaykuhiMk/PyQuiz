@@ -1,0 +1,67 @@
+.filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 200px) auto;
+  gap: var(--space-3);
+  align-items: center;
+  margin-bottom: var(--space-6);
+}
+
+.filters input,
+.filters select {
+  min-width: 0;
+}
+
+.filters .primary-btn {
+  min-width: 130px;
+}
+
+@media (max-width: 640px) {
+  .filters {
+    grid-template-columns: 1fr;
+  }
+
+  .filters .primary-btn {
+    width: 100%;
+  }
+}
+
+.study-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-4);
+}
+
+.study-card h3 {
+  font-size: var(--text-base);
+  margin: var(--space-4) 0;
+  line-height: var(--leading-relaxed);
+}
+
+.study-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.answer-block {
+  padding: var(--space-4);
+  margin: var(--space-4) 0;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.pager {
+  margin-top: var(--space-8);
+}
+
+.pager-label {
+  min-width: 80px;
+  text-align: center;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-muted);
+}

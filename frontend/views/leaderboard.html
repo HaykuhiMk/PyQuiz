@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leaderboard - PyQuiz</title>
+  <link rel="stylesheet" href="/css/design-system.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/header_footer.css" />
+  <link rel="stylesheet" href="/css/leaderboard.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+</head>
+<body>
+  <div id="header-container"></div>
+  <main class="page-shell reveal">
+    <h1 class="page-title"><i class="fas fa-trophy"></i> Global Leaderboard</h1>
+    <p class="page-subtitle">Top Python quiz champions ranked by points and streaks.</p>
+    <div class="card" id="leaderboard-list">
+      <div class="empty-state">Loading leaderboard...</div>
+    </div>
+  </main>
+  <div id="footer-container"></div>
+  <script type="module" src="/js/leaderboard.js"></script>
+  <script type="module" src="/js/load_header_footer.js"></script>
+</body>
+</html>

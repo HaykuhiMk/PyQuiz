@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Users - PyQuiz Admin</title>
+    <link rel="stylesheet" href="/css/design-system.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/admin_dashboard.css" />
+    <link rel="stylesheet" href="/css/manage_questions.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+  </head>
+  <body>
+    <aside id="sidebar">
+      <h2>Admin Panel</h2>
+      <nav>
+        <ul>
+          <li>
+            <a href="admin_dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+          </li>
+          <li>
+            <a href="manage-questions.html"
+              ><i class="fas fa-question-circle"></i> Manage Questions</a
+            >
+          </li>
+          <li>
+            <a href="users.html" class="active"
+              ><i class="fas fa-users"></i> Manage Users</a
+            >
+          </li>
+          <li>
+            <a href="contacts.html"
+              ><i class="fas fa-envelope"></i> Contact Messages</a
+            >
+          </li>
+          <li>
+            <a href="analytics.html"
+              ><i class="fas fa-chart-bar"></i> Analytics</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <button id="logout-btn">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
+    </aside>
+
+    <main id="main-content">
+      <header>
+        <h1>Manage Users</h1>
+      </header>
+
+      <section id="user-list-section">
+        <table id="user-table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Points</th>
+              <th>Answered</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="user-list-body">
+            <tr><td colspan="7">Loading...</td></tr>
+          </tbody>
+        </table>
+        <div id="pagination-controls">
+          <button type="button" id="prev-page-btn" class="secondary-btn">
+            <i class="fas fa-chevron-left"></i> Previous
+          </button>
+          <span id="page-label">Page 1</span>
+          <button type="button" id="next-page-btn" class="secondary-btn">
+            Next <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="js/users.js"></script>
+  </body>
+</html>

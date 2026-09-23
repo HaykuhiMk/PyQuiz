@@ -4,13 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PyQuiz - Home</title>
-    <link rel="stylesheet" href="css/index.css" />
-    <link rel="stylesheet" href="css/header_footer.css" />
+    <link rel="stylesheet" href="/css/design-system.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/index.css" />
+    <link rel="stylesheet" href="/css/header_footer.css" />
   </head>
   <body>
     <div id="header-container"></div>
 
-    <section id="hero">
+    <section id="hero" class="reveal">
       <div class="hero-content">
         <h1>Welcome to PyQuiz !</h1>
         <p id="slogan">Turn Every Question into a Python Adventure.</p>
@@ -18,17 +20,17 @@
           Test your Python knowledge with interactive quizzes! Sign up to track
           your progress and challenge yourself.
         </p>
-        <div class="buttons">
-          <button id="login-btn">Login</button>
-          <button id="register-btn">Registration</button>
-          <button id="guest-btn">Continue as Guest</button>
+        <div class="btn-row btn-row--center btn-row--stretch hero-buttons">
+          <button id="login-btn" class="primary-btn" type="button">Login</button>
+          <button id="register-btn" class="secondary-btn" type="button">Registration</button>
+          <button id="guest-btn" class="secondary-btn" type="button">Continue as Guest</button>
         </div>
       </div>
     </section>
 
-    <section id="features">
+    <section id="features" class="reveal">
       <h2>Why Choose PyQuiz?</h2>
-      <div class="feature-box">
+      <div class="feature-box reveal-stagger">
         <div class="feature">
           <h3>Interactive Quizzes</h3>
           <p>Engage in fun and interactive Python quizzes.</p>
@@ -38,8 +40,8 @@
           <p>Save your scores and see your improvement over time.</p>
         </div>
         <div class="feature">
-          <h3>Compete with Friends</h3>
-          <p>Challenge your friends and climb the leaderboard.</p>
+          <h3>Compete & Level Up</h3>
+          <p>Blitz, Survival, Daily Challenge, leaderboard, and achievements.</p>
         </div>
       </div>
     </section>

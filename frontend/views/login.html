@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - PyQuiz</title>
+    <link rel="stylesheet" href="/css/design-system.css" />
+    <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/login_styles.css" />
     <link rel="stylesheet" href="/css/header_footer.css" />
   </head>
@@ -37,11 +39,12 @@
             onclick="togglePasswordVisibility()"
           />
         </div>
-        <button type="submit">Login</button>
-        <div id="forgot-password-container">
+        <button type="submit" class="primary-btn">Login</button>
+        <div class="form-footer">
           <button
             type="button"
             id="forgot-password-btn"
+            class="link-btn"
             onclick="window.location.href='./forgot_password.html'"
           >
             Forgot Password?

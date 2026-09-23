@@ -1,74 +1,94 @@
-# 🧠 PyQuiz
-PyQuiz is a fun, interactive web application designed to help users test and enhance their Python skills through various quizzes and challenges. Built with a modern tech stack and a clean user experience, PyQuiz is perfect for beginners who want to learn, as well as experienced developers who want to sharpen their knowledge.
+# PyQuiz
 
-📡 Live Project
-Try out the live version here: [PyQuiz](https://pyquiz.picsartacademy.am/)
+PyQuiz is a full-stack quiz platform for practicing Python MCQs.
 
-✍️ Blog Post
-Learn more about the journey and features of PyQuiz in this detailed article:  [Exploring PyQuiz – A Fun and Interactive Way to Test Your Python Skills](https://medium.com/@haykuhimkrtchyan09/exploring-pyquiz-a-fun-and-interactive-way-to-test-your-python-skills-c62cecd2f37c)
+## Project Structure
 
+- `frontend/`: static pages and browser scripts
+- `backend/`: REST API, auth, admin, password reset, contact
 
-## 🚀 Features
+Both services are independent Node.js apps and run on separate ports.
 
-**🧪 Interactive Python Quizzes** – Timed, auto-evaluated questions to test your Python knowledge
+## Features
 
-**👥 User Authentication** – Secure login/signup using JWT tokens
+- User registration and login
+- Topic-based random quiz flow
+- User progress tracking
+- Admin login and question creation
+- Forgot/reset password flow
+- Contact form email delivery
 
-**🗂 Multiple Difficulty Levels** – Ranging from beginner to advanced
+## Tech Stack
 
-**📊 Score Tracking** – Keeps track of your results and improvements
+- Frontend: HTML, CSS, vanilla JavaScript, Express static server
+- Backend: Node.js, Express, MongoDB (Mongoose), JWT
+- Security middleware: Helmet, CORS, rate limiting
 
-**🛠 Admin Panel** – Easily manage questions and users
+## Local Setup
 
-**🌐 RESTful API** – Backend services exposed for quiz data and authentication
+1. Clone repository:
 
-
-## 🛠 Tech Stack
-### Frontend
-
-* HTML/CSS/JavaScript
-* EJS Templates (for server-side rendering)
-
-### Backend
-
-* Node.js
-* Express.js
-* MongoDB (Mongoose ODM)
-* JSON Web Tokens (JWT) for authentication
-
-## 🔐 Authentication
-* Users sign up/login with a secure JWT-based flow.
-* JWT tokens are used to maintain sessions and authorize access to protected routes.
-
-## 📦 Installation & Setup for Developers
-**Clone the repository:**
-```
+```bash
 git clone https://github.com/HaykuhiMk/PyQuiz.git
 cd PyQuiz
 ```
 
-**Install dependencies:**
+2. Install dependencies:
 
-`npm install`
-
-**Add your .env file for environment configs:**
+```bash
+cd backend && npm install
+cd ../frontend && npm install
 ```
-PORT=3000
+
+3. Configure environment variables.
+
+Create `backend/.env`:
+
+```env
+PORT=3001
 MONGO_URI=your_mongodb_uri
 JWT_SECRET=your_jwt_secret
+CLIENT_URI=http://localhost:3000
+API_URI=http://localhost:3001
+EMAIL_USER=your_email
+EMAIL_PASS=your_email_password
 ```
 
-**Start the server:**
+Create `frontend/.env`:
 
-`npm start`
+```env
+PORT=3000
+```
 
-**Visit [http://localhost:3000](http://localhost:3000) in your browser.**
+4. Run both services:
 
-## 🙌 Contributing
-Contributions are welcome! If you have ideas for new features or improvements, feel free to open an issue or submit a PR.
+```bash
+cd backend && npm start
+cd ../frontend && npm start
+```
 
-## 📃 License
-This project is licensed under the MIT License. See the LICENSE file for details.
+5. Open [http://localhost:3000](http://localhost:3000).
+
+## Notes
+
+- Frontend API endpoint is configured in `frontend/public/js/config.js`.
+- Backend API defaults to `http://localhost:3001`.
+- Versioned API is available at `/api/v1/*` with standardized response format.
+- Swagger docs are available at `http://localhost:3001/api-docs`.
+- Prometheus metrics endpoint is available at `http://localhost:3001/metrics`.
+
+## Backend Quality Tooling
+
+In `backend/`:
+
+- `npm run lint`
+- `npm run test`
+- `npm run typecheck`
+- `npm run build`
+
+## License
+
+MIT
 
 
 

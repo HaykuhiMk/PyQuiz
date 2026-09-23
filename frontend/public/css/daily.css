@@ -1,0 +1,15 @@
+#daily-quiz .options {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+#daily-quiz .option-btn {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+  min-height: 48px;
+  height: auto;
+  padding: var(--space-4) var(--space-5);
+}

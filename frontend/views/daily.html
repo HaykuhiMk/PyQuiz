@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Challenge - PyQuiz</title>
+  <link rel="stylesheet" href="/css/design-system.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/header_footer.css" />
+  <link rel="stylesheet" href="/css/daily.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/PrismJS/prism-themes/themes/prism-one-dark.css" />
+</head>
+<body>
+  <div id="header-container"></div>
+  <main class="page-shell reveal">
+    <h1 class="page-title"><i class="fas fa-calendar-day"></i> Daily Challenge</h1>
+    <p class="page-subtitle">Same 5 questions for everyone today. Score bonus points!</p>
+    <div id="daily-status" class="card"></div>
+    <div id="daily-quiz" class="card" style="display:none;"></div>
+    <div id="daily-result" class="card quiz-summary" style="display:none;"></div>
+  </main>
+  <div id="footer-container"></div>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/components/prism-python.min.js"></script>
+  <script type="module" src="/js/daily.js"></script>
+  <script type="module" src="/js/load_header_footer.js"></script>
+</body>
+</html>

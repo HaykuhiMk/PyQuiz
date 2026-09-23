@@ -1,13 +1,7 @@
-import API_BASE_URL from "./config.js";
+import { api, isLoggedIn } from "./api.js";
+import { celebrateQuizComplete, initRipples } from "./ui.js";
 
-window.fetchTopicsDebug = async function() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/questions/topics`);
-        const text = await response.text();
-    } catch (error) {
-        console.error("🔧 Debug fetch error:", error);
-    }
-};
+const BLITZ_SECONDS = 45;
 
 document.addEventListener("DOMContentLoaded", () => {
     const topicSelectionContainer = document.getElementById("topic-selection");
@@ -31,24 +25,39 @@ document.addEventListener("DOMContentLoaded", () => {
     const giveUpBtn = document.getElementById("give-up-btn");
     const guestWarning = document.getElementById("guest-warning");
     const backToAccountBtn = document.getElementById("back-to-account-btn");
-    const darkModeBtn = document.getElementById("dark-mode-btn");
 
     let allTopics = [];
     let currentQuestion = null;
     let selectedOption = null;
     let attempts = 0;
     let selectedTopics = [];
-    const totalQuestions = 146;
+    let quizMode = "classic";
+    let difficulty = "";
+    let timerInterval = null;
+    let questionStartedAt = Date.now();
+    let session = { correct: 0, wrong: 0, points: 0, streak: 0, answered: 0 };
     const isGuest = getCookie("guestMode") === "true";
     const answeredQuestions = isGuest ? null : new Set();
 
     const categoryMapping = {
-        'basics': ['Variables', 'Data Types', 'Basic Arithmetic', 'Strings', 'Input/Output', 'Control Flow', 'Loops'],
-        'data-structures': ['Lists', 'Tuples', 'Dictionaries', 'Sets', 'Arrays', 'Queues', 'Stacks'],
-        'functions': ['Functions', 'Lambda Functions', 'Recursion', 'Arguments', 'Return Values'],
-        'ooad': ['Classes', 'Objects', 'Inheritance', 'Polymorphism', 'Encapsulation'],
-        'advanced': ['Generators', 'Decorators', 'Context Managers', 'Metaclasses', 'Async/Await']
+        'basics': ['Data Types', 'Basic Arithmetic', 'Strings', 'Integers', 'Integer', 'Bool', 'String', 'Comparison Operators', 'Type Conversion', 'Assignment', 'Variable Assignment', 'Case Sensitivity', 'print', 'stdout', 'Files', 'None'],
+        'data-structures': ['Lists', 'Tuples', 'Dictionaries', 'Sets', 'Nested Lists', 'Data Structures', 'List Methods', 'Set Methods', 'Dictionary Methods', 'dict_keys', 'Keys', 'Slicing', 'List Slicing', 'Indexing', 'List Manipulation', 'List Modification', 'List Multiplication', 'List References', 'List Unpacking', 'Extended Unpacking', 'Tuple Unpacking', 'String Unpacking', 'Multiple Assignment', 'Duplicate Removal', 'Mutability', 'Mutable', 'Immutable', 'Aliasing', 'len'],
+        'functions': ['map', 'zip', 'enumerate', 'chr', 'ord', 'maketrans', 'translate', 'strip', 'removeprefix', 'removesuffix', 'swapcase'],
+        'ooad': ['Identity Operators', 'Type Checking', 'Boolean Logic', 'Identity', 'Equality', 'Hashing', 'Reference Counting', 'Memory Management'],
+        'advanced': ['Sorting', 'Sorting with key function', 'String Translation', 'string formatting', 'string manipulation', 'string slicing', 'boolean indexing', 'Exponentiation Operator', 'Modulo Operator', 'Range', 'Range Function', 'Step Values', 'Loops', 'For Loop', 'while loop', 'Break Statement', 'Continue Statement', 'Control Statements', 'Conditional Statements', 'Iteration', 'String Concatenation', 'String Indexing', 'String Iteration']
     };
+
+    document.querySelectorAll(".mode-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".mode-btn").forEach((item) => item.classList.remove("active"));
+            btn.classList.add("active");
+            quizMode = btn.dataset.mode;
+        });
+    });
+
+    document.getElementById("difficulty-filter").addEventListener("change", (event) => {
+        difficulty = event.target.value;
+    });
 
     if (isGuest) {
         guestWarning.style.display = "block";
@@ -151,21 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             topicsList.innerHTML = '<div class="loading-spinner"></div>';
             
-            const response = await fetch(`${API_BASE_URL}/api/questions/topics`, {
-                method: "GET",
-                credentials: "include",
-                headers: {
-                    "Accept": "application/json",
-                    "Content-Type": "application/json"
-                }
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to fetch topics: ${response.status} - ${errorText}`);
-            }
-            
-            const topics = await response.json();
+            const topics = await api.getTopics();
             allTopics = topics.filter(topic => topic.trim()).sort();
 
             let delay = 0;
@@ -188,49 +183,40 @@ document.addEventListener("DOMContentLoaded", () => {
             
         } catch (error) {
             console.error("Error fetching topics:", error);
-            topicsList.innerHTML = `
-                <div style="color: red; padding: 10px; text-align: center;">
-                    <p>Error loading topics: ${error.message}</p>
-                    <button onclick="fetchTopics()" 
-                            style="margin-top: 10px; padding: 8px 16px; 
-                                   background: #ff4444; color: white; 
-                                   border: none; border-radius: 4px; 
-                                   cursor: pointer;">
-                        Try Again
-                    </button>
-                </div>
-            `;
+            topicsList.innerHTML = `<div style="color: red; padding: 10px; text-align: center;"><p>Error loading topics: ${error.message}</p></div>`;
         }
     }
 
     startQuizBtn.onclick = () => {
+        document.getElementById("mode-selection").style.display = "none";
         topicSelectionContainer.style.display = "none";
         quizContainer.style.display = "block";
+        document.getElementById("hud-mode").textContent = quizMode[0].toUpperCase() + quizMode.slice(1);
+        document.getElementById("timer-wrap").style.display = quizMode === "blitz" ? "block" : "none";
+        session = { correct: 0, wrong: 0, points: 0, streak: 0, answered: 0 };
         fetchQuestion();
     };
+
+    function topicsForApi() {
+        if (!selectedTopics.length) return [];
+        if (allTopics.length && selectedTopics.length >= allTopics.length) return [];
+        return selectedTopics;
+    }
 
     async function fetchQuestion(retries = 5) {
         try {
             if (!isGuest) await fetchUserProgress();
 
-            const topicsParam = selectedTopics.length > 0 ? `topics=${selectedTopics.join(',')}` : '';
-            const queryParams = [];
-            
-            if (topicsParam) queryParams.push(topicsParam);
-            
-            if (!isGuest && answeredQuestions && answeredQuestions.size > 0) {
-                const excludeIds = Array.from(answeredQuestions).join(',');
-                if (excludeIds) queryParams.push(`excludeIds=${excludeIds}`);
-            }
-            
-            const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
-            
-            const response = await fetch(`${API_BASE_URL}/api/questions/random${queryString}`, {
-                method: "GET",
-                credentials: "include",
-            });
+            const excludeIds =
+                !isGuest && answeredQuestions && quizMode === "classic"
+                    ? Array.from(answeredQuestions)
+                    : [];
 
-            const data = await response.json();
+            const data = await api.getRandomQuestion({
+                topics: topicsForApi(),
+                difficulty,
+                excludeIds,
+            });
 
             if (data.noMoreQuestions) {
                 const selectedTopicsText = selectedTopics.length > 0 
@@ -269,56 +255,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            if (!response.ok) {
-                throw new Error(data.error || "Failed to fetch question");
-            }
-
             currentQuestion = data;
             displayQuestion(currentQuestion);
             resetUI();
+            questionStartedAt = Date.now();
+            if (quizMode === "blitz") startBlitzTimer();
         } catch (error) {
             console.error("Error fetching question:", error);
-            resultContainer.innerHTML = `
-                <div style="color: red; padding: 10px; text-align: center;">
-                    <p>Error loading question: ${error.message}</p>
-                    <button onclick="fetchQuestion()" 
-                            style="margin-top: 10px; padding: 8px 16px; 
-                                   background: #ff4444; color: white; 
-                                   border: none; border-radius: 4px; 
-                                   cursor: pointer;">
-                        Try Again
-                    </button>
-                </div>
-            `;
+            resultContainer.innerHTML = `<div style="color: red; padding: 10px; text-align: center;"><p>Error loading question: ${error.message}</p></div>`;
         }
     }
 
     async function fetchUserProgress() {
         try {
-            const token = getCookie("auth_token");
-            if (!token) {
+            if (!isLoggedIn()) {
                 window.location.href = '/login.html';
                 return;
             }
 
-            const response = await fetch(`${API_BASE_URL}/api/users/user-progress`, {
-                method: "GET",
-                credentials: "include",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                }
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    window.location.href = '/login.html';
-                    return;
-                }
-                throw new Error("Failed to fetch user progress");
-            }
-
-            const data = await response.json();
+            const data = await api.getProgress();
             if (data.answeredQuestions) {
                 answeredQuestions.clear();
                 data.answeredQuestions.forEach(q => answeredQuestions.add(q));
@@ -343,38 +298,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function displayQuestion(question) {
         questionContainer.innerText = question.question;
-        difficultyContainer.innerText = question.difficulty || "Unknown";
-        topicsContainer.innerText = question.topics?.join(", ") || "None";
+        difficultyContainer.querySelector("span").textContent = question.difficulty || "Unknown";
+        topicsContainer.querySelector("span").textContent = question.topics?.join(", ") || "None";
 
         if (question.code) {
-            questionCode.innerHTML = `<pre><code class="language-python">${escapeHTML(question.code.trim())}</code></pre>`;
+            questionCode.textContent = question.code.trim();
         } else {
-            questionCode.innerHTML = "";
+            questionCode.textContent = "";
         }
 
         Prism.highlightAll();
 
         optionsContainer.innerHTML = "";
-        const selectElement = document.createElement("select");
-        selectElement.onchange = () => {
-            selectedOption = selectElement.value ? parseInt(selectElement.value) : null;
-        };
-
-        const placeholderOption = document.createElement("option");
-        placeholderOption.value = "";
-        placeholderOption.innerText = "Select an answer...";
-        placeholderOption.disabled = true;
-        placeholderOption.selected = true;
-        selectElement.appendChild(placeholderOption);
-
         question.options.forEach((option, index) => {
-            const optionElement = document.createElement("option");
-            optionElement.value = index;
-            optionElement.innerText = option;
-            selectElement.appendChild(optionElement);
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "quiz-option";
+            btn.textContent = option;
+            btn.addEventListener("click", () => {
+                optionsContainer.querySelectorAll(".quiz-option").forEach((el) => el.classList.remove("selected"));
+                btn.classList.add("selected");
+                selectedOption = index;
+            });
+            optionsContainer.appendChild(btn);
         });
-
-        optionsContainer.appendChild(selectElement);
+        initRipples();
     }
 
     submitBtn.onclick = async () => {
@@ -383,42 +331,56 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const correctAnswerIndex = currentQuestion.options.indexOf(currentQuestion.correctAnswer);
+        clearBlitzTimer();
+        submitBtn.disabled = true;
 
-        if (selectedOption === correctAnswerIndex) {
-            resultContainer.innerText = "✅ Correct!";
-            submitBtn.disabled = true;
-            showExplanation();
+        let checkResult;
+        try {
+            checkResult = await api.checkAnswer(currentQuestion._id, { selectedIndex: selectedOption });
+        } catch (error) {
+            console.error("Failed to check answer:", error);
+            resultContainer.innerText = `Error checking answer: ${error.message}`;
+            submitBtn.disabled = false;
+            return;
+        }
 
-            if (!isGuest) {
-                try {
-                    await updateUserProgress(currentQuestion._id);
-                    answeredQuestions.add(currentQuestion._id);
-                } catch (error) {
-                    console.error("Error updating progress:", error);
-                }
-            }
+        const isCorrect = checkResult.isCorrect;
+
+        if (isCorrect) {
+            currentQuestion.explanation = checkResult.explanation;
+            optionsContainer.querySelectorAll(".quiz-option")[selectedOption]?.classList.add("correct");
+            await handleAnswerResult(true, selectedOption);
+        } else if (quizMode === "survival") {
+            optionsContainer.querySelectorAll(".quiz-option")[selectedOption]?.classList.add("incorrect");
+            await handleAnswerResult(false, selectedOption);
+            showQuizSummary("Survival run ended.");
         } else {
             attempts++;
             resultContainer.innerText = "❌ Wrong! Try again.";
+            submitBtn.disabled = false;
             if (attempts >= 3) giveUpBtn.style.display = "block";
+            if (quizMode === "blitz") startBlitzTimer();
         }
     };
 
     giveUpBtn.onclick = async () => {
-        resultContainer.innerHTML = `<strong>Correct Answer:</strong> ${currentQuestion.correctAnswer}`;
+        clearBlitzTimer();
         submitBtn.disabled = true;
         giveUpBtn.style.display = "none";
-        showExplanation();
 
-        if (!isGuest) {
-            try {
-                await updateUserProgress(currentQuestion._id);
-                answeredQuestions.add(currentQuestion._id);
-            } catch (error) {
-                console.error("Error updating progress:", error);
-            }
+        let checkResult = {};
+        try {
+            checkResult = await api.checkAnswer(currentQuestion._id, { reveal: true });
+        } catch (error) {
+            console.error("Failed to reveal answer:", error);
         }
+
+        const correctAnswer = checkResult.correctAnswer ?? "N/A";
+        resultContainer.innerHTML = `<strong>Correct Answer:</strong> ${escapeHTML(correctAnswer)}`;
+        currentQuestion.explanation = checkResult.explanation;
+        showExplanation();
+        await handleAnswerResult(false, null);
+        if (quizMode === "survival") showQuizSummary("Survival run ended.");
     };
 
     nextBtn.onclick = fetchQuestion;
@@ -436,43 +398,92 @@ document.addEventListener("DOMContentLoaded", () => {
         nextBtn.style.display = "block";
     }
 
-    async function updateUserProgress(questionId) {
-        try {
-            const token = getCookie("auth_token");
-            if (!token) {
-                window.location.href = '/login.html';
-                return;
-            }
+    async function handleAnswerResult(isCorrect, selectedIndex) {
+        session.answered += 1;
+        if (isCorrect) {
+            session.correct += 1;
+            session.streak += 1;
+            resultContainer.innerText = "✅ Correct!";
+            submitBtn.disabled = true;
+            showExplanation();
+        } else {
+            session.wrong += 1;
+            session.streak = 0;
+        }
+        updateHud();
 
-            const response = await fetch(`${API_BASE_URL}/api/users/user-progress`, {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ questionId })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                
-                if (response.status === 401) {
-                    window.location.href = '/login.html';
-                    return;
+        if (!isGuest) {
+            try {
+                const timeSpentSec = Math.max(1, Math.round((Date.now() - questionStartedAt) / 1000));
+                const result = await api.updateProgress({
+                    questionId: currentQuestion._id,
+                    selectedIndex,
+                    mode: quizMode,
+                    timeSpentSec,
+                });
+                session.points = result.totalPoints || session.points;
+                if (result.pointsAwarded) session.points = result.totalPoints;
+                if (result.newAchievements?.length) {
+                    resultContainer.innerHTML += `<br><small>🏆 Unlocked: ${result.newAchievements.join(", ")}</small>`;
                 }
-                throw new Error(`Server returned ${response.status}: ${errorData}`);
-            }
-
-            const data = await response.json();
-            await fetchUserProgress();
+                answeredQuestions.add(currentQuestion._id);
+                updateHud(result.currentStreak);
         } catch (error) {
             console.error("Failed to update user progress:", error);
-            resultContainer.innerHTML += `<br><small style="color: red;">Failed to save progress: ${error.message}</small>`;
-            
-            if (error.message.includes("401") || error.message.includes("unauthorized")) {
-                window.location.href = '/login.html';
             }
+        }
+    }
+
+    function updateHud(streakOverride) {
+        document.getElementById("hud-score").textContent = `${session.correct}/${session.answered}`;
+        document.getElementById("hud-streak").textContent = streakOverride ?? session.streak;
+        document.getElementById("hud-points").textContent = session.points;
+    }
+
+    function showQuizSummary(reason = "Session complete") {
+        clearBlitzTimer();
+        const accuracy = session.answered ? Math.round((session.correct / session.answered) * 100) : 0;
+        celebrateQuizComplete();
+        resultContainer.innerHTML = `
+            <div class="quiz-summary">
+                <div class="score-ring" style="--score-pct: ${accuracy}%"><span>${accuracy}%</span></div>
+                <h2>${reason}</h2>
+                <p>Score: <strong>${session.correct} / ${session.answered}</strong></p>
+                <p>Total points: <strong>${session.points}</strong></p>
+                <div class="action-row">
+                    <button type="button" onclick="window.location.reload()" class="primary-btn">Play Again</button>
+                    <button type="button" onclick="window.location.href='/account.html'" class="secondary-btn">Dashboard</button>
+                    <button type="button" onclick="window.location.href='/leaderboard.html'" class="secondary-btn">Leaderboard</button>
+                </div>
+            </div>`;
+        submitBtn.style.display = "none";
+        nextBtn.style.display = "none";
+        giveUpBtn.style.display = "none";
+        initRipples();
+    }
+
+    function startBlitzTimer() {
+        clearBlitzTimer();
+        let remaining = BLITZ_SECONDS;
+        const fill = document.getElementById("timer-fill");
+        const label = document.getElementById("timer-label");
+        timerInterval = setInterval(() => {
+            remaining -= 1;
+            const pct = (remaining / BLITZ_SECONDS) * 100;
+            fill.style.width = `${pct}%`;
+            label.textContent = `${remaining}s`;
+            if (remaining <= 0) {
+                clearBlitzTimer();
+                resultContainer.innerText = "⏰ Time's up!";
+                handleAnswerResult(false, null).then(() => fetchQuestion());
+            }
+        }, 1000);
+    }
+
+    function clearBlitzTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
         }
     }
 
@@ -497,20 +508,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return decodeURIComponent(value);
         } catch {
             return value;
-        }
-    }
-
-    function toggleDarkMode() {
-        document.body.classList.toggle("dark-mode");
-        topicSelectionContainer.classList.toggle("dark-mode");
-        localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
-    }
-
-    if (darkModeBtn) {
-        darkModeBtn.onclick = toggleDarkMode;
-        if (localStorage.getItem("darkMode") === "true") {
-            document.body.classList.add("dark-mode");
-            topicSelectionContainer.classList.add("dark-mode");
         }
     }
 

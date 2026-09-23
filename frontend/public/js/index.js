@@ -10,9 +10,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return null;
     }
 
-    const token = getCookie("token"); 
-    if (token) {
-        window.location.href = "account.html";  
+    const hasSession = Boolean(getCookie("csrfToken"));
+    const isGuest = getCookie("guestMode") === "true";
+    if (hasSession && !isGuest) {
+        window.location.href = "account.html";
         return;
     }
 

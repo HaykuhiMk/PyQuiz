@@ -1,0 +1,17 @@
+#leaderboard-list .meta {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+#leaderboard-list .points {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--accent-yellow);
+}
+
+#leaderboard-list .achievements {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}

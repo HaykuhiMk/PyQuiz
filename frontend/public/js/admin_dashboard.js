@@ -1,4 +1,4 @@
-import API_BASE_URL from "./config.js";
+import { api } from "./api.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     const questionForm = document.getElementById("question-form");
@@ -30,24 +30,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 explanation
             };
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/add-question`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${localStorage.getItem("adminToken")}` 
-                    },
-                    body: JSON.stringify(questionData),
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    document.getElementById("question-success").textContent = "Question added successfully!";
-                    questionForm.reset(); 
-                } else {
-                    alert("Error: " + (result.error || "Failed to add question"));
-                }
+                await api.addQuestion(questionData);
+                document.getElementById("question-success").textContent = "Question added successfully!";
+                questionForm.reset();
             } catch (error) {
                 console.error("Error submitting question:", error);
+                alert("Error: " + (error.message || "Failed to add question"));
             }
         });
     } else {

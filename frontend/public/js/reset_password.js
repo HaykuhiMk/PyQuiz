@@ -1,4 +1,4 @@
-import API_BASE_URL from "./config.js";
+import { api } from "./api.js";
 
 document.addEventListener("DOMContentLoaded", function () {
     const urlParams = new URLSearchParams(window.location.search);
@@ -34,17 +34,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/reset_password/${resetKey}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ password })
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.error || "❌ Error resetting password. Please try again.");
-            }
+            await api.resetPassword(resetKey, password);
 
             showMessage("✅ Password successfully reset! Redirecting...", "green");
 
@@ -63,10 +53,10 @@ function togglePasswordVisibility() {
 
     if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
-        toggleIcon.src = './images/hide-password.png'; 
+        toggleIcon.src = '/images/hide-password.png';
     } else {
         passwordInput.type = 'password';
-        toggleIcon.src = './images/show-password.png'; 
+        toggleIcon.src = '/images/show-password.png'; 
     }
 }
 
@@ -76,10 +66,10 @@ function toggleConfirmPasswordVisibility() {
 
     if (confirmPasswordInput.type === 'password') {
         confirmPasswordInput.type = 'text';
-        toggleIcon.src = './images/hide-password.png';
+        toggleIcon.src = '/images/hide-password.png';
     } else {
         confirmPasswordInput.type = 'password';
-        toggleIcon.src = './images/show-password.png'; 
+        toggleIcon.src = '/images/show-password.png'; 
     }
 }
 

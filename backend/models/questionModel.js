@@ -10,5 +10,9 @@ const questionSchema = new mongoose.Schema({
     explanation: { type: String, required: true }
 });
 
+questionSchema.index({ difficulty: 1 });
+questionSchema.index({ topics: 1 });
+questionSchema.index({ difficulty: 1, topics: 1 });
+
 const Question = mongoose.model("Question", questionSchema);
 module.exports = Question;

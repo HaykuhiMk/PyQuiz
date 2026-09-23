@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Questions - PyQuiz Admin</title>
+    <link rel="stylesheet" href="/css/design-system.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/admin_dashboard.css" />
+    <link rel="stylesheet" href="/css/manage_questions.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+  </head>
+  <body>
+    <aside id="sidebar">
+      <h2>Admin Panel</h2>
+      <nav>
+        <ul>
+          <li>
+            <a href="admin_dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+          </li>
+          <li>
+            <a href="manage-questions.html" class="active"
+              ><i class="fas fa-question-circle"></i> Manage Questions</a
+            >
+          </li>
+          <li>
+            <a href="users.html"><i class="fas fa-users"></i> Manage Users</a>
+          </li>
+          <li>
+            <a href="contacts.html"
+              ><i class="fas fa-envelope"></i> Contact Messages</a
+            >
+          </li>
+          <li>
+            <a href="analytics.html"
+              ><i class="fas fa-chart-bar"></i> Analytics</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <button id="logout-btn">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
+    </aside>
+
+    <main id="main-content">
+      <header>
+        <h1>Manage Questions</h1>
+      </header>
+
+      <section id="question-filters">
+        <input type="text" id="filter-topic" placeholder="Filter by topic..." />
+        <select id="filter-difficulty">
+          <option value="">All difficulties</option>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+        <button type="button" id="filter-btn" class="secondary-btn">
+          <i class="fas fa-filter"></i> Filter
+        </button>
+      </section>
+
+      <section id="question-list-section">
+        <table id="question-table">
+          <thead>
+            <tr>
+              <th>Question</th>
+              <th>Difficulty</th>
+              <th>Topics</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="question-list-body">
+            <tr><td colspan="4">Loading...</td></tr>
+          </tbody>
+        </table>
+        <div id="pagination-controls">
+          <button type="button" id="prev-page-btn" class="secondary-btn">
+            <i class="fas fa-chevron-left"></i> Previous
+          </button>
+          <span id="page-label">Page 1</span>
+          <button type="button" id="next-page-btn" class="secondary-btn">
+            Next <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </section>
+
+      <section id="edit-question-section" hidden>
+        <h2>Edit Question</h2>
+        <form id="edit-question-form">
+          <div class="form-group">
+            <label for="edit-question-text"
+              ><i class="fas fa-question"></i> Question:</label
+            >
+            <textarea id="edit-question-text" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-code"
+              ><i class="fas fa-code"></i> Code Snippet (optional):</label
+            >
+            <textarea id="edit-code"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-options"
+              ><i class="fas fa-list"></i> Options (Enter each option on a new
+              line):</label
+            >
+            <textarea id="edit-options" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-answer"
+              ><i class="fas fa-check"></i> Correct Answer:</label
+            >
+            <input type="text" id="edit-answer" required />
+          </div>
+
+          <div class="form-group">
+            <label for="edit-difficulty"
+              ><i class="fas fa-signal"></i> Difficulty:</label
+            >
+            <select id="edit-difficulty" required>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-topics"
+              ><i class="fas fa-tags"></i> Topics (comma-separated):</label
+            >
+            <input type="text" id="edit-topics" required />
+          </div>
+
+          <div class="form-group">
+            <label for="edit-explanation"
+              ><i class="fas fa-info-circle"></i> Explanation:</label
+            >
+            <textarea id="edit-explanation" required></textarea>
+          </div>
+
+          <button type="submit" class="primary-btn">
+            <i class="fas fa-save"></i> Save Changes
+          </button>
+          <button type="button" id="cancel-edit-btn" class="secondary-btn">
+            Cancel
+          </button>
+          <p id="edit-status" class="success-message"></p>
+        </form>
+      </section>
+    </main>
+
+    <script type="module" src="js/manage-questions.js"></script>
+  </body>
+</html>
