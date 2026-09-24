@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>(function(){try{var t=localStorage.getItem('pyquiz-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - PyQuiz</title>
@@ -10,36 +11,59 @@
     <link rel="stylesheet" href="/css/header_footer.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
+<body class="pq-with-sidebar" data-page-title="Dashboard">
     <div id="header-container"></div>
     <div class="account-container">
-        <div class="profile-header reveal">
+        <div class="dashboard-greeting reveal">
+            <div>
+                <h1 class="pq-display">Welcome back, <span id="username">User</span></h1>
+                <p class="pq-body-lg pq-muted">Your Python learning command center</p>
+            </div>
+            <a href="/questions.html" class="primary-btn primary-btn--lg">
+                <i class="fas fa-play"></i>
+                <span>Start a quiz</span>
+            </a>
+        </div>
+
+        <div class="profile-info">
             <div class="profile-avatar" id="profile-avatar">
                 <i class="fas fa-user-circle" id="avatar-icon"></i>
                 <img id="avatar-image" alt="Profile photo" hidden />
             </div>
-            <div class="profile-title">
-                <h2>Welcome, <span id="username">User</span>!</h2>
-                <p class="subtitle">Your Python learning command center</p>
-            </div>
-            <a href="/settings.html" class="secondary-btn" title="Account settings">
+            <div class="info-item"><i class="fas fa-envelope"></i><span id="email">Loading...</span></div>
+            <div class="info-item"><i class="fas fa-crown"></i><span id="rank">Loading...</span></div>
+            <a href="/settings.html" class="secondary-btn info-settings-link" title="Account settings">
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
             </a>
         </div>
 
-        <div class="profile-info">
-            <div class="info-item"><i class="fas fa-envelope"></i><span id="email">Loading...</span></div>
-            <div class="info-item"><i class="fas fa-crown"></i><span id="rank">Loading...</span></div>
-            <div class="info-item" id="daily-status"></div>
+        <div class="dashboard-grid-2 reveal">
+            <div class="card pq-card--ribbon" id="daily-card">
+                <h3 class="card-heading"><i class="fas fa-calendar-day"></i> Daily Challenge</h3>
+                <div id="daily-status">Loading...</div>
+            </div>
+            <div class="card streak-card">
+                <h3 class="card-heading"><i class="fas fa-fire"></i> Streak</h3>
+                <div class="streak-chip"><span class="streak-chip__dot"></span><span id="streak-count">0</span> <small>day streak</small></div>
+                <p class="pq-muted pq-small" id="best-streak-line">Best streak: 0 days</p>
+            </div>
         </div>
 
-        <div class="stats">
-            <div class="stat-card"><div class="stat-content"><h3>Points</h3><p id="points-count">0</p></div></div>
-            <div class="stat-card"><div class="stat-content"><h3>Current Streak</h3><p id="streak-count">0</p></div></div>
-            <div class="stat-card"><div class="stat-content"><h3>Best Streak</h3><p id="best-streak-count">0</p></div></div>
-            <div class="stat-card"><div class="stat-content"><h3>Answered</h3><p id="answered-count">0</p></div></div>
-            <div class="stat-card"><div class="stat-content"><h3>Remaining</h3><p id="unanswered-count">0</p></div></div>
+        <div class="pq-stats reveal">
+            <div class="pq-stat">
+                <span class="pq-stat__l">Points</span>
+                <span class="pq-stat__v" id="points-count">0</span>
+            </div>
+            <div class="pq-stat">
+                <span class="pq-stat__l">Accuracy</span>
+                <span class="pq-stat__v" id="accuracy-value">—</span>
+            </div>
+            <div class="pq-stat">
+                <span class="pq-stat__l">Streak</span>
+                <span class="pq-stat__v"><span class="streak-chip__dot"></span><span id="streak-stat-value">0</span> <small>days</small></span>
+                <span class="pq-stat__d" id="streak-stat-desc"></span>
+            </div>
         </div>
 
         <div class="progress-section card">
@@ -49,6 +73,17 @@
             </div>
             <div class="progress-bar"><div id="progress-fill"></div></div>
             <p class="progress-fraction"><span id="progress-completed">0</span> / <span id="progress-total">0</span> questions</p>
+        </div>
+
+        <div class="dashboard-grid-2">
+            <div class="pq-stack" id="weak-topics-section" hidden>
+                <h3 class="card-heading"><i class="fas fa-bullseye"></i> Needs practice</h3>
+                <div class="fold-card-grid" id="weak-topics-grid"></div>
+            </div>
+            <div class="card" id="mastery-card">
+                <h3 class="card-heading"><i class="fas fa-layer-group"></i> Topic Mastery</h3>
+                <div id="topic-mastery-list"></div>
+            </div>
         </div>
 
         <div class="achievements card">
@@ -73,6 +108,6 @@
     </div>
     <div id="footer-container"></div>
     <script type="module" src="/js/account.js"></script>
-    <script type="module" src="/js/load_header_footer.js"></script>
+    <script type="module" src="/js/load_sidebar.js"></script>
 </body>
 </html>

@@ -1,7 +1,10 @@
 import { api, isLoggedIn } from "./api.js";
-import { celebrateQuizComplete, initRipples } from "./ui.js";
+import { celebrateQuizComplete, initRipples, countUp } from "./ui.js";
 
 const BLITZ_SECONDS = 45;
+
+const ICON_CHECK = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+const ICON_CROSS = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
 document.addEventListener("DOMContentLoaded", () => {
     const topicSelectionContainer = document.getElementById("topic-selection");
@@ -25,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const giveUpBtn = document.getElementById("give-up-btn");
     const guestWarning = document.getElementById("guest-warning");
     const backToAccountBtn = document.getElementById("back-to-account-btn");
+    const finishBtn = document.getElementById("finish-btn");
 
     let allTopics = [];
     let currentQuestion = null;
@@ -35,7 +39,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let difficulty = "";
     let timerInterval = null;
     let questionStartedAt = Date.now();
-    let session = { correct: 0, wrong: 0, points: 0, streak: 0, answered: 0 };
+    const emptySession = () => ({ correct: 0, wrong: 0, points: 0, streak: 0, bestStreak: 0, answered: 0, history: [] });
+    let session = emptySession();
     const isGuest = getCookie("guestMode") === "true";
     const answeredQuestions = isGuest ? null : new Set();
 
@@ -192,8 +197,9 @@ document.addEventListener("DOMContentLoaded", () => {
         topicSelectionContainer.style.display = "none";
         quizContainer.style.display = "block";
         document.getElementById("hud-mode").textContent = quizMode[0].toUpperCase() + quizMode.slice(1);
-        document.getElementById("timer-wrap").style.display = quizMode === "blitz" ? "block" : "none";
-        session = { correct: 0, wrong: 0, points: 0, streak: 0, answered: 0 };
+        document.getElementById("timer-wrap").style.display = quizMode === "blitz" ? "grid" : "none";
+        session = emptySession();
+        finishBtn.style.display = "none";
         fetchQuestion();
     };
 
@@ -228,25 +234,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     : '';
 
                 resultContainer.innerHTML = `
-                    <div style="text-align: center; padding: 20px;">
-                        <h3>Congratulations! 🎉</h3>
-                        <p>You've completed all available questions for ${selectedTopicsText}!</p>
-                        ${progressText}
-                        <div style="margin-top: 20px;">
-                            <button onclick="window.location.reload()" 
-                                    style="margin: 10px; padding: 10px 20px; 
-                                           background: #4CAF50; color: white; 
-                                           border: none; border-radius: 4px; 
-                                           cursor: pointer;">
-                                Choose New Topics
-                            </button>
-                            <button onclick="window.location.href='/account.html'" 
-                                    style="margin: 10px; padding: 10px 20px; 
-                                           background: #2196F3; color: white; 
-                                           border: none; border-radius: 4px; 
-                                           cursor: pointer;">
-                                View Progress
-                            </button>
+                    <div class="quiz-summary">
+                        <h2>All caught up!</h2>
+                        <p>You've completed all available questions for ${selectedTopicsText}.</p>
+                        <p>${progressText}</p>
+                        <div class="action-row">
+                            <button type="button" onclick="window.location.reload()" class="primary-btn">Choose New Topics</button>
+                            <button type="button" onclick="window.location.href='/account.html'" class="secondary-btn">View Progress</button>
                         </div>
                     </div>
                 `;
@@ -288,12 +282,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function showExplanation() {
         if (currentQuestion.explanation) {
-            explanationContainer.innerText = currentQuestion.explanation;
-            explanationContainer.style.display = "block";
-            explanationContainer.classList.add("show");
+            explanationContainer.innerHTML =
+                '<span class="pq-disc-mark" aria-hidden="true"></span><div><h4>Explanation</h4><p></p></div>';
+            explanationContainer.querySelector("p").textContent = currentQuestion.explanation;
+            explanationContainer.className = "pq-explain show";
+            explanationContainer.style.display = "grid";
         } else {
             explanationContainer.style.display = "none";
         }
+    }
+
+    function renderRibbon() {
+        const positionEl = document.getElementById("quiz-position");
+        const correctCountEl = document.getElementById("quiz-correct-count");
+        const ribbon = document.getElementById("quiz-ribbon");
+
+        positionEl.textContent = `Question ${session.answered + 1}`;
+        correctCountEl.textContent = `${session.correct} correct`;
+
+        const recentHistory = session.history.slice(-9);
+        ribbon.innerHTML =
+            recentHistory.map((outcome) => `<i class="${outcome}"></i>`).join("") + '<i class="now"></i>';
     }
 
     function displayQuestion(question) {
@@ -309,20 +318,70 @@ document.addEventListener("DOMContentLoaded", () => {
 
         Prism.highlightAll();
 
+        renderRibbon();
+
         optionsContainer.innerHTML = "";
         question.options.forEach((option, index) => {
+            const li = document.createElement("li");
             const btn = document.createElement("button");
             btn.type = "button";
-            btn.className = "quiz-option";
-            btn.textContent = option;
+            btn.className = "pq-answer";
+            btn.dataset.optionText = option;
+            btn.innerHTML = `<span class="pq-answer__key">${String.fromCharCode(65 + index)}</span><span>${escapeHTML(option)}</span>`;
             btn.addEventListener("click", () => {
-                optionsContainer.querySelectorAll(".quiz-option").forEach((el) => el.classList.remove("selected"));
-                btn.classList.add("selected");
+                optionsContainer.querySelectorAll(".pq-answer").forEach((el) => {
+                    el.classList.remove("is-selected", "is-wrong");
+                });
+                btn.classList.add("is-selected");
                 selectedOption = index;
             });
-            optionsContainer.appendChild(btn);
+            li.appendChild(btn);
+            optionsContainer.appendChild(li);
         });
         initRipples();
+    }
+
+    function lockOptions() {
+        optionsContainer.querySelectorAll(".pq-answer").forEach((btn) => {
+            btn.disabled = true;
+        });
+    }
+
+    function dimOtherOptions(...keepIndexes) {
+        optionsContainer.querySelectorAll(".pq-answer").forEach((btn, index) => {
+            if (!keepIndexes.includes(index)) btn.classList.add("is-dim");
+        });
+    }
+
+    function markAnswerState(index, state, tagText) {
+        const btn = optionsContainer.querySelectorAll(".pq-answer")[index];
+        if (!btn) return;
+        btn.classList.remove("is-selected");
+        btn.classList.add(state);
+        const keyEl = btn.querySelector(".pq-answer__key");
+        if (keyEl) keyEl.innerHTML = state === "is-correct" ? ICON_CHECK : ICON_CROSS;
+        if (tagText) {
+            const tag = document.createElement("span");
+            tag.className = "pq-answer__tag";
+            tag.textContent = tagText;
+            btn.appendChild(tag);
+        }
+    }
+
+    function normalizeAnswerText(str) {
+        return (str ?? "").trim().replace(/\s+/g, " ");
+    }
+
+    function findOptionIndexByText(text) {
+        const target = normalizeAnswerText(text);
+        const buttons = Array.from(optionsContainer.querySelectorAll(".pq-answer"));
+        return buttons.findIndex((btn) => normalizeAnswerText(btn.dataset.optionText) === target);
+    }
+
+    function markCorrectAnswerByText(correctText) {
+        if (!correctText) return;
+        const index = findOptionIndexByText(correctText);
+        if (index !== -1) markAnswerState(index, "is-correct", "Correct answer");
     }
 
     submitBtn.onclick = async () => {
@@ -348,15 +407,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (isCorrect) {
             currentQuestion.explanation = checkResult.explanation;
-            optionsContainer.querySelectorAll(".quiz-option")[selectedOption]?.classList.add("correct");
+            markAnswerState(selectedOption, "is-correct", "Correct answer");
+            dimOtherOptions(selectedOption);
+            lockOptions();
             await handleAnswerResult(true, selectedOption);
         } else if (quizMode === "survival") {
-            optionsContainer.querySelectorAll(".quiz-option")[selectedOption]?.classList.add("incorrect");
+            markAnswerState(selectedOption, "is-wrong", "Your answer");
+            dimOtherOptions(selectedOption);
+            lockOptions();
             await handleAnswerResult(false, selectedOption);
-            showQuizSummary("Survival run ended.");
+            showQuizSummary("Survival run ended");
         } else {
             attempts++;
-            resultContainer.innerText = "❌ Wrong! Try again.";
+            optionsContainer.querySelectorAll(".pq-answer")[selectedOption]?.classList.add("is-wrong");
+            resultContainer.innerText = "Wrong — try again.";
             submitBtn.disabled = false;
             if (attempts >= 3) giveUpBtn.style.display = "block";
             if (quizMode === "blitz") startBlitzTimer();
@@ -377,13 +441,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const correctAnswer = checkResult.correctAnswer ?? "N/A";
         resultContainer.innerHTML = `<strong>Correct Answer:</strong> ${escapeHTML(correctAnswer)}`;
+        if (selectedOption !== null) {
+            markAnswerState(selectedOption, "is-wrong", "Your answer");
+        }
+        markCorrectAnswerByText(correctAnswer);
+        const correctIndex = findOptionIndexByText(correctAnswer);
+        dimOtherOptions(selectedOption, correctIndex);
+        lockOptions();
         currentQuestion.explanation = checkResult.explanation;
         showExplanation();
         await handleAnswerResult(false, null);
-        if (quizMode === "survival") showQuizSummary("Survival run ended.");
+        if (quizMode === "survival") showQuizSummary("Survival run ended");
     };
 
     nextBtn.onclick = fetchQuestion;
+
+    finishBtn.onclick = () => showQuizSummary("Session complete");
 
     function resetUI() {
         resultContainer.innerText = "";
@@ -400,10 +473,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function handleAnswerResult(isCorrect, selectedIndex) {
         session.answered += 1;
+        session.history.push(isCorrect ? "r" : "w");
         if (isCorrect) {
             session.correct += 1;
             session.streak += 1;
-            resultContainer.innerText = "✅ Correct!";
+            session.bestStreak = Math.max(session.bestStreak, session.streak);
+            resultContainer.innerText = "Correct!";
             submitBtn.disabled = true;
             showExplanation();
         } else {
@@ -411,6 +486,11 @@ document.addEventListener("DOMContentLoaded", () => {
             session.streak = 0;
         }
         updateHud();
+        renderRibbon();
+
+        if (quizMode !== "survival" && session.answered > 0) {
+            finishBtn.style.display = "inline-flex";
+        }
 
         if (!isGuest) {
             try {
@@ -440,41 +520,104 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("hud-points").textContent = session.points;
     }
 
+    function resultsVerdict(accuracy) {
+        if (accuracy >= 80) return "Nicely done";
+        if (accuracy >= 50) return "Good effort";
+        return "Keep practicing";
+    }
+
     function showQuizSummary(reason = "Session complete") {
         clearBlitzTimer();
         const accuracy = session.answered ? Math.round((session.correct / session.answered) * 100) : 0;
+        const modeLabel = quizMode.charAt(0).toUpperCase() + quizMode.slice(1);
         celebrateQuizComplete();
+
+        const statsHtml = `
+            <div class="pq-stat"><span class="pq-stat__l">Accuracy</span><span class="pq-stat__v">${accuracy}%</span></div>
+            <div class="pq-stat"><span class="pq-stat__l">Best streak</span><span class="pq-stat__v">${session.bestStreak}</span></div>
+            ${isGuest ? "" : '<div class="pq-stat"><span class="pq-stat__l">Total points</span><span class="pq-stat__v" id="results-xp">0</span></div>'}`;
+
         resultContainer.innerHTML = `
-            <div class="quiz-summary">
-                <div class="score-ring" style="--score-pct: ${accuracy}%"><span>${accuracy}%</span></div>
-                <h2>${reason}</h2>
-                <p>Score: <strong>${session.correct} / ${session.answered}</strong></p>
-                <p>Total points: <strong>${session.points}</strong></p>
-                <div class="action-row">
-                    <button type="button" onclick="window.location.reload()" class="primary-btn">Play Again</button>
-                    <button type="button" onclick="window.location.href='/account.html'" class="secondary-btn">Dashboard</button>
-                    <button type="button" onclick="window.location.href='/leaderboard.html'" class="secondary-btn">Leaderboard</button>
+            <div class="pq-results">
+                <div class="pq-score-disc">
+                    <span class="pq-small">Score</span>
+                    <b id="results-score">0</b>
+                    <span class="pq-results__of">of ${session.answered}</span>
+                </div>
+                <div class="pq-stack pq-results__meta">
+                    <span class="badge badge-brand">${modeLabel} mode</span>
+                    <h1 class="pq-display-xl">${resultsVerdict(accuracy)}</h1>
+                    <p class="pq-body-lg pq-muted">${reason} — you answered ${session.correct} out of ${session.answered} questions correctly.</p>
+                    <div class="pq-stats" style="grid-template-columns: repeat(${isGuest ? 2 : 3}, 1fr)">${statsHtml}</div>
+                    <div>
+                        <div class="pq-ribbon-label"><span>Your answers</span><span>${session.correct} correct</span></div>
+                        <div class="pq-ribbon" id="results-ribbon"></div>
+                    </div>
+                    <div class="pq-row action-row">
+                        <button type="button" onclick="window.location.reload()" class="primary-btn">Play Again</button>
+                        <button type="button" onclick="window.location.href='/account.html'" class="secondary-btn">Dashboard</button>
+                        <button type="button" onclick="window.location.href='/leaderboard.html'" class="secondary-btn">Leaderboard</button>
+                    </div>
                 </div>
             </div>`;
+
         submitBtn.style.display = "none";
         nextBtn.style.display = "none";
         giveUpBtn.style.display = "none";
+        finishBtn.style.display = "none";
         initRipples();
+        animateResults(accuracy);
+    }
+
+    function animateResults(accuracy) {
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const scoreEl = document.getElementById("results-score");
+        const xpEl = document.getElementById("results-xp");
+        const ribbon = document.getElementById("results-ribbon");
+
+        countUp(scoreEl, session.correct, 800);
+        if (xpEl) countUp(xpEl, session.points, 1000);
+
+        const cells = session.history.map(() => document.createElement("i"));
+        cells.forEach((cell) => ribbon.appendChild(cell));
+
+        if (prefersReducedMotion) {
+            cells.forEach((cell, index) => (cell.className = session.history[index]));
+            return;
+        }
+
+        session.history.forEach((outcome, index) => {
+            setTimeout(() => {
+                cells[index].className = outcome;
+            }, 200 + index * 120);
+        });
+    }
+
+    function formatTimer(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${String(s).padStart(2, "0")}`;
     }
 
     function startBlitzTimer() {
         clearBlitzTimer();
         let remaining = BLITZ_SECONDS;
-        const fill = document.getElementById("timer-fill");
+        const ring = document.getElementById("timer-wrap");
         const label = document.getElementById("timer-label");
+
+        const render = () => {
+            ring.style.setProperty("--p", remaining / BLITZ_SECONDS);
+            ring.classList.toggle("is-low", remaining <= 10);
+            label.textContent = formatTimer(remaining);
+        };
+        render();
+
         timerInterval = setInterval(() => {
             remaining -= 1;
-            const pct = (remaining / BLITZ_SECONDS) * 100;
-            fill.style.width = `${pct}%`;
-            label.textContent = `${remaining}s`;
+            render();
             if (remaining <= 0) {
                 clearBlitzTimer();
-                resultContainer.innerText = "⏰ Time's up!";
+                resultContainer.innerText = "Time's up!";
                 handleAnswerResult(false, null).then(() => fetchQuestion());
             }
         }, 1000);

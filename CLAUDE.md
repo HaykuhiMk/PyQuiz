@@ -1,9 +1,11 @@
-The artifact URL is accessible, but it is an empty Design System artifact and does not contain the actual PyQuiz design I want to implement.
+Do NOT extract the existing PyQuiz design from the codebase.
 
-Do not start designing or implementing the frontend yet.
+The artifact at this URL is supposed to contain the NEW PyQuiz design that I created separately:
 
-Do not work on CI, BullMQ, Swagger, or other cleanup tasks either.
+https://claude.ai/artifact/92nmAar5UjGy4zBEtqjCFD
 
-Keep the current PyQuiz code unchanged.
+I want the artifact itself to be the visual reference for a NEW frontend design, not a documentation of the current design.
 
-I will provide the actual visual design/reference separately. Once I provide it, we will use that as the source of truth for the frontend redesign.
+Please inspect the artifact one more time and tell me exactly what content/files are available inside it.
+
+If the artifact is genuinely empty from your perspective, do not create anything or modify the PyQuiz code. Just tell me that you cannot access the actual design content.

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script>(function(){try{var t=localStorage.getItem('pyquiz-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PyQuiz - Quiz</title>
@@ -8,10 +9,9 @@
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/quiz-page.css" />
     <link rel="stylesheet" href="/css/header_footer.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/PrismJS/prism-themes/themes/prism-one-dark.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   </head>
-  <body>
+  <body class="pq-with-sidebar" data-page-title="Quiz">
     <div id="header-container"></div>
 
     <div id="mode-selection" class="card reveal">
@@ -91,31 +91,51 @@
         <div><strong>Streak</strong><div id="hud-streak">0</div></div>
         <div><strong>Points</strong><div id="hud-points">0</div></div>
       </div>
-      <div id="timer-wrap" style="display: none;">
-        <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width: 100%"></div></div>
-        <p id="timer-label">45s</p>
-      </div>
-      <h1>PyQuiz</h1>
+
       <div id="guest-warning" style="display: none;">
         You are in Guest Mode. Your progress will not be saved.
       </div>
-      <div id="question"></div>
-      <p id="difficulty"><strong>Difficulty:</strong> <span></span></p>
-      <p id="topics"><strong>Topics:</strong> <span></span></p>
-      <pre><code id="question-code" class="language-python"></code></pre>
-      <div id="options" class="reveal-stagger"></div>
-      <div id="result"></div>
-      <p id="explanation" style="display: none"></p>
 
-      <div id="button-container">
-        <button id="submit-btn" class="primary-btn" type="button">Submit</button>
-        <button id="next-btn" class="secondary-btn" type="button">Next Question</button>
-        <button id="give-up-btn" class="secondary-btn" type="button" style="display: none">
-          Show Answer
-        </button>
+      <div class="pq-ribbon-label">
+        <span id="quiz-position">Question 1</span>
+        <span id="quiz-correct-count">0 correct</span>
+      </div>
+      <div class="pq-ribbon" id="quiz-ribbon"></div>
+
+      <div class="pq-question">
+        <div class="pq-question__in">
+          <div class="pq-question__meta">
+            <p id="difficulty"><strong>Difficulty:</strong> <span></span></p>
+            <p id="topics"><strong>Topics:</strong> <span></span></p>
+            <div id="timer-wrap" class="pq-timer" style="display: none">
+              <svg viewBox="0 0 44 44"><circle class="track" cx="22" cy="22" r="18" /><circle class="bar" cx="22" cy="22" r="18" /></svg>
+              <span id="timer-label">0:45</span>
+            </div>
+          </div>
+
+          <h2 id="question" class="pq-title"></h2>
+
+          <pre class="pq-code"><code id="question-code" class="language-python"></code></pre>
+
+          <ol id="options" class="pq-answers"></ol>
+
+          <div id="result"></div>
+          <div id="explanation" style="display: none"></div>
+
+          <div id="button-container" class="pq-question__foot">
+            <button id="submit-btn" class="primary-btn" type="button">Submit</button>
+            <button id="next-btn" class="secondary-btn" type="button">Next Question</button>
+            <button id="give-up-btn" class="secondary-btn" type="button" style="display: none">
+              Show Answer
+            </button>
+          </div>
+        </div>
       </div>
 
       <div id="back-container">
+        <button id="finish-btn" class="secondary-btn" type="button" style="display: none">
+          Finish &amp; see results
+        </button>
         <button id="back-to-account-btn" class="secondary-btn" type="button">
           Back to Dashboard
         </button>
@@ -127,6 +147,6 @@
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/prism.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/components/prism-python.min.js"></script>
     <script type="module" src="/js/questions.js"></script>
-    <script type="module" src="/js/load_header_footer.js"></script>
+    <script type="module" src="/js/load_sidebar.js"></script>
   </body>
 </html>

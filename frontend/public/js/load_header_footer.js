@@ -1,5 +1,6 @@
 import { initializeHeaderLogic } from './header_logic.js';
 import { initUI } from './ui.js';
+import { initThemeToggle } from './theme.js';
 
 document.addEventListener("DOMContentLoaded", async function () {
     try {
@@ -19,6 +20,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         // Initialize header logic after content is loaded
         initializeHeaderLogic();
         initUI();
+        initThemeToggle();
 
     } catch (error) {
         console.error('Error loading header:', error);

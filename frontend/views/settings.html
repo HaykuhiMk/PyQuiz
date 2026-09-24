@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>(function(){try{var t=localStorage.getItem('pyquiz-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - PyQuiz</title>
@@ -10,7 +11,7 @@
     <link rel="stylesheet" href="/css/settings.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
+<body class="pq-with-sidebar" data-page-title="Settings">
     <div id="header-container"></div>
     <main class="settings-page reveal">
         <div class="settings-page-header">
@@ -94,6 +95,6 @@
     </main>
     <div id="footer-container"></div>
     <script type="module" src="/js/settings.js"></script>
-    <script type="module" src="/js/load_header_footer.js"></script>
+    <script type="module" src="/js/load_sidebar.js"></script>
 </body>
 </html>

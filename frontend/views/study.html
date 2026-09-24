@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>(function(){try{var t=localStorage.getItem('pyquiz-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Study Mode - PyQuiz</title>
@@ -10,7 +11,7 @@
   <link rel="stylesheet" href="/css/study.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/PrismJS/prism-themes/themes/prism-one-dark.css" />
 </head>
-<body>
+<body class="pq-with-sidebar" data-page-title="Study">
   <div id="header-container"></div>
   <main class="page-shell reveal">
     <h1 class="page-title">Study Mode</h1>
@@ -38,6 +39,6 @@
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/prism.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/components/prism-python.min.js"></script>
   <script type="module" src="/js/study.js"></script>
-  <script type="module" src="/js/load_header_footer.js"></script>
+  <script type="module" src="/js/load_sidebar.js"></script>
 </body>
 </html>

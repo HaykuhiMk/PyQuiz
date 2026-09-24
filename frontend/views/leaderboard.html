@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>(function(){try{var t=localStorage.getItem('pyquiz-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Leaderboard - PyQuiz</title>
@@ -10,7 +11,7 @@
   <link rel="stylesheet" href="/css/leaderboard.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
-<body>
+<body class="pq-with-sidebar" data-page-title="Leaderboard">
   <div id="header-container"></div>
   <main class="page-shell reveal">
     <h1 class="page-title"><i class="fas fa-trophy"></i> Global Leaderboard</h1>
@@ -21,6 +22,6 @@
   </main>
   <div id="footer-container"></div>
   <script type="module" src="/js/leaderboard.js"></script>
-  <script type="module" src="/js/load_header_footer.js"></script>
+  <script type="module" src="/js/load_sidebar.js"></script>
 </body>
 </html>

@@ -1,54 +1,80 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..800;1,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 @import url('./motion.css');
 
-/* ─── Design tokens ─── */
+/* ─── PyQuiz design tokens ───
+   Source of truth: the PyQuiz design-system artifact. Both themes are
+   defined on :root (dark, matching the current/default identity) and
+   overridden under [data-theme="light"]; theme.js sets that attribute
+   before first paint. Every pre-existing variable name below is kept
+   as an alias onto the new tokens so no other file needs to change. */
 :root {
-  --bg-primary: #0b1020;
-  --bg-secondary: #12192b;
-  --bg-elevated: #182236;
-  --bg-hover: #1e2a42;
+  /* Logo-derived brand palette (identical in both themes) */
+  --fold-light: #96b6dd;
+  --brand: #2d6fbc;
+  --on-brand: #ffffff;
+  --sun: #f7d35b;
 
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  /* Dark theme (default) */
+  --ground: #0e1726;
+  --surface: #16233a;
+  --surface-sunk: #0a1220;
+  --line: #2a3b57;
+  --line-strong: #6a82a8;
+  --ink: #eef3fa;
+  --ink-muted: #a6b5cc;
+  --fold-deep: #6fa0dc;
+  --fold-shadow: #0a1220;
+  --brand-soft: #162b4a;
+  --sun-soft: #3a2e10;
+  --sun-ink: #f7d35b;
+  --coral: #f07a70;
+  --coral-soft: #2a1c1c;
+  --focus: #f7d35b;
+  --shadow-lift: 0 12px 32px -12px rgba(0, 0, 0, 0.6);
+  --shadow-crease: inset 0 -3px 0 rgba(0, 0, 0, 0.45);
 
-  --accent-blue: #3776ab;
-  --accent-yellow: #ffd43b;
-  --accent-gradient: linear-gradient(135deg, #3776ab 0%, #4a8fc4 50%, #ffd43b 100%);
-  --accent-glow: 0 0 24px rgba(55, 118, 171, 0.35);
+  --accent-gradient: linear-gradient(135deg, var(--brand) 0%, var(--fold-light) 50%, var(--sun) 100%);
+  --accent-glow: 0 0 24px rgba(45, 111, 188, 0.35);
+  --fold-grad-v: linear-gradient(180deg, var(--fold-light) 0%, var(--brand) 55%, var(--fold-deep) 100%);
+  --fold-grad-h: linear-gradient(90deg, var(--fold-light) 0%, var(--brand) 55%, var(--fold-deep) 100%);
 
   --success: #22c55e;
-  --error: #ef4444;
-  --warning: #f59e0b;
+  --error: var(--coral);
+  --warning: var(--sun);
 
-  --border-subtle: rgba(148, 163, 184, 0.12);
-  --border-default: rgba(148, 163, 184, 0.2);
-  --border-focus: rgba(55, 118, 171, 0.6);
+  --radius-none: 0;
+  --radius-xs: 2px;
+  --radius-disc: 50%;
+  --chamfer-sm: 6px;
+  --chamfer-md: 10px;
+  --chamfer-lg: 18px;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.32);
-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.4);
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.28);
-
+  /* Kept for existing rounded-corner components not yet migrated to chamfer */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
   --radius-full: 9999px;
 
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
   --space-10: 2.5rem;
   --space-12: 3rem;
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  --font-sans: Archivo, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, 'Fira Code', Consolas, monospace;
 
+  --text-display-xl: 56px;
+  --text-display: 40px;
+  --text-title: 24px;
+  --text-heading: 18px;
+  --text-body-lg: 17px;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
@@ -64,15 +90,39 @@
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-fold: cubic-bezier(0.7, 0, 0.2, 1);
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
   --duration-fast: 150ms;
   --duration-normal: 250ms;
   --duration-slow: 400ms;
+  --dur-1: 120ms;
+  --dur-2: 240ms;
+  --dur-3: 480ms;
 
   --max-width: 1120px;
   --nav-height: 64px;
   --content-width: 65ch;
 
   /* Legacy aliases for existing JS/CSS */
+  --bg-primary: var(--ground);
+  --bg-secondary: var(--surface);
+  --bg-elevated: var(--surface);
+  --bg-hover: var(--brand-soft);
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-muted);
+  --text-muted: var(--ink-muted);
+  --accent-blue: var(--brand);
+  /* Every existing use of --accent-yellow is as literal text color, where
+     raw --sun fails contrast on light surfaces; --sun-ink is the artifact's
+     text-safe variant of the same sun family. */
+  --accent-yellow: var(--sun-ink);
+  --border-subtle: var(--line);
+  --border-default: var(--line);
+  --border-focus: var(--focus);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.32);
+  --shadow-lg: var(--shadow-lift);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.28);
   --python-blue: var(--accent-blue);
   --python-yellow: var(--accent-yellow);
   --primary-color: var(--accent-blue);
@@ -86,6 +136,32 @@
   --gradient: var(--accent-gradient);
   --radius: var(--radius-lg);
   --shadow: var(--shadow-card);
+}
+
+:root[data-theme='light'] {
+  --ground: #f3f6fa;
+  --surface: #ffffff;
+  --surface-sunk: #e8eef6;
+  --line: #d3ddea;
+  --line-strong: #7d90ab;
+  --ink: #13233f;
+  --ink-muted: #4d5e78;
+  --fold-deep: #2a5a93;
+  --fold-shadow: #263a56;
+  --brand-soft: #e3ecf8;
+  --sun-soft: #fdf3cf;
+  --sun-ink: #8a5a00;
+  --coral: #c8382f;
+  --coral-soft: #fbe5e2;
+  --focus: #1e4e7e;
+  --shadow-lift: 0 12px 32px -12px rgba(19, 35, 63, 0.28);
+  --shadow-crease: inset 0 -3px 0 rgba(38, 58, 86, 0.35);
+
+  --bg-hover: var(--brand-soft);
+  --accent-glow: 0 0 24px rgba(45, 111, 188, 0.18);
+  --shadow-sm: 0 1px 2px rgba(19, 35, 63, 0.1);
+  --shadow-md: 0 8px 24px rgba(19, 35, 63, 0.12);
+  --shadow-card: 0 4px 24px rgba(19, 35, 63, 0.1);
 }
 
 /* ─── Reset & base ─── */
@@ -116,8 +192,8 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(55, 118, 171, 0.15), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255, 212, 59, 0.06), transparent);
+    radial-gradient(ellipse 80% 50% at 50% -20%, color-mix(in srgb, var(--brand) 15%, transparent), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, color-mix(in srgb, var(--sun) 6%, transparent), transparent);
   pointer-events: none;
   z-index: -1;
 }
@@ -147,7 +223,7 @@ a {
 }
 
 a:hover {
-  color: var(--accent-yellow);
+  color: var(--fold-deep);
 }
 
 img {
@@ -155,8 +231,15 @@ img {
   height: auto;
 }
 
+/* Belt-and-suspenders: a class setting `display` on the same element (e.g.
+   .pq-stack{display:flex}) otherwise wins over the UA default [hidden]
+   style at equal specificity, silently un-hiding the element. */
+[hidden] {
+  display: none !important;
+}
+
 ::selection {
-  background: rgba(55, 118, 171, 0.35);
+  background: color-mix(in srgb, var(--brand) 35%, transparent);
   color: var(--text-primary);
 }
 
@@ -225,5 +308,70 @@ img {
   .page-shell {
     padding-left: var(--space-4);
     padding-right: var(--space-4);
+  }
+}
+
+/* ─── Typography/layout utilities (artifact type scale) ─── */
+.pq-display-xl {
+  font-size: var(--text-display-xl);
+  line-height: 56px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.pq-display {
+  font-size: var(--text-display);
+  line-height: 44px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.pq-heading {
+  font-size: var(--text-heading);
+  line-height: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.pq-body-lg {
+  font-size: var(--text-body-lg);
+  line-height: 26px;
+}
+
+.pq-muted {
+  color: var(--ink-muted);
+}
+
+.pq-small {
+  font-size: var(--text-sm);
+  line-height: 20px;
+}
+
+.pq-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pq-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+@media (max-width: 639px) {
+  .pq-display-xl {
+    font-size: 40px;
+    line-height: 42px;
+  }
+
+  .pq-display {
+    font-size: 30px;
+    line-height: 34px;
   }
 }

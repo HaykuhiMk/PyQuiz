@@ -40,7 +40,7 @@ function addRipple(event) {
 }
 
 const RIPPLE_SELECTOR =
-  '.primary-btn, .secondary-btn, .mode-btn, .action-btn, .quiz-option, #start-quiz-btn, .buttons button';
+  '.primary-btn, .secondary-btn, .mode-btn, .action-btn, #start-quiz-btn, .buttons button';
 
 export function initRipples() {
   document.querySelectorAll(RIPPLE_SELECTOR).forEach((el) => {
@@ -69,6 +69,23 @@ export function initReveal() {
     }
     observer.observe(el);
   });
+}
+
+export function countUp(el, to, ms = 900) {
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReducedMotion) {
+    el.textContent = Math.round(to).toLocaleString('en-US');
+    return;
+  }
+
+  const t0 = performance.now();
+  function step(t) {
+    const k = Math.min(1, (t - t0) / ms);
+    const eased = 1 - Math.pow(1 - k, 3);
+    el.textContent = Math.round(to * eased).toLocaleString('en-US');
+    if (k < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
 
 export function setActiveNav() {
@@ -125,6 +142,15 @@ export function celebrateQuizComplete() {
 
 export function initUI() {
   document.body.classList.add('page-enter');
+  // The animation's fill-mode holds its final `transform` on <body> after it
+  // finishes, which turns <body> into the containing block for every
+  // position:fixed descendant (headers, the sidebar, drawers, toasts...)
+  // instead of the viewport. Drop the class once the entrance is done.
+  document.body.addEventListener(
+    'animationend',
+    () => document.body.classList.remove('page-enter'),
+    { once: true }
+  );
   initRipples();
   initReveal();
   setActiveNav();

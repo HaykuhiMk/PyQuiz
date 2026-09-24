@@ -33,6 +33,11 @@ function initializeHeaderLogic() {
             }
         });
     }
+
+    const authActions = document.getElementById("topbar-auth-actions");
+    if (authActions) {
+        authActions.hidden = isUserLoggedIn();
+    }
 }
 
 // Initialize when the script loads
