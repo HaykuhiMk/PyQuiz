@@ -1,0 +1,254 @@
+/* Public pages (landing, about, features, contact, auth) — shared layout
+   on top of design-system.css + components.css. Page files only add what
+   is specific to them. */
+
+.pq-public {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: calc(var(--nav-height) + var(--space-7)) var(--space-6) var(--space-8);
+}
+
+.pq-wide {
+  font-stretch: 125%;
+}
+
+/* Section rhythm: a title row with an optional one-line lead, then content */
+.pq-section + .pq-section {
+  margin-top: var(--space-8);
+}
+
+.pq-section__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.pq-section__head h2 {
+  margin: 0;
+  font-size: var(--text-title);
+  line-height: 30px;
+  font-weight: 750;
+  font-stretch: 125%;
+  letter-spacing: -0.01em;
+}
+
+.pq-section__head p {
+  margin: 0;
+}
+
+/* Grid of equal cards */
+.pq-grid {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+}
+
+.pq-grid--2 {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+}
+
+.pq-grid > .card {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.pq-grid > .card h3 {
+  margin: 0;
+  font-size: var(--text-heading);
+  line-height: 24px;
+  font-weight: 700;
+}
+
+.pq-grid > .card p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 24px;
+}
+
+/* Square icon tile for feature cards (icons from js/icons.js) */
+.pq-tile-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--brand-soft);
+  color: var(--fold-deep);
+}
+
+.pq-card-link {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fold-deep);
+  text-decoration: none;
+}
+
+.pq-card-link:hover {
+  color: var(--ink);
+}
+
+.pq-card-link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Closing call-to-action band */
+.pq-cta-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  background-image: var(--fold-grad-h);
+  background-size: 100% 6px;
+  background-repeat: no-repeat;
+}
+
+.pq-cta-band h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-title);
+  line-height: 30px;
+  font-weight: 750;
+  font-stretch: 125%;
+}
+
+.pq-cta-band p {
+  margin: 0;
+}
+
+/* ─── Auth / single-form pages ─── */
+.pq-auth {
+  flex: 1 0 auto;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(var(--nav-height) + var(--space-7)) var(--space-4) var(--space-7);
+}
+
+.pq-auth__card {
+  width: 100%;
+  max-width: 440px;
+  padding: var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  background-image: var(--fold-grad-h);
+  background-size: 100% 6px;
+  background-repeat: no-repeat;
+}
+
+.pq-auth__card--wide {
+  max-width: 520px;
+}
+
+.pq-auth__head {
+  margin-bottom: var(--space-5);
+}
+
+.pq-auth__head h1 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-title);
+  line-height: 30px;
+  font-weight: 750;
+  font-stretch: 125%;
+}
+
+.pq-auth__head p {
+  margin: 0;
+}
+
+.pq-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pq-form .pq-field + .pq-field {
+  margin-top: 0;
+}
+
+.pq-form__submit {
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--space-2);
+}
+
+.pq-auth__alt {
+  margin: var(--space-5) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--ink-muted);
+  max-width: none;
+}
+
+.pq-auth__alt a {
+  font-weight: 600;
+  color: var(--fold-deep);
+}
+
+/* Password field with a show/hide button inside the input */
+.pq-password {
+  position: relative;
+}
+
+.pq-field .pq-password .pq-input {
+  padding-right: 48px;
+}
+
+.pq-password__toggle {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 40px;
+  height: 40px;
+}
+
+/* The form message line; JS writes errors into it */
+.pq-form-message {
+  margin: 0;
+  max-width: none;
+}
+
+.pq-form-message:empty {
+  display: none;
+}
+
+@media (max-width: 639px) {
+  .pq-public {
+    padding: calc(var(--nav-height) + var(--space-6)) var(--space-4) var(--space-7);
+  }
+
+  .pq-section + .pq-section {
+    margin-top: var(--space-7);
+  }
+
+  .pq-cta-band {
+    padding: var(--space-5);
+  }
+
+  .pq-cta-band .btn-row {
+    width: 100%;
+  }
+
+  .pq-auth {
+    padding-top: calc(var(--nav-height) + var(--space-5));
+  }
+
+  .pq-auth__card {
+    padding: var(--space-5) var(--space-4);
+  }
+}

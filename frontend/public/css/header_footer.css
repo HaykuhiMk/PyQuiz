@@ -1,118 +1,175 @@
-header {
+/* ═══════════════════════════════════════════════════════════════
+   Public page layout, TopBar and footer (marketing + auth pages).
+   Everything here is scoped to .pq-topbar / body:not(.pq-with-sidebar)
+   so it can't bleed onto the logged-in app shell below.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Sticky footer: public pages are a full-height column and the footer
+   takes up the remaining space above it, so short pages (login,
+   registration) keep the footer at the bottom of the viewport while
+   long pages let it follow the content. */
+body:not(.pq-with-sidebar) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+body:not(.pq-with-sidebar) > #footer-container {
+  margin-top: auto;
+}
+
+/* ─── TopBar ─── */
+.pq-topbar {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
   height: var(--nav-height);
-  background: color-mix(in srgb, var(--surface) 85%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface);
+  box-shadow: inset 0 -1px 0 var(--line);
 }
 
-nav {
+.pq-topbar__inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-5);
   max-width: var(--max-width);
+  height: 100%;
   margin: 0 auto;
-  padding: 0 var(--space-6);
-  height: var(--nav-height);
+  padding: 0 var(--space-5);
 }
 
-nav .logo a {
+.pq-topbar__logo {
   display: flex;
   align-items: center;
-  text-decoration: none;
+  padding: 4px 0;
 }
 
-.logo-img {
-  height: 36px;
+.pq-wordmark {
+  display: block;
+  height: 24px;
   width: auto;
-  border-radius: 0;
-  object-fit: contain;
-  filter: brightness(1.05);
 }
 
-nav ul {
+.pq-topbar__logo:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+}
+
+.pq-topnav {
+  flex: 1;
   display: flex;
   align-items: center;
+  gap: var(--space-4);
+  height: 100%;
+  min-width: 0;
+}
+
+.pq-topnav ul {
+  display: flex;
+  align-items: stretch;
   gap: var(--space-1);
-  list-style: none;
+  height: 100%;
   margin: 0;
   padding: 0;
+  list-style: none;
 }
 
-nav ul li a {
+.pq-topnav li {
+  display: flex;
+}
+
+.pq-topnav ul a {
   position: relative;
-  display: block;
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-muted);
   text-decoration: none;
-  border-radius: var(--radius-sm);
-  transition:
-    color var(--duration-fast) var(--ease-out),
-    background var(--duration-fast) var(--ease-out);
+  white-space: nowrap;
+  transition: color var(--dur-1);
 }
 
-nav ul li a:hover,
-nav ul li a.active {
-  color: var(--text-primary);
-  background: var(--bg-hover);
+.pq-topnav ul a:hover {
+  color: var(--ink);
 }
 
-nav ul li a.active {
-  color: var(--fold-deep);
-  font-weight: 700;
+.pq-topnav ul a[aria-current="page"] {
+  color: var(--ink);
 }
 
-nav ul li a.active::after {
+/* Active link: a 4px fold-gradient ribbon with its end cut at 45° */
+.pq-topnav ul a[aria-current="page"]::after {
   content: '';
   position: absolute;
-  left: var(--space-3);
-  right: var(--space-3);
-  bottom: 2px;
-  height: 3px;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 4px;
   background: var(--fold-grad-h);
   clip-path: polygon(0 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
 }
 
-nav ul li a:focus-visible,
-.theme-toggle:focus-visible,
-.topbar-auth-actions a:focus-visible {
+.pq-topnav ul a:focus-visible {
   outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-
-.burger-menu {
-  display: none;
-  font-size: 1.5rem;
-  color: var(--text-primary);
-  cursor: pointer;
-  padding: var(--space-2);
-}
-
-.topbar-end {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  outline-offset: -4px;
 }
 
 .topbar-auth-actions {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  margin-left: auto;
 }
 
 .topbar-auth-actions a {
   min-height: 36px;
-  padding: 0 var(--space-4);
-  font-size: var(--text-sm);
+  padding: 0 14px;
+  font-size: 14px;
 }
 
+.topbar-auth-actions a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.topbar-end {
+  display: flex;
+  align-items: center;
+}
+
+.pq-iconbtn {
+  width: 40px;
+  height: 40px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-none);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.pq-iconbtn:hover {
+  background: var(--brand-soft);
+  color: var(--fold-deep);
+}
+
+.pq-iconbtn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.burger-menu {
+  display: none;
+}
+
+/* Theme toggle — shared by the public TopBar and the app shell top bar */
 .theme-toggle {
   display: inline-flex;
   align-items: center;
@@ -122,7 +179,7 @@ nav ul li a:focus-visible,
   margin-left: var(--space-2);
   padding: 0;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-none);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
@@ -136,6 +193,11 @@ nav ul li a:focus-visible,
   color: var(--text-primary);
   background: var(--bg-hover);
   border-color: var(--border-focus);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .theme-toggle svg {
@@ -155,76 +217,156 @@ nav ul li a:focus-visible,
   display: block;
 }
 
-#footer-container {
-  width: 100%;
-}
-
-.site-footer,
-#footer-container .site-footer {
-  width: 100%;
-  text-align: center;
-  padding: var(--space-8) var(--space-6);
-  border-top: 1px solid var(--border-subtle);
-  background: var(--bg-secondary);
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-}
-
-.site-footer p,
-#footer-container p {
-  margin: var(--space-1) auto;
-  max-width: none;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.site-footer a,
-#footer-container a {
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.site-footer a:hover,
-#footer-container a:hover {
-  color: var(--fold-deep);
-}
-
-@media (max-width: 900px) {
-  .burger-menu {
-    display: block;
+/* Tablet and phone: links and account actions move into a panel that
+   unfolds under the bar; the theme toggle and menu button stay visible. */
+@media (max-width: 899px) {
+  .pq-topbar__inner {
+    gap: var(--space-2);
+    padding: 0 var(--space-4);
   }
 
-  nav ul {
+  .topbar-end {
+    margin-left: auto;
+  }
+
+  .burger-menu {
+    display: inline-grid;
+    order: 3;
+  }
+
+  .pq-topnav {
     display: none;
     position: absolute;
     top: var(--nav-height);
     left: 0;
     right: 0;
+    height: auto;
+    max-height: calc(100dvh - var(--nav-height));
+    overflow-y: auto;
     flex-direction: column;
-    padding: var(--space-4);
-    background: color-mix(in srgb, var(--surface) 98%, transparent);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border-subtle);
-    gap: var(--space-1);
+    align-items: stretch;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4) var(--space-5);
+    background: var(--surface);
+    box-shadow: inset 0 -1px 0 var(--line), var(--shadow-lift);
   }
 
-  nav ul.active {
+  .pq-topnav.is-open {
     display: flex;
   }
 
-  nav ul li {
-    width: 100%;
+  .pq-topnav ul {
+    flex-direction: column;
+    height: auto;
+    gap: 0;
   }
 
-  nav ul li a {
-    padding: var(--space-3) var(--space-4);
+  .pq-topnav ul a {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 var(--space-3);
+  }
+
+  /* Mobile active link: the ribbon runs down the left edge */
+  .pq-topnav ul a[aria-current="page"] {
+    background: var(--brand-soft);
+  }
+
+  .pq-topnav ul a[aria-current="page"]::after {
+    left: 0;
+    right: auto;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    height: auto;
+    background: var(--fold-grad-v);
+    clip-path: none;
+  }
+
+  .topbar-auth-actions {
+    margin-left: 0;
+    padding-top: var(--space-4);
+    box-shadow: inset 0 1px 0 var(--line);
+  }
+
+  .topbar-auth-actions a {
+    flex: 1 1 0;
+    min-height: 44px;
   }
 }
 
-@media (max-width: 480px) {
-  .topbar-auth-actions a {
-    padding: 0 var(--space-3);
-    font-size: var(--text-xs);
+@media (prefers-reduced-motion: no-preference) and (max-width: 899px) {
+  .pq-topnav.is-open {
+    transform-origin: top;
+    animation: pq-topnav-unfold var(--dur-2) var(--ease-fold);
+  }
+}
+
+@keyframes pq-topnav-unfold {
+  from {
+    opacity: 0;
+    transform: perspective(700px) rotateX(-30deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ─── Footer (shared with the app shell) ─── */
+#footer-container {
+  width: 100%;
+}
+
+.site-footer {
+  width: 100%;
+  background: var(--surface);
+  box-shadow: inset 0 1px 0 var(--line);
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.site-footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-6);
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--space-5);
+}
+
+.site-footer p {
+  margin: 0;
+  max-width: none;
+  color: var(--ink-muted);
+}
+
+.site-footer a {
+  color: var(--fold-deep);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.site-footer a:hover {
+  color: var(--ink);
+}
+
+.site-footer a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 639px) {
+  .site-footer__inner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: var(--space-5) var(--space-4);
   }
 }
 

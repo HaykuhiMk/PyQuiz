@@ -7,45 +7,102 @@
     <title>PyQuiz - Home</title>
     <link rel="stylesheet" href="/css/design-system.css" />
     <link rel="stylesheet" href="/css/components.css" />
-    <link rel="stylesheet" href="/css/index.css" />
     <link rel="stylesheet" href="/css/header_footer.css" />
+    <link rel="stylesheet" href="/css/public.css" />
+    <link rel="stylesheet" href="/css/index.css" />
   </head>
   <body>
     <div id="header-container"></div>
 
-    <section id="hero" class="reveal">
-      <div class="hero-content">
-        <h1>Welcome to PyQuiz !</h1>
-        <p id="slogan">Turn Every Question into a Python Adventure.</p>
-        <p>
-          Test your Python knowledge with interactive quizzes! Sign up to track
-          your progress and challenge yourself.
-        </p>
-        <div class="btn-row btn-row--center btn-row--stretch hero-buttons">
-          <button id="login-btn" class="primary-btn" type="button">Login</button>
-          <button id="register-btn" class="secondary-btn" type="button">Registration</button>
-          <button id="guest-btn" class="secondary-btn" type="button">Continue as Guest</button>
+    <main class="pq-public landing">
+      <section class="landing-hero" aria-labelledby="landing-title">
+        <div class="landing-hero__text">
+          <img src="/images/pyquiz-wordmark.png" alt="PyQuiz" class="landing-hero__mark" width="311" height="56" />
+          <h1 class="pq-display-xl pq-wide landing-hero__title" id="landing-title">Turn every question into a Python adventure</h1>
+          <p class="pq-body-lg pq-muted landing-hero__lead">
+            Test your Python knowledge with interactive quizzes. Sign up to track your progress and challenge yourself.
+          </p>
+          <div class="btn-row landing-hero__actions">
+            <button id="register-btn" class="primary-btn landing-hero__btn" type="button">Sign up</button>
+            <button id="login-btn" class="secondary-btn landing-hero__btn" type="button">Log in</button>
+          </div>
+          <p class="pq-small pq-muted landing-hero__guest">
+            Just looking?
+            <button id="guest-btn" class="link-btn landing-hero__guest-btn" type="button">Continue as guest</button>
+            <span>Guest progress isn't saved.</span>
+          </p>
         </div>
-      </div>
-    </section>
 
-    <section id="features" class="reveal">
-      <h2>Why Choose PyQuiz?</h2>
-      <div class="feature-box reveal-stagger">
-        <div class="feature">
-          <h3>Interactive Quizzes</h3>
-          <p>Engage in fun and interactive Python quizzes.</p>
+        <!-- The logo's four facets and sun disc, from the design system cover -->
+        <div class="landing-hero__art" aria-hidden="true">
+          <svg viewBox="0 0 480 288" preserveAspectRatio="xMidYMid meet" focusable="false">
+            <polygon class="f-lit" points="16,-8 112,-8 112,224 64,224 16,176" />
+            <polygon class="f-face" points="120,64 280,64 280,296 120,296" />
+            <polygon class="f-turn" points="120,64 168,64 120,112" />
+            <polygon class="f-crease" points="288,-8 480,-8 480,176 336,176 288,128" />
+            <polygon class="f-turn" points="288,128 336,176 288,176" />
+            <polygon class="f-turn" points="64,224 112,224 112,176" />
+            <circle class="f-sun" cx="376" cy="236" r="44" />
+            <polygon class="f-lit" points="262,296 280,278 280,296" />
+          </svg>
         </div>
-        <div class="feature">
-          <h3>Track Your Progress</h3>
-          <p>Save your scores and see your improvement over time.</p>
+      </section>
+
+      <section class="pq-section" aria-labelledby="modes-title">
+        <div class="pq-section__head">
+          <h2 id="modes-title">Three ways to play</h2>
+          <p class="pq-muted">Pick a mode, choose your topics and difficulty, and answer real Python questions.</p>
         </div>
-        <div class="feature">
-          <h3>Compete & Level Up</h3>
-          <p>Blitz, Survival, Daily Challenge, leaderboard, and achievements.</p>
+        <div class="pq-grid landing-modes">
+          <article class="card">
+            <span class="pq-tile-icon"><span data-icon="play"></span></span>
+            <h3>Classic</h3>
+            <p class="pq-muted">Practice at your own pace, with no timer.</p>
+          </article>
+          <article class="card">
+            <span class="pq-tile-icon"><span data-icon="clock"></span></span>
+            <h3>Blitz</h3>
+            <p class="pq-muted">45 seconds per question. Answer before the timer runs out.</p>
+          </article>
+          <article class="card">
+            <span class="pq-tile-icon"><span data-icon="flag"></span></span>
+            <h3>Survival</h3>
+            <p class="pq-muted">One mistake ends the run. See how far you can go.</p>
+          </article>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <section class="pq-section" aria-labelledby="practice-title">
+        <div class="pq-section__head">
+          <h2 id="practice-title">Keep learning between quizzes</h2>
+        </div>
+        <div class="pq-grid pq-grid--2">
+          <article class="card">
+            <span class="pq-tile-icon"><span data-icon="code"></span></span>
+            <h3>Study mode</h3>
+            <p class="pq-muted">Browse questions by topic and difficulty, and reveal answers with their explanations.</p>
+            <a class="pq-card-link" href="/study.html">Open study mode <span data-icon="arrow" data-size="16"></span></a>
+          </article>
+          <article class="card">
+            <span class="pq-tile-icon"><span data-icon="trophy"></span></span>
+            <h3>Daily challenge and leaderboard</h3>
+            <p class="pq-muted">Everyone gets the same questions each day, with bonus points for correct answers. Points count toward the global leaderboard.</p>
+            <a class="pq-card-link" href="/leaderboard.html">See the leaderboard <span data-icon="arrow" data-size="16"></span></a>
+          </article>
+        </div>
+      </section>
+
+      <section class="pq-section pq-cta-band" aria-labelledby="cta-title">
+        <div>
+          <h2 id="cta-title">Track your progress</h2>
+          <p class="pq-muted">With an account you keep your points, streaks, achievements and topic mastery.</p>
+        </div>
+        <div class="btn-row">
+          <a class="primary-btn" href="/registration.html">Sign up</a>
+          <a class="secondary-btn" href="/features.html">See all features</a>
+        </div>
+      </section>
+    </main>
 
     <div id="footer-container"></div>
 

@@ -993,6 +993,14 @@ textarea::placeholder {
   box-shadow: inset 0 0 0 2px var(--coral);
 }
 
+.pq-field textarea.pq-input {
+  height: auto;
+  min-height: 132px;
+  padding: 10px 14px;
+  line-height: 24px;
+  resize: vertical;
+}
+
 .pq-field select.pq-input {
   appearance: none;
   padding-right: 40px;

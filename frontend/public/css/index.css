@@ -1,98 +1,109 @@
-#hero {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - var(--nav-height));
-  padding: calc(var(--nav-height) + var(--space-12)) var(--space-6) var(--space-12);
-  text-align: center;
-}
-
-.hero-content {
-  max-width: 640px;
-}
-
-.hero-content h1 {
-  font-size: clamp(2rem, 5vw, var(--text-4xl));
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  margin-bottom: var(--space-4);
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-#slogan {
-  font-size: var(--text-xl);
-  font-weight: 500;
-  color: var(--accent-yellow);
-  margin-bottom: var(--space-4);
-  max-width: none;
-}
-
-.hero-content > p {
-  margin: 0 auto var(--space-8);
-  font-size: var(--text-lg);
-  color: var(--text-secondary);
-  max-width: 48ch;
-}
-
-.hero-buttons {
-  max-width: 520px;
-  margin: 0 auto;
-}
-
-#features {
-  padding: var(--space-12) var(--space-6);
-  max-width: var(--max-width);
-  margin: 0 auto;
-}
-
-#features h2 {
-  text-align: center;
-  font-size: var(--text-2xl);
-  margin-bottom: var(--space-8);
-}
-
-.feature-box {
+/* Landing page */
+.landing-hero {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-6);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: var(--space-7);
+  align-items: center;
+  padding-bottom: var(--space-7);
+  margin-bottom: var(--space-7);
+  border-bottom: 1px solid var(--line);
 }
 
-.feature {
-  padding: var(--space-6);
-  text-align: center;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  transition: all var(--duration-normal) var(--ease-out);
+.landing-hero__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-width: 0;
 }
 
-.feature:hover {
-  border-color: var(--border-default);
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
+.landing-hero__mark {
+  display: block;
+  height: 40px;
+  width: auto;
+  margin-bottom: var(--space-2);
 }
 
-.feature h3 {
-  font-size: var(--text-lg);
-  margin-bottom: var(--space-3);
+.landing-hero__title {
+  max-width: 14ch;
+  overflow-wrap: break-word;
+  hyphens: manual;
 }
 
-.feature p {
-  margin: 0 auto;
-  font-size: var(--text-sm);
-  color: var(--text-muted);
+.landing-hero__lead {
+  margin: 0;
+  max-width: 46ch;
 }
 
-@media (max-width: 768px) {
-  .feature-box {
+.landing-hero__actions {
+  margin-top: var(--space-2);
+}
+
+.landing-hero__btn {
+  min-height: 52px;
+  padding: 0 var(--space-6);
+  font-size: var(--text-body-lg);
+}
+
+.landing-hero__guest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-2);
+  margin: 0;
+}
+
+.landing-hero__guest-btn {
+  padding: 0;
+  font-weight: 600;
+  color: var(--fold-deep);
+}
+
+/* Facet art — the artifact cover's slabs, drawn with theme tokens */
+.landing-hero__art svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.f-lit { fill: var(--fold-light); }
+.f-face { fill: var(--brand); }
+.f-turn { fill: var(--fold-deep); }
+.f-crease { fill: var(--fold-shadow); }
+:root:not([data-theme='light']) .f-crease { fill: var(--fold-light); }
+.f-sun { fill: var(--sun); }
+
+.landing-modes .card h3 {
+  font-stretch: 125%;
+}
+
+@media (max-width: 899px) {
+  .landing-hero {
     grid-template-columns: 1fr;
+    gap: var(--space-6);
   }
 
-  .hero-buttons {
-    flex-direction: column;
-    align-items: stretch;
+  .landing-hero__art {
+    max-width: 420px;
+  }
+}
+
+@media (max-width: 639px) {
+  .landing-hero__mark {
+    height: 32px;
+  }
+
+  .landing-hero__title {
+    font-size: 36px;
+    line-height: 40px;
+    max-width: none;
+  }
+
+  .landing-hero__actions {
+    width: 100%;
+  }
+
+  .landing-hero__actions > * {
+    flex: 1 1 140px;
   }
 }

@@ -18,14 +18,22 @@ document.addEventListener("DOMContentLoaded", function () {
         return passwordRegex.test(password);
     }
 
+    const submitBtn = form.querySelector('button[type="submit"]');
+
     function showError(message) {
         helperText.textContent = message;
-        helperText.style.color = 'red';
+        helperText.classList.add('error');
     }
 
     function clearError() {
-        helperText.textContent = 'All fields are required';
-        helperText.style.color = 'white';
+        helperText.textContent = '';
+        helperText.classList.remove('error');
+    }
+
+    function setBusy(busy) {
+        submitBtn.disabled = busy;
+        if (busy) submitBtn.setAttribute('aria-busy', 'true');
+        else submitBtn.removeAttribute('aria-busy');
     }
 
     form.addEventListener('submit', function (event) {
@@ -57,30 +65,31 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         clearError();
+        setBusy(true);
 
         api.register({ username, email, password })
         .then((data) => {
             if (data.message) {
                 form.reset();
                 window.location.href = './login.html';
+            } else {
+                setBusy(false);
             }
         })
         .catch(error => {
             console.error('Error:', error);
             showError(error.message || 'An error occurred during registration.');
+            setBusy(false);
         });
     });
 
     window.togglePasswordVisibility = function (fieldId) {
         const passwordInput = document.getElementById(fieldId);
-        const toggleIcon = document.getElementById(`toggle-${fieldId}`);
+        const toggleButton = document.getElementById(`toggle-${fieldId}`);
+        const reveal = passwordInput.type === 'password';
 
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            toggleIcon.src = '/images/hide-password.png';
-        } else {
-            passwordInput.type = 'password';
-            toggleIcon.src = '/images/show-password.png';
-        }
+        passwordInput.type = reveal ? 'text' : 'password';
+        toggleButton.textContent = reveal ? 'Hide' : 'Show';
+        toggleButton.setAttribute('aria-pressed', String(reveal));
     };
 });

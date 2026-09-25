@@ -1,46 +1,31 @@
-main {
-  padding: calc(var(--nav-height) + var(--space-8)) var(--space-6) var(--space-12);
-  max-width: var(--max-width);
-  margin: 0 auto;
+/* Features page */
+.feature-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 
-#features h1 {
-  font-size: var(--text-3xl);
-  text-align: center;
-  margin-bottom: var(--space-4);
+/* Theme tile: half surface, half navy — the two themes side by side */
+.theme-tile {
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
-#features > p {
-  text-align: center;
-  margin: 0 auto var(--space-10);
-  max-width: 52ch;
+.theme-tile__half {
+  position: absolute;
+  inset: 0 0 0 50%;
+  background: #0e1726;
 }
 
-.feature-box {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--space-6);
+.pq-banner a {
+  color: var(--fold-deep);
+  font-weight: 600;
 }
 
-.feature {
-  padding: var(--space-6);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  transition: all var(--duration-normal) var(--ease-out);
-}
-
-.feature:hover {
-  border-color: var(--border-default);
-  transform: translateY(-2px);
-}
-
-.feature h2 {
-  font-size: var(--text-lg);
-  margin-bottom: var(--space-3);
-}
-
-.feature p {
-  margin: 0;
-  font-size: var(--text-sm);
+.pq-banner a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }

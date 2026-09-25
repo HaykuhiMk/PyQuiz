@@ -7,53 +7,46 @@
     <title>Login - PyQuiz</title>
     <link rel="stylesheet" href="/css/design-system.css" />
     <link rel="stylesheet" href="/css/components.css" />
-    <link rel="stylesheet" href="/css/login_styles.css" />
     <link rel="stylesheet" href="/css/header_footer.css" />
+    <link rel="stylesheet" href="/css/public.css" />
+    <link rel="stylesheet" href="/css/login_styles.css" />
   </head>
   <body>
     <div id="header-container"></div>
-    <div id="login-container">
-      <h2>Login</h2>
-      <form id="login-form">
-        <label for="email">Email</label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          placeholder="Enter your Email"
-          required
-        /><br /><br />
+    <main class="pq-auth">
+      <div id="login-container" class="pq-auth__card">
+        <div class="pq-auth__head">
+          <h1 id="login-title">Log in</h1>
+          <p class="pq-muted">Welcome back. Log in to keep your progress, streak and points.</p>
+        </div>
 
-        <label for="password">Password</label>
-        <div class="password-container">
-          <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="Enter your password"
-            required
-          />
-          <img
-            id="toggle-password"
-            src="/images/show-password.png"
-            alt="Show/Hide Password"
-            onclick="togglePasswordVisibility()"
-          />
-        </div>
-        <button type="submit" class="primary-btn">Login</button>
-        <div class="form-footer">
-          <button
-            type="button"
-            id="forgot-password-btn"
-            class="link-btn"
-            onclick="window.location.href='./forgot_password.html'"
-          >
-            Forgot Password?
-          </button>
-        </div>
-      </form>
-      <div id="helper-text"></div>
-    </div>
+        <form id="login-form" class="pq-form" aria-labelledby="login-title" aria-describedby="helper-text">
+          <div class="pq-field">
+            <label for="email">Email</label>
+            <input class="pq-input" type="email" id="email" name="email" autocomplete="email" required />
+          </div>
+
+          <div class="pq-field">
+            <div class="pq-auth__labelrow">
+              <label for="password">Password</label>
+              <button type="button" id="forgot-password-btn" class="link-btn" onclick="window.location.href='./forgot_password.html'">
+                Forgot password?
+              </button>
+            </div>
+            <div class="pq-password">
+              <input class="pq-input" type="password" id="password" name="password" autocomplete="current-password" required />
+              <button type="button" id="toggle-password" class="pq-password__toggle pq-iconbtn" aria-pressed="false" aria-controls="password" onclick="togglePasswordVisibility()">Show</button>
+            </div>
+          </div>
+
+          <p id="helper-text" class="pq-form-message pq-status" role="alert"></p>
+
+          <button type="submit" class="primary-btn pq-form__submit">Log in</button>
+        </form>
+
+        <p class="pq-auth__alt">New to PyQuiz? <a href="/registration.html">Create an account</a></p>
+      </div>
+    </main>
     <div id="footer-container"></div>
     <script type="module" src="/js/login.js" defer></script>
     <script type="module" src="/js/load_header_footer.js"></script>

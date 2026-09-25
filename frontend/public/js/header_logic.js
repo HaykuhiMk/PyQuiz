@@ -2,9 +2,9 @@ function getCookie(name) {
     const value = document.cookie.split("; ")
         .find(row => row.startsWith(name + "="))
         ?.split("=")[1];
-    
+
     if (!value) return null;
-    
+
     try {
         return decodeURIComponent(value);
     } catch {
@@ -21,9 +21,22 @@ function isUserLoggedIn() {
     return hasSession && !isGuest;
 }
 
+function markCurrentLink() {
+    const path = window.location.pathname.split("/").pop() || "index.html";
+    document.querySelectorAll(".pq-topnav ul a").forEach((link) => {
+        const href = link.getAttribute("href")?.replace(/^\//, "");
+        if (href === path) {
+            link.setAttribute("aria-current", "page");
+        } else {
+            link.removeAttribute("aria-current");
+        }
+    });
+}
+
 function initializeHeaderLogic() {
     const logoLink = document.querySelector(".logo a");
-    if (logoLink) {
+    if (logoLink && !logoLink.dataset.redirectBound) {
+        logoLink.dataset.redirectBound = "true";
         logoLink.addEventListener("click", function(event) {
             event.preventDefault();
             if (isUserLoggedIn()) {
@@ -34,10 +47,17 @@ function initializeHeaderLogic() {
         });
     }
 
+    const loggedIn = isUserLoggedIn();
     const authActions = document.getElementById("topbar-auth-actions");
     if (authActions) {
-        authActions.hidden = isUserLoggedIn();
+        authActions.hidden = loggedIn;
     }
+    const appActions = document.getElementById("topbar-app-actions");
+    if (appActions) {
+        appActions.hidden = !loggedIn;
+    }
+
+    markCurrentLink();
 }
 
 // Initialize when the script loads
@@ -47,4 +67,4 @@ initializeHeaderLogic();
 document.addEventListener("DOMContentLoaded", initializeHeaderLogic);
 
 // Export for use in other modules if needed
-export { initializeHeaderLogic, isUserLoggedIn }; 
+export { initializeHeaderLogic, isUserLoggedIn };

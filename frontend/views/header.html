@@ -1,26 +1,35 @@
 <!DOCTYPE html>
-<header>
-  <nav>
+<header class="pq-topbar">
+  <nav class="pq-topbar__inner" aria-label="Main">
     <div class="logo">
-      <a href="#" id="logo-link" data-dynamic-redirect="true">
-        <img src="/images/logo.png" alt="PyQuiz Logo" class="logo-img" />
+      <a href="/index.html" id="logo-link" class="pq-topbar__logo" data-dynamic-redirect="true">
+        <img src="/images/pyquiz-wordmark.png" alt="PyQuiz home" class="pq-wordmark" width="133" height="24" />
       </a>
     </div>
-    <div class="burger-menu">&#9776;</div>
-    <ul>
-      <li><a href="/index.html">Home</a></li>
-      <li><a href="/questions.html">Quiz</a></li>
-      <li><a href="/study.html">Study</a></li>
-      <li><a href="/daily.html">Daily</a></li>
-      <li><a href="/leaderboard.html">Leaderboard</a></li>
-      <li><a href="/account.html">Dashboard</a></li>
-      <li><a href="/about.html">About</a></li>
-    </ul>
-    <div class="topbar-end">
+
+    <button class="burger-menu pq-iconbtn" type="button" aria-expanded="false" aria-controls="pq-topnav" aria-label="Open menu">
+      <svg class="pq-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
+    </button>
+
+    <div class="pq-topnav" id="pq-topnav">
+      <ul>
+        <li><a href="/index.html">Home</a></li>
+        <li><a href="/features.html">Features</a></li>
+        <li><a href="/study.html">Study</a></li>
+        <li><a href="/leaderboard.html">Leaderboard</a></li>
+        <li><a href="/about.html">About</a></li>
+        <li><a href="/contact.html">Contact</a></li>
+      </ul>
       <div id="topbar-auth-actions" class="topbar-auth-actions" hidden>
-        <a href="/login.html" class="secondary-btn topbar-auth-actions__login">Login</a>
-        <a href="/registration.html" class="primary-btn topbar-auth-actions__register">Register</a>
+        <a href="/login.html" class="secondary-btn topbar-auth-actions__login">Log in</a>
+        <a href="/registration.html" class="primary-btn topbar-auth-actions__register">Sign up</a>
       </div>
+      <div id="topbar-app-actions" class="topbar-auth-actions" hidden>
+        <a href="/account.html" class="primary-btn">Dashboard</a>
+      </div>
+    </div>
+
+    <div class="topbar-end">
       <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to light theme">
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />

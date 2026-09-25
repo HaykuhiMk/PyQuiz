@@ -7,67 +7,116 @@
     <title>PyQuiz - Features</title>
     <link rel="stylesheet" href="/css/design-system.css" />
     <link rel="stylesheet" href="/css/components.css" />
-    <link rel="stylesheet" href="/css/features.css" />
     <link rel="stylesheet" href="/css/header_footer.css" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="stylesheet" href="/css/public.css" />
+    <link rel="stylesheet" href="/css/features.css" />
   </head>
   <body>
     <div id="header-container"></div>
 
-    <main>
-      <section id="features">
-        <h1>Explore PyQuiz Features</h1>
-        <p>
-          PyQuiz is designed to make learning Python fun and engaging. Check out
-          the key features below!
-        </p>
+    <main class="pq-public">
+      <div class="pq-page-head">
+        <div>
+          <h1 class="pq-display pq-wide">Features</h1>
+          <p class="pq-body-lg pq-muted">Everything you can do in PyQuiz today. Features marked "Account" need you to be signed in.</p>
+        </div>
+      </div>
 
-        <div class="feature-box">
-          <div class="feature">
-            <h2>Randomized Quizzes</h2>
-            <p>
-              Experience a unique challenge every time with randomly selected
-              Python questions.
-            </p>
-          </div>
-          <div class="feature">
-            <h2>Track Your Progress</h2>
-            <p>
-              Save your quiz scores and monitor your improvement over time with
-              personalized progress tracking.
-            </p>
-          </div>
-          <div class="feature">
-            <h2>Guest Mode</h2>
-            <p>
-              Enjoy quizzes without signing up. Your progress won’t be saved,
-              but the fun remains!
-            </p>
-          </div>
-          <div class="feature">
-            <h2>Leaderboard</h2>
-            <p>
-              Compete with friends and other Python enthusiasts to top the
-              leaderboard.
-            </p>
-          </div>
-          <div class="feature">
-            <h2>Detailed Explanations</h2>
-            <p>
-              After each quiz question, receive detailed explanations to enhance
-              your learning.
-            </p>
-          </div>
-          <div class="feature">
-            <h2>Regular Updates</h2>
-            <p>
-              New questions and features are added regularly to keep the
-              experience fresh.
-            </p>
-          </div>
+      <section class="pq-section" aria-labelledby="f-quiz">
+        <div class="pq-section__head">
+          <h2 id="f-quiz">Quizzes</h2>
+        </div>
+        <div class="pq-grid">
+          <article class="card">
+            <div class="feature-card__top"><span class="pq-tile-icon"><span data-icon="play"></span></span></div>
+            <h3>Three quiz modes</h3>
+            <p class="pq-muted">Classic at your own pace, Blitz with 45 seconds per question, and Survival, where one mistake ends the run.</p>
+          </article>
+          <article class="card">
+            <div class="feature-card__top"><span class="pq-tile-icon"><span data-icon="topics"></span></span></div>
+            <h3>Topics and difficulty</h3>
+            <p class="pq-muted">Search and pick the topics you want, group them by category, and filter by easy, medium or hard.</p>
+          </article>
+          <article class="card">
+            <div class="feature-card__top"><span class="pq-tile-icon"><span data-icon="refresh"></span></span></div>
+            <h3>Randomized questions</h3>
+            <p class="pq-muted">Questions are drawn at random from the topics you choose, so each session plays differently.</p>
+          </article>
+          <article class="card">
+            <div class="feature-card__top"><span class="pq-tile-icon"><span data-icon="info"></span></span></div>
+            <h3>Explanations</h3>
+            <p class="pq-muted">Questions include explanations of the Python behaviour behind the answer.</p>
+          </article>
+          <article class="card">
+            <div class="feature-card__top"><span class="pq-tile-icon"><span data-icon="user"></span></span></div>
+            <h3>Guest mode</h3>
+            <p class="pq-muted">Play quizzes without signing up. Your progress isn't saved while you're a guest.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="pq-section" aria-labelledby="f-learn">
+        <div class="pq-section__head">
+          <h2 id="f-learn">Learning and progress</h2>
+        </div>
+        <div class="pq-grid">
+          <article class="card">
+            <div class="feature-card__top"><span class="pq-tile-icon"><span data-icon="code"></span></span></div>
+            <h3>Study mode</h3>
+            <p class="pq-muted">Browse questions with their code, filter by topic and difficulty, and reveal the answer and explanation when you're ready.</p>
+            <a class="pq-card-link" href="/study.html">Open study mode <span data-icon="arrow" data-size="16"></span></a>
+          </article>
+          <article class="card">
+            <div class="feature-card__top"><span class="pq-tile-icon"><span data-icon="flag"></span></span><span class="badge">Account</span></div>
+            <h3>Daily challenge</h3>
+            <p class="pq-muted">Five questions, the same for everyone each day. Submit once and earn 20 bonus points for every correct answer.</p>
+          </article>
+          <article class="card">
+            <div class="feature-card__top"><span class="pq-tile-icon"><span data-icon="chart"></span></span><span class="badge">Account</span></div>
+            <h3>Progress dashboard</h3>
+            <p class="pq-muted">Your points, accuracy and streak, topic mastery with your weakest topics, and the achievements you've unlocked.</p>
+          </article>
+          <article class="card">
+            <div class="feature-card__top"><span class="pq-tile-icon"><span data-icon="trophy"></span></span></div>
+            <h3>Global leaderboard</h3>
+            <p class="pq-muted">The top 50 players, ranked by total points and then by best streak. Signed-in players see their own position highlighted.</p>
+            <a class="pq-card-link" href="/leaderboard.html">See the leaderboard <span data-icon="arrow" data-size="16"></span></a>
+          </article>
+          <article class="card">
+            <div class="feature-card__top"><span class="pq-tile-icon"><span data-icon="check"></span></span><span class="badge">Account</span></div>
+            <h3>Achievements</h3>
+            <p class="pq-muted">Five milestones: your first correct answer, streaks of 5 and 10, and 100 and 500 points.</p>
+          </article>
+          <article class="card">
+            <div class="feature-card__top"><span class="pq-tile-icon theme-tile"><span class="theme-tile__half"></span></span></div>
+            <h3>Light and dark themes</h3>
+            <p class="pq-muted">Switch themes from the top bar. PyQuiz follows your system setting until you choose.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="pq-section" aria-labelledby="f-not-yet">
+        <div class="pq-section__head">
+          <h2 id="f-not-yet">Not available yet</h2>
+        </div>
+        <div class="pq-banner">
+          <span data-icon="info"></span>
+          <span class="pq-banner__text">
+            PyQuiz doesn't have friend lists or private leaderboards, and it doesn't keep a day-by-day history of your activity.
+            Planned work is tracked in the project's
+            <a href="https://github.com/HaykuhiMk/PyQuiz/issues" target="_blank" rel="noopener">GitHub issues</a>.
+          </span>
+        </div>
+      </section>
+
+      <section class="pq-section pq-cta-band" aria-labelledby="f-cta">
+        <div>
+          <h2 id="f-cta">Try it yourself</h2>
+          <p class="pq-muted">Create an account to save your progress, or start a quiz as a guest.</p>
+        </div>
+        <div class="btn-row">
+          <a class="primary-btn" href="/registration.html">Sign up</a>
+          <a class="secondary-btn" href="/index.html">Back to home</a>
         </div>
       </section>
     </main>

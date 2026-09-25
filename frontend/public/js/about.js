@@ -1,4 +1,5 @@
 import API_BASE_URL from './config.js';
+import { countUp } from './ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initFaqAccordion();
@@ -37,45 +38,28 @@ function closeFaqItem(item) {
 }
 
 async function loadLiveStats() {
+  // Real counts from the public API. If they can't be loaded, the stat
+  // keeps its "—" placeholder rather than showing a made-up number.
   try {
     const [topicsRes, studyRes] = await Promise.all([
       fetch(`${API_BASE_URL}/api/v1/questions/topics`),
       fetch(`${API_BASE_URL}/api/v1/questions/study?page=1&limit=1`),
     ]);
+    if (!topicsRes.ok || !studyRes.ok) return;
 
     const topicsPayload = await topicsRes.json();
     const studyPayload = await studyRes.json();
 
-    const topicCount = topicsPayload.data?.length ?? 0;
-    const questionCount = studyPayload.meta?.total ?? topicsPayload.data?.length ?? 0;
+    const topicCount = topicsPayload.data?.length;
+    const questionCount = studyPayload.meta?.total;
 
-    animateCount('[data-count-target="topics"]', topicCount);
-    animateCount('[data-count-target="questions"]', questionCount);
+    if (Number.isFinite(topicCount)) {
+      countUp(document.querySelector('[data-count-target="topics"]'), topicCount);
+    }
+    if (Number.isFinite(questionCount)) {
+      countUp(document.querySelector('[data-count-target="questions"]'), questionCount);
+    }
   } catch {
-    animateCount('[data-count-target="topics"]', 90);
-    animateCount('[data-count-target="questions"]', 47);
+    // Leave the placeholders in place.
   }
-
-  document.querySelectorAll('[data-count]').forEach((el) => {
-    animateCount(el, Number(el.dataset.count));
-  });
-}
-
-function animateCount(selectorOrEl, target) {
-  const el = typeof selectorOrEl === 'string' ? document.querySelector(selectorOrEl) : selectorOrEl;
-  if (!el || Number.isNaN(target)) return;
-
-  const suffix = el.dataset.suffix || '';
-  const duration = 900;
-  const start = performance.now();
-
-  function tick(now) {
-    const progress = Math.min((now - start) / duration, 1);
-    const eased = 1 - (1 - progress) ** 3;
-    const value = Math.round(target * eased);
-    el.textContent = `${value}${suffix}`;
-    if (progress < 1) requestAnimationFrame(tick);
-  }
-
-  requestAnimationFrame(tick);
 }

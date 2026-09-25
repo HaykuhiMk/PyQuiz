@@ -5,13 +5,22 @@ const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
 const helperText = document.getElementById("helper-text");
 
+const submitBtn = form.querySelector('button[type="submit"]');
+
 function showError(message) {
     helperText.textContent = message;
-    helperText.style.color = "red";
+    helperText.classList.add("error");
 }
 
 function clearError() {
     helperText.textContent = "";
+    helperText.classList.remove("error");
+}
+
+function setBusy(busy) {
+    submitBtn.disabled = busy;
+    if (busy) submitBtn.setAttribute("aria-busy", "true");
+    else submitBtn.removeAttribute("aria-busy");
 }
 
 form.addEventListener("submit", (event) => {
@@ -25,6 +34,9 @@ form.addEventListener("submit", (event) => {
         return;
     }
 
+    clearError();
+    setBusy(true);
+
     api.login({ email, password })
     .then(() => {
         window.location.href = "./account.html";
@@ -32,20 +44,18 @@ form.addEventListener("submit", (event) => {
     .catch(error => {
         console.error("🚨 Login Error:", error.message);  
         showError(error.message || "An error occurred during login.");
+        setBusy(false);
     });
 });
 
 function togglePasswordVisibility() {
     const passwordInput = document.getElementById('password');
-    const toggleIcon = document.getElementById('toggle-password');
+    const toggleButton = document.getElementById('toggle-password');
+    const reveal = passwordInput.type === 'password';
 
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        toggleIcon.src = '/images/hide-password.png';
-    } else {
-        passwordInput.type = 'password';
-        toggleIcon.src = '/images/show-password.png';
-    }
+    passwordInput.type = reveal ? 'text' : 'password';
+    toggleButton.textContent = reveal ? 'Hide' : 'Show';
+    toggleButton.setAttribute('aria-pressed', String(reveal));
 }
 
 window.togglePasswordVisibility = togglePasswordVisibility;

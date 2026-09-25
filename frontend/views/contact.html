@@ -8,44 +8,79 @@
     <link rel="stylesheet" href="/css/design-system.css" />
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/header_footer.css" />
+    <link rel="stylesheet" href="/css/public.css" />
     <link rel="stylesheet" href="/css/contact.css" />
   </head>
   <body>
     <div id="header-container"></div>
 
-    <section id="contact">
-      <div class="contact-content">
-        <h1>Contact Us</h1>
-        <p>
-          If you have any questions or need assistance, feel free to reach out
-          to us through the form below!
-        </p>
-
-        <form id="contact-form" action="#" method="POST">
-          <div class="form-group">
-            <label for="name">Your Name:</label>
-            <input type="text" id="name" name="name" required />
-          </div>
-
-          <div class="form-group">
-            <label for="email">Your Email:</label>
-            <input type="email" id="email" name="email" required />
-          </div>
-
-          <div class="form-group">
-            <label for="message">Your Message:</label>
-            <textarea id="message" name="message" rows="5" required></textarea>
-          </div>
-
-          <div style="position: absolute; left: -9999px" aria-hidden="true">
-            <label for="website">Website</label>
-            <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
-          </div>
-
-          <button type="submit" id="submit-btn" class="primary-btn">Send Message</button>
-        </form>
+    <main class="pq-public contact-page">
+      <div class="pq-page-head">
+        <div>
+          <h1 class="pq-display pq-wide">Contact us</h1>
+          <p class="pq-body-lg pq-muted">Have a question or need help? Reach out through the form below.</p>
+        </div>
       </div>
-    </section>
+
+      <div class="contact-layout">
+        <section id="contact" class="card contact-card" aria-labelledby="contact-form-title">
+          <h2 class="pq-heading contact-card__title" id="contact-form-title">Send a message</h2>
+
+          <div id="contact-status" role="status" aria-live="polite"></div>
+
+          <form id="contact-form" class="pq-form" action="#" method="POST" novalidate>
+            <div class="pq-field">
+              <label for="name">Your name</label>
+              <input class="pq-input" type="text" id="name" name="name" maxlength="100" autocomplete="name" required aria-describedby="name-error" />
+              <span class="pq-error" id="name-error" hidden></span>
+            </div>
+
+            <div class="pq-field">
+              <label for="email">Your email</label>
+              <input class="pq-input" type="email" id="email" name="email" maxlength="200" autocomplete="email" required aria-describedby="email-error" />
+              <span class="pq-error" id="email-error" hidden></span>
+            </div>
+
+            <div class="pq-field">
+              <label for="message">Your message</label>
+              <textarea class="pq-input" id="message" name="message" rows="6" maxlength="5000" required aria-describedby="message-error"></textarea>
+              <span class="pq-error" id="message-error" hidden></span>
+            </div>
+
+            <div style="position: absolute; left: -9999px" aria-hidden="true">
+              <label for="website">Website</label>
+              <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
+            </div>
+
+            <button type="submit" id="submit-btn" class="primary-btn pq-form__submit">Send message</button>
+          </form>
+        </section>
+
+        <aside class="contact-aside" aria-label="Other ways to reach us">
+          <div class="card pq-card--sunk contact-aside__item">
+            <span class="pq-tile-icon"><span data-icon="mail"></span></span>
+            <div>
+              <h2 class="pq-heading">Email</h2>
+              <p class="pq-muted"><a href="mailto:pyquizteam@gmail.com">pyquizteam@gmail.com</a></p>
+            </div>
+          </div>
+          <div class="card pq-card--sunk contact-aside__item">
+            <span class="pq-tile-icon"><span data-icon="code"></span></span>
+            <div>
+              <h2 class="pq-heading">Found a wrong answer?</h2>
+              <p class="pq-muted">Report it on <a href="https://github.com/HaykuhiMk/PyQuiz/issues" target="_blank" rel="noopener">GitHub issues<span class="pq-sr-only"> (opens in a new tab)</span></a> with the question and what you expected.</p>
+            </div>
+          </div>
+          <div class="card pq-card--sunk contact-aside__item">
+            <span class="pq-tile-icon"><span data-icon="info"></span></span>
+            <div>
+              <h2 class="pq-heading">Common questions</h2>
+              <p class="pq-muted">The <a href="/about.html#faq">help and FAQ</a> covers how quizzes work and more.</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
 
     <div id="footer-container"></div>
 

@@ -1,5 +1,1 @@
 @import url('./login_styles.css');
-
-#registration-container {
-  width: min(480px, 92vw);
-}
