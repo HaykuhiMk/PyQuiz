@@ -1,27 +1,9 @@
+/* Settings — TextField, segmented ChoiceControl, Button and Card from the
+   artifact, in a single 720px reading column. */
 .settings-page {
-  max-width: 720px;
+  max-width: calc(720px + var(--space-6) * 2);
   margin: 0 auto;
   padding: calc(var(--nav-height) + var(--space-8)) var(--space-6) var(--space-12);
-}
-
-.settings-page-header {
-  margin-bottom: var(--space-8);
-}
-
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--text-muted);
-  text-decoration: none;
-  margin-bottom: var(--space-4);
-  transition: color var(--duration-fast) var(--ease-out);
-}
-
-.back-link:hover {
-  color: var(--accent-yellow);
 }
 
 .settings-layout {
@@ -30,44 +12,45 @@
   gap: var(--space-5);
 }
 
-.settings-profile-card .settings-block {
-  border-bottom: none;
-  padding-bottom: 0;
+.settings-card {
+  padding: var(--space-5);
 }
 
-.settings-profile-preview {
+.settings-card__title {
   display: flex;
   align-items: center;
-  gap: var(--space-5);
-  padding-bottom: var(--space-6);
-  margin-bottom: var(--space-5);
-  border-bottom: 1px solid var(--border-subtle);
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
 }
 
-.settings-profile-preview h3 {
-  font-size: var(--text-lg);
-  margin: 0 0 var(--space-1);
-}
-
-.settings-email {
-  font-size: var(--text-sm);
-  color: var(--text-muted);
-  margin: 0;
-  max-width: none;
+/* ─── Identity ─── */
+.settings-identity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'avatar text'
+    'photo  photo';
+  gap: var(--space-4) var(--space-5);
+  align-items: center;
 }
 
 .settings-avatar {
-  width: 80px;
-  height: 80px;
+  grid-area: avatar;
+  width: 72px;
+  height: 72px;
   display: grid;
   place-items: center;
-  font-size: 2.75rem;
-  color: var(--accent-blue);
-  background: var(--bg-elevated);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-disc);
+  background: var(--surface-sunk);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--fold-deep);
   overflow: hidden;
   flex-shrink: 0;
+}
+
+.settings-avatar__icon {
+  display: grid;
+  place-items: center;
 }
 
 .settings-avatar img {
@@ -76,114 +59,120 @@
   object-fit: cover;
 }
 
-.settings-block {
-  padding: var(--space-4) 0;
-  border-bottom: 1px solid var(--border-subtle);
+.settings-identity__text {
+  grid-area: text;
+  min-width: 0;
 }
 
-.settings-block:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+.settings-identity__text h2 {
+  overflow-wrap: anywhere;
 }
 
-.settings-block h4 {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 var(--space-2);
+.settings-identity__email {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
 }
 
-.settings-hint {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
+.settings-identity__photo {
+  grid-area: photo;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.settings-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* ─── Forms ─── */
+.settings-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-form .pq-status {
+  margin-top: var(--space-3);
+}
+
+.settings-form__actions {
+  margin-top: var(--space-5);
+}
+
+.settings-inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+}
+
+.settings-inline .primary-btn {
+  min-height: 44px;
+  min-width: 128px;
+}
+
+.settings-readonly-field {
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line);
+}
+
+.settings-readonly {
+  margin: 0;
+  max-width: none;
+  font-size: 15px;
+  line-height: 24px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* The status lines are populated by settings.js; hide them until then. */
+.settings-status:empty {
+  display: none;
+}
+
+/* ─── Delete account ─── */
+.settings-danger {
+  border-color: var(--coral);
+}
+
+.settings-danger:hover {
+  border-color: var(--coral);
+}
+
+.settings-danger__title {
+  color: var(--coral);
+}
+
+.settings-danger__copy {
   margin: 0 0 var(--space-4);
   max-width: none;
 }
 
-.settings-readonly {
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  margin: 0 0 var(--space-2);
-  max-width: none;
-}
+@media (max-width: 639px) {
+  .settings-page {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
 
-.settings-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
+  .settings-card {
+    padding: var(--space-4);
+  }
 
-.settings-form-inline {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: var(--space-3);
-  align-items: start;
-}
-
-.settings-form button {
-  align-self: flex-start;
-}
-
-.settings-form-inline button {
-  align-self: stretch;
-  min-width: 120px;
-}
-
-.avatar-upload-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  align-items: center;
-}
-
-.settings-status {
-  font-size: var(--text-xs);
-  margin: var(--space-3) 0 0;
-  min-height: 1rem;
-  max-width: none;
-}
-
-.settings-status.success {
-  color: var(--success);
-}
-
-.settings-status.error {
-  color: var(--error);
-}
-
-.card-heading--danger {
-  color: var(--error);
-}
-
-.card-heading--danger i {
-  color: var(--error);
-}
-
-.settings-danger {
-  padding-top: 0;
-  border-top: none;
-}
-
-.settings-danger h4 {
-  color: var(--error);
-}
-
-@media (max-width: 600px) {
-  .settings-form-inline {
+  .settings-inline {
     grid-template-columns: 1fr;
   }
 
-  .settings-form-inline button {
+  .settings-inline .primary-btn,
+  .settings-form__actions > button,
+  .settings-photo-actions > button {
     width: 100%;
   }
 
-  .settings-profile-preview {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .avatar-upload-row .secondary-btn {
-    flex: 1 1 auto;
-    justify-content: center;
+  .settings-avatar {
+    width: 56px;
+    height: 56px;
   }
 }

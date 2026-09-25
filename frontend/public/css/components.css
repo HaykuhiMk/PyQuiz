@@ -619,8 +619,7 @@ textarea::placeholder {
   color: var(--text-muted);
 }
 
-/* ─── Leaderboard & mastery ─── */
-.leaderboard-row,
+/* ─── Mastery rows ─── */
 .mastery-row {
   display: grid;
   grid-template-columns: 48px 1fr auto;
@@ -631,41 +630,12 @@ textarea::placeholder {
   transition: background var(--duration-fast);
 }
 
-.leaderboard-row:hover,
 .mastery-row:hover {
   background: var(--bg-hover);
 }
 
-.leaderboard-row:last-child,
 .mastery-row:last-child {
   border-bottom: none;
-}
-
-.rank-badge {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  display: grid;
-  place-items: center;
-  font-size: var(--text-sm);
-  font-weight: 700;
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-}
-
-.rank-badge.gold {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: var(--bg-primary);
-}
-
-.rank-badge.silver {
-  background: linear-gradient(135deg, #94a3b8, #64748b);
-  color: var(--bg-primary);
-}
-
-.rank-badge.bronze {
-  background: linear-gradient(135deg, #d97706, #b45309);
-  color: var(--text-primary);
 }
 
 /* ─── Quiz summary ─── */
@@ -858,4 +828,355 @@ textarea::placeholder {
   inset: 0;
   pointer-events: none;
   z-index: 9999;
+}
+
+/* ─── Phase 7 primitives ───
+   Hand-authored equivalents of the artifact's Banner, TextField,
+   ChoiceControls (segmented), QuizTable and Loading components, plus the
+   shared page header used by the logged-in content pages. */
+
+.pq-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pq-icon {
+  flex: none;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Page header: display title + one muted line, closed by a hairline,
+   matching the dashboard greeting. */
+.pq-page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding-bottom: var(--space-5);
+  margin-bottom: var(--space-6);
+  border-bottom: 1px solid var(--line);
+}
+
+.pq-page-head h1 {
+  margin: 0;
+}
+
+.pq-page-head p {
+  margin: var(--space-2) 0 0;
+}
+
+/* The logo's sun disc: insight/reward marker (hints, explanations, completion) */
+.pq-disc-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-disc);
+  background: var(--sun);
+  flex: none;
+}
+
+/* Inline code inside running text */
+.pq-inline {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 1px 6px;
+  background: var(--surface-sunk);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* ─── Banner ─── */
+.pq-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: 12px var(--space-4);
+  background: var(--brand-soft);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.pq-banner > .pq-icon {
+  color: var(--fold-deep);
+}
+
+.pq-banner__text {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.pq-banner__text strong {
+  font-weight: 700;
+}
+
+.pq-banner--sun {
+  background: var(--sun-soft);
+}
+
+.pq-banner--sun .pq-disc-mark {
+  width: 24px;
+  height: 24px;
+}
+
+.pq-banner--coral {
+  background: var(--coral-soft);
+}
+
+.pq-banner--coral > .pq-icon {
+  color: var(--coral);
+}
+
+.pq-banner .primary-btn,
+.pq-banner .secondary-btn {
+  min-height: 36px;
+  padding: 0 14px;
+}
+
+/* ─── TextField ─── */
+.pq-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pq-field + .pq-field {
+  margin-top: var(--space-4);
+}
+
+.pq-label,
+.pq-field > label {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.pq-help {
+  margin: 0;
+  max-width: none;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ink-muted);
+}
+
+.pq-field .pq-input {
+  height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-none);
+  font-size: 15px;
+  background-color: var(--surface);
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+  transition: box-shadow var(--dur-1);
+}
+
+.pq-field .pq-input:hover {
+  box-shadow: inset 0 0 0 1.5px var(--ink-muted);
+}
+
+.pq-field .pq-input:focus {
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+.pq-field .pq-input[aria-invalid="true"] {
+  box-shadow: inset 0 0 0 2px var(--coral);
+}
+
+.pq-field select.pq-input {
+  appearance: none;
+  padding-right: 40px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-muted) 50%),
+    linear-gradient(-45deg, transparent 50%, var(--ink-muted) 50%);
+  background-position: calc(100% - 20px) 50%, calc(100% - 15px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.pq-inputwrap {
+  position: relative;
+}
+
+.pq-inputwrap > .pq-icon {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  color: var(--ink-muted);
+  pointer-events: none;
+}
+
+.pq-field .pq-inputwrap .pq-input {
+  padding-left: 42px;
+}
+
+/* Status line under a form: success reads as fold-deep with a check,
+   errors as coral with a cross, so neither relies on colour alone. */
+.pq-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 20px;
+  margin: var(--space-3) 0 0;
+  max-width: none;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.pq-status:empty {
+  margin: 0;
+  min-height: 0;
+}
+
+.pq-status.success {
+  color: var(--fold-deep);
+}
+
+.pq-status.error {
+  color: var(--coral);
+}
+
+.pq-status.success::before,
+.pq-status.error::before {
+  content: '';
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: var(--pq-status-mark) center / contain no-repeat;
+  mask: var(--pq-status-mark) center / contain no-repeat;
+}
+
+.pq-status.success {
+  --pq-status-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='square'%3E%3Cpath d='m4 12 5 5L20 6'/%3E%3C/svg%3E");
+}
+
+.pq-status.error {
+  --pq-status-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='square'%3E%3Cpath d='M6 6l12 12M18 6 6 18'/%3E%3C/svg%3E");
+}
+
+/* ─── Segmented control (ChoiceControls) ─── */
+.pq-seg {
+  display: inline-flex;
+  align-self: flex-start;
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+}
+
+.pq-seg button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-none);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: background var(--dur-1), color var(--dur-1);
+}
+
+.pq-seg button:hover {
+  color: var(--ink);
+  background: var(--brand-soft);
+}
+
+.pq-seg button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.pq-seg button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  position: relative;
+}
+
+/* ─── QuizTable ─── */
+.pq-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.pq-table th {
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  padding: 8px 12px;
+  box-shadow: inset 0 -1px 0 var(--line-strong);
+  white-space: nowrap;
+}
+
+.pq-table td {
+  padding: 12px;
+  box-shadow: inset 0 -1px 0 var(--line);
+  color: var(--ink);
+  vertical-align: middle;
+}
+
+.pq-table tbody tr:last-child td {
+  box-shadow: none;
+}
+
+.pq-table tbody tr:hover td {
+  background: var(--surface-sunk);
+}
+
+.pq-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* ─── Loading skeleton ─── */
+.pq-skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-sunk);
+}
+
+.pq-skel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--ink) 8%, transparent) 50%, transparent 80%);
+  animation: pq-sheen 1.4s ease-in-out infinite;
+}
+
+.pq-skel--line {
+  height: 12px;
+}
+
+.pq-skel--title {
+  height: 22px;
+  width: 60%;
+}
+
+@keyframes pq-sheen {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pq-skel::after {
+    animation: none;
+  }
 }

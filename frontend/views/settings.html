@@ -9,87 +9,108 @@
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/header_footer.css" />
     <link rel="stylesheet" href="/css/settings.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="pq-with-sidebar" data-page-title="Settings">
     <div id="header-container"></div>
     <main class="settings-page reveal">
-        <div class="settings-page-header">
-            <a href="/account.html" class="back-link"><i class="fas fa-arrow-left"></i> Dashboard</a>
-            <h1 class="page-title page-title--gradient"><i class="fas fa-cog"></i> Account Settings</h1>
-            <p class="page-subtitle">Manage your profile, security, and account preferences.</p>
+        <div class="pq-page-head">
+            <div>
+                <h1 class="pq-display">Settings</h1>
+                <p class="pq-body-lg pq-muted">Manage your profile, appearance and account security.</p>
+            </div>
         </div>
 
         <div class="settings-layout">
-            <section class="card settings-profile-card">
-                <div class="settings-profile-preview">
-                    <div class="settings-avatar" id="settings-avatar">
-                        <i class="fas fa-user-circle" id="avatar-icon"></i>
-                        <img id="avatar-image" alt="Profile photo" hidden />
-                    </div>
-                    <div>
-                        <h3 id="settings-display-name">User</h3>
-                        <p id="settings-email-readonly" class="settings-email">—</p>
-                    </div>
+            <section class="card settings-card settings-identity" aria-labelledby="settings-display-name">
+                <div class="settings-avatar" id="settings-avatar">
+                    <span id="avatar-icon" class="settings-avatar__icon"><span data-icon="user" data-size="36"></span></span>
+                    <img id="avatar-image" alt="Profile photo" hidden />
                 </div>
-                <div class="settings-block">
-                    <h4>Profile Photo</h4>
-                    <p class="settings-hint">JPG, PNG or WebP. Max 500KB.</p>
-                    <div class="avatar-upload-row">
+                <div class="settings-identity__text">
+                    <h2 class="pq-heading" id="settings-display-name">User</h2>
+                    <p id="settings-email-readonly" class="pq-small pq-muted settings-identity__email">—</p>
+                </div>
+                <div class="settings-identity__photo">
+                    <div class="settings-photo-actions">
                         <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp" hidden />
-                        <button type="button" id="upload-avatar-btn" class="secondary-btn">
-                            <i class="fas fa-camera"></i> Upload Photo
-                        </button>
-                        <button type="button" id="remove-avatar-btn" class="secondary-btn" hidden>
-                            <i class="fas fa-trash"></i> Remove
-                        </button>
+                        <button type="button" id="upload-avatar-btn" class="secondary-btn">Upload photo</button>
+                        <button type="button" id="remove-avatar-btn" class="secondary-btn" hidden>Remove</button>
                     </div>
-                    <p id="avatar-status" class="settings-status"></p>
+                    <p class="pq-help">JPG, PNG or WebP, up to 500 KB.</p>
+                    <p id="avatar-status" class="settings-status pq-status" aria-live="polite"></p>
                 </div>
             </section>
 
-            <section class="card">
-                <h3 class="card-heading"><i class="fas fa-user"></i> Profile</h3>
-                <div class="settings-block">
-                    <h4>Display Name</h4>
-                    <form id="username-form" class="settings-form settings-form-inline">
-                        <input type="text" id="settings-username" minlength="2" maxlength="50" required />
-                        <button type="submit" class="primary-btn">Save Name</button>
-                    </form>
-                    <p id="username-status" class="settings-status"></p>
-                </div>
-                <div class="settings-block">
-                    <h4>Email</h4>
-                    <p class="settings-readonly" id="settings-email-display">—</p>
-                    <p class="settings-hint">Email cannot be changed here. Contact support if needed.</p>
-                </div>
-            </section>
-
-            <section class="card">
-                <h3 class="card-heading"><i class="fas fa-lock"></i> Security</h3>
-                <div class="settings-block">
-                    <h4>Change Password</h4>
-                    <form id="password-form" class="settings-form">
-                        <input type="password" id="current-password" placeholder="Current password" required />
-                        <input type="password" id="new-password" placeholder="New password" required />
-                        <input type="password" id="confirm-password" placeholder="Confirm new password" required />
-                        <button type="submit" class="primary-btn">Update Password</button>
-                    </form>
-                    <p id="password-status" class="settings-status"></p>
+            <section class="card settings-card" aria-labelledby="settings-profile-heading">
+                <h2 class="pq-heading settings-card__title" id="settings-profile-heading">Profile</h2>
+                <form id="username-form" class="settings-form">
+                    <div class="pq-field">
+                        <label for="settings-username">Display name</label>
+                        <div class="settings-inline">
+                            <input class="pq-input" type="text" id="settings-username" minlength="2" maxlength="50" required autocomplete="nickname" aria-describedby="settings-username-help" />
+                            <button type="submit" class="primary-btn">Save name</button>
+                        </div>
+                        <p class="pq-help" id="settings-username-help">2 to 50 characters. Shown on the leaderboard.</p>
+                    </div>
+                    <p id="username-status" class="settings-status pq-status" aria-live="polite"></p>
+                </form>
+                <div class="pq-field settings-readonly-field">
+                    <span class="pq-label" id="settings-email-label">Email</span>
+                    <p class="settings-readonly" id="settings-email-display" aria-labelledby="settings-email-label">—</p>
+                    <p class="pq-help">Email can't be changed here. Contact support if you need to update it.</p>
                 </div>
             </section>
 
-            <section class="card settings-danger-card">
-                <h3 class="card-heading card-heading--danger"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
-                <div class="settings-block settings-danger">
-                    <h4>Delete Account</h4>
-                    <p class="settings-hint">This permanently removes your account, progress, and achievements.</p>
-                    <form id="delete-form" class="settings-form">
-                        <input type="password" id="delete-password" placeholder="Enter password to confirm" required />
-                        <button type="submit" class="danger-btn">Delete My Account</button>
-                    </form>
-                    <p id="delete-status" class="settings-status"></p>
+            <section class="card settings-card" aria-labelledby="settings-appearance-heading">
+                <h2 class="pq-heading settings-card__title" id="settings-appearance-heading">Appearance</h2>
+                <div class="pq-field">
+                    <span class="pq-label" id="settings-theme-label">Theme</span>
+                    <div class="pq-seg" role="group" aria-labelledby="settings-theme-label" id="settings-theme">
+                        <button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
+                        <button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
+                    </div>
+                    <p class="pq-help">Saved on this device. You can also switch from the top bar.</p>
                 </div>
+            </section>
+
+            <section class="card settings-card" aria-labelledby="settings-security-heading">
+                <h2 class="pq-heading settings-card__title" id="settings-security-heading">Password</h2>
+                <form id="password-form" class="settings-form">
+                    <div class="pq-field">
+                        <label for="current-password">Current password</label>
+                        <input class="pq-input" type="password" id="current-password" required autocomplete="current-password" />
+                    </div>
+                    <div class="pq-field">
+                        <label for="new-password">New password</label>
+                        <input class="pq-input" type="password" id="new-password" required autocomplete="new-password" />
+                    </div>
+                    <div class="pq-field">
+                        <label for="confirm-password">Confirm new password</label>
+                        <input class="pq-input" type="password" id="confirm-password" required autocomplete="new-password" />
+                    </div>
+                    <div class="settings-form__actions">
+                        <button type="submit" class="primary-btn">Update password</button>
+                    </div>
+                    <p id="password-status" class="settings-status pq-status" aria-live="polite"></p>
+                </form>
+            </section>
+
+            <section class="card settings-card settings-danger" aria-labelledby="settings-danger-heading">
+                <h2 class="pq-heading settings-card__title settings-danger__title" id="settings-danger-heading">
+                    <span data-icon="alert" data-size="20"></span>Delete account
+                </h2>
+                <p class="pq-small pq-muted settings-danger__copy">This permanently removes your account, progress and achievements. It can't be undone.</p>
+                <form id="delete-form" class="settings-form">
+                    <div class="pq-field">
+                        <label for="delete-password">Password</label>
+                        <input class="pq-input" type="password" id="delete-password" required autocomplete="current-password" aria-describedby="delete-password-help" />
+                        <p class="pq-help" id="delete-password-help">Enter your password to confirm.</p>
+                    </div>
+                    <div class="settings-form__actions">
+                        <button type="submit" class="danger-btn">Delete my account</button>
+                    </div>
+                    <p id="delete-status" class="settings-status pq-status" aria-live="polite"></p>
+                </form>
             </section>
         </div>
     </main>

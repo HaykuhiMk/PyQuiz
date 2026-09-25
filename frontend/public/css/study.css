@@ -1,67 +1,149 @@
-.filters {
+/* Study — filters as TextFields, cards as reading surfaces with the quiz
+   CodeBlock and the sun-backed Explanation (quiz-page.css). */
+.study-filters {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(140px, 200px) auto;
-  gap: var(--space-3);
-  align-items: center;
-  margin-bottom: var(--space-6);
+  grid-template-columns: minmax(0, 2fr) minmax(160px, 1fr) auto;
+  gap: var(--space-4);
+  align-items: start;
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
 }
 
-.filters input,
-.filters select {
-  min-width: 0;
+.study-filters .pq-field + .pq-field {
+  margin-top: 0;
 }
 
-.filters .primary-btn {
-  min-width: 130px;
+/* Align the button with the inputs (label row is 20px + 6px gap) */
+.study-filters .primary-btn {
+  margin-top: 26px;
+  min-height: 44px;
+  min-width: 132px;
 }
 
-@media (max-width: 640px) {
-  .filters {
-    grid-template-columns: 1fr;
-  }
+#study-feedback:empty {
+  display: none;
+}
 
-  .filters .primary-btn {
-    width: 100%;
-  }
+#study-feedback {
+  margin-bottom: var(--space-5);
 }
 
 .study-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  gap: var(--space-5);
+  align-items: start;
 }
 
-.study-card h3 {
-  font-size: var(--text-base);
-  margin: var(--space-4) 0;
-  line-height: var(--leading-relaxed);
-}
-
-.study-meta {
+.study-card {
+  min-width: 0; /* lets .pq-code scroll inside the grid track */
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+.study-card__topics {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.study-card__q {
+  line-height: 26px;
+  overflow-wrap: anywhere;
+}
+
+/* Options are read-only here: no hover edge, no pointer */
+.study-options {
   gap: var(--space-2);
-  font-size: var(--text-xs);
-  color: var(--text-muted);
 }
 
-.answer-block {
+.study-option {
+  cursor: default;
+  min-height: 48px;
+  padding: 8px var(--space-3);
+  font-size: 15px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+
+.study-option.pq-answer:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+}
+
+.study-option.pq-answer.is-correct:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 2px var(--sun-ink);
+}
+
+.study-card__reveal:empty {
+  display: none;
+}
+
+.study-card__reveal .study-reveal-btn {
+  align-self: flex-start;
+}
+
+.study-card__answer:focus {
+  outline: none;
+}
+
+/* The explanation unfolds (quiz Explanation motion) when revealed. */
+.study-card__explain {
   padding: var(--space-4);
-  margin: var(--space-4) 0;
-  background: rgba(34, 197, 94, 0.08);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  border-radius: var(--radius-md);
+}
+
+.study-card__answer {
+  margin: 0 0 var(--space-2);
   font-size: var(--text-sm);
+  line-height: 24px;
+  font-weight: 700;
+  color: var(--ink);
 }
 
-.pager {
-  margin-top: var(--space-8);
+.study-card__answer .pq-inline {
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
 }
 
-.pager-label {
-  min-width: 80px;
+.study-pager {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-7);
+}
+
+.study-pager__label {
+  min-width: 72px;
   text-align: center;
   font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--text-muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+}
+
+@media (max-width: 767px) {
+  .study-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .study-filters .primary-btn {
+    margin-top: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 639px) {
+  .study-card {
+    padding: var(--space-4);
+  }
+
+  .study-card__explain {
+    grid-template-columns: 24px 1fr;
+    gap: var(--space-3);
+  }
+
+  .study-card__explain .pq-disc-mark {
+    width: 24px;
+    height: 24px;
+  }
 }

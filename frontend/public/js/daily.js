@@ -1,94 +1,253 @@
 import { api, requireAuth } from './api.js';
+import { countUp } from './ui.js';
+import { icon } from './icons.js';
 
 let challenge = null;
 let currentIndex = 0;
+let selectedIndex = null;
 const answers = [];
 
 function escapeHTML(str = '') {
-  return str.replace(/[&<>"']/g, (match) =>
+  return String(str).replace(/[&<>"']/g, (match) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match])
   );
 }
 
+function capitalize(str = '') {
+  return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+}
+
+function formatChallengeDate(dateKey) {
+  // dateKey is the server's UTC day (YYYY-MM-DD); format it in UTC too so
+  // the label never drifts to the previous/next day in the viewer's zone.
+  const date = new Date(`${dateKey}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
+}
+
+function verdict(accuracy) {
+  if (accuracy >= 80) return 'Nicely done';
+  if (accuracy >= 50) return 'Good effort';
+  return 'Keep practicing';
+}
+
+const statusEl = () => document.getElementById('daily-status');
+const quizEl = () => document.getElementById('daily-quiz');
+const resultEl = () => document.getElementById('daily-result');
+
+function banner(tone, html, action = '') {
+  const mark =
+    tone === 'sun'
+      ? '<span class="pq-disc-mark" aria-hidden="true"></span>'
+      : icon(tone === 'coral' ? 'alert' : 'info');
+  const toneClass = tone === 'brand' ? '' : ` pq-banner--${tone}`;
+  return `<div class="pq-banner${toneClass}">${mark}<span class="pq-banner__text">${html}</span>${action}</div>`;
+}
+
+function renderLoading() {
+  statusEl().innerHTML = '';
+  quizEl().hidden = false;
+  quizEl().setAttribute('aria-busy', 'true');
+  quizEl().innerHTML = `
+    <div class="pq-question" aria-hidden="true"><div class="pq-question__in">
+      <div class="pq-skel pq-skel--line" style="width:30%"></div>
+      <div class="pq-skel pq-skel--title"></div>
+      <div class="pq-skel" style="height:56px"></div>
+      <div class="pq-skel" style="height:56px"></div>
+    </div></div>
+    <span class="pq-sr-only">Loading today's challenge</span>`;
+}
+
+function renderRibbon() {
+  const total = challenge.questions.length;
+  const cells = Array.from({ length: total }, (_, index) => {
+    if (index < currentIndex) return '<i class="done"></i>';
+    if (index === currentIndex) return '<i class="now"></i>';
+    return '<i></i>';
+  }).join('');
+  return `
+    <div class="daily-progress">
+      <div class="pq-ribbon-label">
+        <span>Question ${currentIndex + 1} of ${total}</span>
+        <span>${currentIndex} answered</span>
+      </div>
+      <div class="pq-ribbon" aria-hidden="true">${cells}</div>
+    </div>`;
+}
+
 function renderQuestion() {
   const question = challenge.questions[currentIndex];
-  const container = document.getElementById('daily-quiz');
-  container.style.display = 'block';
+  const isLast = currentIndex === challenge.questions.length - 1;
+  selectedIndex = null;
+
+  const container = quizEl();
+  container.hidden = false;
+  container.removeAttribute('aria-busy');
   container.innerHTML = `
-    <p>Question ${currentIndex + 1} of ${challenge.questions.length}</p>
-    <h3>${escapeHTML(question.question)}</h3>
-    ${
-      question.code
-        ? `<pre><code class="language-python">${escapeHTML(question.code.trim())}</code></pre>`
-        : ''
-    }
-    <div class="options">
-      ${question.options
-        .map(
-          (option, index) =>
-            `<button class="secondary-btn option-btn" data-index="${index}">${escapeHTML(option)}</button>`
-        )
-        .join('')}
-    </div>`;
+    ${renderRibbon()}
+    <article class="pq-question">
+      <div class="pq-question__in">
+        <div class="pq-question__meta">
+          ${question.difficulty ? `<span class="badge">${escapeHTML(capitalize(question.difficulty))}</span>` : ''}
+          ${question.topics?.length ? `<span>${escapeHTML(question.topics.join(', '))}</span>` : ''}
+        </div>
+        <h2 class="pq-title" id="daily-question-title" tabindex="-1">${escapeHTML(question.question)}</h2>
+        ${
+          question.code
+            ? `<pre class="pq-code"><code class="language-python">${escapeHTML(question.code.trim())}</code></pre>`
+            : ''
+        }
+        <div class="pq-answers" role="group" aria-labelledby="daily-question-title">
+          ${question.options
+            .map(
+              (option, index) => `
+            <button type="button" class="pq-answer" data-index="${index}" aria-pressed="false">
+              <span class="pq-answer__key" aria-hidden="true">${String.fromCharCode(65 + index)}</span>
+              <span>${escapeHTML(option)}</span>
+            </button>`
+            )
+            .join('')}
+        </div>
+        <div class="pq-question__foot">
+          <span class="pq-small pq-muted">Answers are scored when you submit the challenge.</span>
+          <button type="button" class="primary-btn daily-next" id="daily-next" disabled>
+            ${isLast ? 'Submit challenge' : 'Next question'}
+          </button>
+        </div>
+      </div>
+    </article>`;
 
-  if (window.Prism) Prism.highlightAll();
+  if (window.Prism) Prism.highlightAllUnder(container);
 
-  container.querySelectorAll('.option-btn').forEach((button) => {
+  const optionButtons = container.querySelectorAll('.pq-answer');
+  const nextBtn = container.querySelector('#daily-next');
+
+  optionButtons.forEach((button) => {
     button.addEventListener('click', () => {
-      answers[currentIndex] = {
-        questionId: question._id,
-        selectedIndex: Number(button.dataset.index),
-      };
-      currentIndex += 1;
-      if (currentIndex < challenge.questions.length) {
-        renderQuestion();
-      } else {
-        submitChallenge();
-      }
+      selectedIndex = Number(button.dataset.index);
+      optionButtons.forEach((el) => {
+        const isSelected = el === button;
+        el.classList.toggle('is-selected', isSelected);
+        el.setAttribute('aria-pressed', String(isSelected));
+      });
+      nextBtn.disabled = false;
     });
+  });
+
+  nextBtn.addEventListener('click', () => {
+    if (selectedIndex === null) return;
+    answers[currentIndex] = {
+      questionId: question._id,
+      selectedIndex,
+    };
+    currentIndex += 1;
+    if (currentIndex < challenge.questions.length) {
+      renderQuestion();
+      document.getElementById('daily-question-title')?.focus();
+    } else {
+      submitChallenge();
+    }
   });
 }
 
+function renderResult({ score, total, pointsAwarded = null, alreadyCompleted = false }) {
+  const accuracy = total ? Math.round((score / total) * 100) : 0;
+  const summary = alreadyCompleted
+    ? `You answered ${score} out of ${total} correctly today. A new challenge starts tomorrow.`
+    : `You answered ${score} out of ${total} correctly. Come back tomorrow for a new challenge.`;
+
+  const stats = [
+    `<div class="pq-stat"><span class="pq-stat__l">Accuracy</span><span class="pq-stat__v">${accuracy}%</span></div>`,
+  ];
+  if (pointsAwarded !== null) {
+    stats.push(
+      `<div class="pq-stat"><span class="pq-stat__l">Bonus points</span><span class="pq-stat__v"><span>+<span id="daily-points">0</span></span></span></div>`
+    );
+  }
+
+  const box = resultEl();
+  box.hidden = false;
+  box.innerHTML = `
+    <div class="pq-results">
+      <div class="pq-score-disc">
+        <span class="pq-small">Score</span>
+        <b id="results-score">0</b>
+        <span class="pq-results__of">of ${total}</span>
+      </div>
+      <div class="pq-stack pq-results__meta">
+        <span class="badge badge-brand">Daily challenge</span>
+        <h2 class="pq-display-xl" id="daily-result-title" tabindex="-1">${verdict(accuracy)}</h2>
+        <p class="pq-body-lg pq-muted">${summary}</p>
+        <div class="pq-stats" style="grid-template-columns: repeat(${stats.length}, 1fr)">${stats.join('')}</div>
+        <div class="pq-row action-row">
+          <a class="primary-btn" href="/leaderboard.html">View leaderboard</a>
+          <a class="secondary-btn" href="/account.html">Dashboard</a>
+        </div>
+      </div>
+    </div>`;
+
+  countUp(document.getElementById('results-score'), score, 800);
+  const pointsEl = document.getElementById('daily-points');
+  if (pointsEl) countUp(pointsEl, pointsAwarded, 1000);
+}
+
 async function submitChallenge() {
-  const resultBox = document.getElementById('daily-result');
-  document.getElementById('daily-quiz').style.display = 'none';
-  resultBox.style.display = 'block';
-  resultBox.innerHTML = '<div class="empty-state">Submitting your daily score...</div>';
+  quizEl().hidden = true;
+  statusEl().innerHTML = banner('brand', 'Submitting your answers…');
 
   try {
     const result = await api.submitDailyChallenge(answers);
-    resultBox.innerHTML = `
-      <h2>Daily Challenge Complete!</h2>
-      <p>You scored <strong>${result.score}/${result.total}</strong></p>
-      <p>+${result.pointsAwarded} bonus points</p>
-      <div class="action-row">
-        <a class="primary-btn" href="/leaderboard.html">View Leaderboard</a>
-        <a class="secondary-btn" href="/account.html">My Dashboard</a>
-      </div>`;
+    statusEl().innerHTML = '';
+    renderResult({ score: result.score, total: result.total, pointsAwarded: result.pointsAwarded });
+    document.getElementById('daily-result-title')?.focus();
   } catch (error) {
-    resultBox.innerHTML = `<div class="empty-state">${error.message}</div>`;
+    statusEl().innerHTML = banner(
+      'coral',
+      `We couldn't submit your answers. ${escapeHTML(error.message)}`,
+      '<button type="button" class="secondary-btn" id="daily-retry-submit">Try again</button>'
+    );
+    document.getElementById('daily-retry-submit').addEventListener('click', submitChallenge);
   }
 }
 
-async function init() {
-  if (!requireAuth()) return;
-
-  const status = document.getElementById('daily-status');
+async function loadChallenge() {
+  renderLoading();
   try {
     challenge = await api.getDailyChallenge();
+
+    const dateLabel = formatChallengeDate(challenge.date);
+    const dateBadge = document.getElementById('daily-date');
+    if (dateLabel) {
+      dateBadge.textContent = dateLabel;
+      dateBadge.hidden = false;
+    }
+
     if (challenge.completed) {
-      status.innerHTML = `
-        <h3>Already completed today</h3>
-        <p>Your score: <strong>${challenge.score}/${challenge.total}</strong></p>
-        <p>Come back tomorrow for a new challenge.</p>`;
+      quizEl().hidden = true;
+      statusEl().innerHTML = banner('sun', "<strong>You've completed today's challenge.</strong> Your score is saved.");
+      renderResult({ score: challenge.score, total: challenge.total, alreadyCompleted: true });
       return;
     }
 
-    status.innerHTML = `<p>Today's challenge has <strong>${challenge.total}</strong> questions. Good luck!</p>`;
+    statusEl().innerHTML = banner(
+      'brand',
+      `Today's challenge has <strong>${challenge.total}</strong> questions. You can submit it once.`
+    );
     renderQuestion();
   } catch (error) {
-    status.innerHTML = `<div class="empty-state">${error.message}</div>`;
+    quizEl().hidden = true;
+    statusEl().innerHTML = banner(
+      'coral',
+      `We couldn't load today's challenge. ${escapeHTML(error.message)}`,
+      '<button type="button" class="secondary-btn" id="daily-retry-load">Try again</button>'
+    );
+    document.getElementById('daily-retry-load').addEventListener('click', loadChallenge);
   }
+}
+
+function init() {
+  if (!requireAuth()) return;
+  loadChallenge();
 }
 
 document.addEventListener('DOMContentLoaded', init);

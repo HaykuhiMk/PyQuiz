@@ -1,10 +1,14 @@
 import { api, requireAuth } from './api.js';
 import { showToast } from './ui.js';
+import { mountIcons } from './icons.js';
+import { setTheme, getActiveTheme } from './theme.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (!requireAuth()) return;
 
+  mountIcons(document.querySelector('main'));
   bindSettings();
+  bindThemeChoice();
 
   try {
     const profile = await api.getMe();
@@ -48,7 +52,7 @@ function setStatus(elementId, message, isError = false) {
   const el = document.getElementById(elementId);
   if (!el) return;
   el.textContent = message;
-  el.className = `settings-status ${isError ? 'error' : 'success'}`;
+  el.className = `settings-status pq-status ${isError ? 'error' : 'success'}`;
 }
 
 function bindSettings() {
@@ -143,6 +147,31 @@ function bindSettings() {
       setStatus('delete-status', error.message, true);
     }
   });
+}
+
+// Mirrors the existing theme preference (theme.js); the top-bar toggle and
+// this control stay in sync by watching <html data-theme>.
+function bindThemeChoice() {
+  const group = document.getElementById('settings-theme');
+  if (!group) return;
+  const buttons = group.querySelectorAll('[data-theme-choice]');
+
+  const sync = () => {
+    const active = getActiveTheme();
+    buttons.forEach((button) => {
+      button.setAttribute('aria-pressed', String(button.dataset.themeChoice === active));
+    });
+  };
+
+  buttons.forEach((button) => {
+    button.addEventListener('click', () => setTheme(button.dataset.themeChoice));
+  });
+
+  new MutationObserver(sync).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme'],
+  });
+  sync();
 }
 
 function readFileAsDataUrl(file) {

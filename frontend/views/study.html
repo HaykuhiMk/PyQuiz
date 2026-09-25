@@ -8,32 +8,52 @@
   <link rel="stylesheet" href="/css/design-system.css" />
   <link rel="stylesheet" href="/css/components.css" />
   <link rel="stylesheet" href="/css/header_footer.css" />
+  <link rel="stylesheet" href="/css/quiz-page.css" />
   <link rel="stylesheet" href="/css/study.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/PrismJS/prism-themes/themes/prism-one-dark.css" />
 </head>
 <body class="pq-with-sidebar" data-page-title="Study">
   <div id="header-container"></div>
   <main class="page-shell reveal">
-    <h1 class="page-title">Study Mode</h1>
-    <p class="page-subtitle">Learn at your own pace with instant answers and explanations.</p>
-
-    <div class="card filters">
-      <input type="search" id="study-search" placeholder="Search topics..." />
-      <select id="study-difficulty" aria-label="Difficulty filter">
-        <option value="">All difficulties</option>
-        <option value="easy">Easy</option>
-        <option value="medium">Medium</option>
-        <option value="hard">Hard</option>
-      </select>
-      <button class="primary-btn" id="study-load-btn" type="button">Load Cards</button>
+    <div class="pq-page-head">
+      <div>
+        <h1 class="pq-display">Study</h1>
+        <p class="pq-body-lg pq-muted">Read questions with their answers and explanations, at your own pace.</p>
+      </div>
     </div>
 
-    <div id="study-cards" class="study-grid"></div>
-    <div class="pager btn-row btn-row--center">
-      <button class="secondary-btn" id="study-prev" type="button">Previous</button>
-      <span id="study-page-label" class="pager-label">Page 1</span>
-      <button class="secondary-btn" id="study-next" type="button">Next</button>
-    </div>
+    <form class="card study-filters" id="study-filters" role="search" aria-label="Filter study cards">
+      <div class="pq-field">
+        <label for="study-search">Topic</label>
+        <div class="pq-inputwrap">
+          <span data-icon="search"></span>
+          <input class="pq-input" type="search" id="study-search" placeholder="Try &quot;lists&quot;" autocomplete="off" aria-describedby="study-search-help" />
+        </div>
+        <p class="pq-help" id="study-search-help">Leave empty to include every topic.</p>
+      </div>
+      <div class="pq-field">
+        <label for="study-difficulty">Difficulty</label>
+        <select class="pq-input" id="study-difficulty">
+          <option value="">All difficulties</option>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+      <button class="primary-btn" id="study-load-btn" type="submit">Load cards</button>
+    </form>
+
+    <div id="study-feedback" role="status" aria-live="polite"></div>
+    <div id="study-cards" class="study-grid" aria-busy="false"></div>
+
+    <nav class="study-pager" aria-label="Study pages">
+      <button class="secondary-btn" id="study-prev" type="button">
+        <span data-icon="back" data-size="18"></span>Previous
+      </button>
+      <span id="study-page-label" class="study-pager__label">Page 1</span>
+      <button class="secondary-btn" id="study-next" type="button">
+        Next<span data-icon="arrow" data-size="18"></span>
+      </button>
+    </nav>
   </main>
   <div id="footer-container"></div>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/prism.min.js"></script>
