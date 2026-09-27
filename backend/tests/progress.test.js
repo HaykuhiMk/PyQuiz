@@ -45,6 +45,53 @@ describe('GET /api/v1/questions/random', () => {
   });
 });
 
+describe('GET /api/v1/questions (public listing)', () => {
+  it('never includes the answer or explanation', async () => {
+    await createQuestion();
+    const res = await request(app).get('/api/v1/questions');
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].answer).toBeUndefined();
+    expect(res.body.data[0].explanation).toBeUndefined();
+  });
+});
+
+describe('GET /api/v1/questions/study', () => {
+  it('includes the answer and explanation for study cards', async () => {
+    await createQuestion();
+    const res = await request(app).get('/api/v1/questions/study');
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0]).toMatchObject({
+      question: 'What is 2 + 2?',
+      options: ['3', '4', '5', '6'],
+      answer: '4',
+      explanation: '2 + 2 = 4',
+    });
+    expect(res.body.meta.total).toBe(1);
+  });
+
+  it('returns only the study fields, not the full document', async () => {
+    await createQuestion();
+    const res = await request(app).get('/api/v1/questions/study');
+
+    expect(Object.keys(res.body.data[0]).sort()).toEqual(
+      ['_id', 'answer', 'code', 'difficulty', 'explanation', 'options', 'question', 'topics'].sort()
+    );
+  });
+
+  it('applies the difficulty filter', async () => {
+    await createQuestion();
+    await createQuestion({ question: 'Hard one?', difficulty: 'hard' });
+    const res = await request(app).get('/api/v1/questions/study?difficulty=hard');
+
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].question).toBe('Hard one?');
+  });
+});
+
 describe('POST /api/v1/questions/:id/check', () => {
   it('reports a wrong guess without revealing the answer', async () => {
     const q = await createQuestion();

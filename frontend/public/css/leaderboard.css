@@ -56,7 +56,7 @@
 
 .lb-rank--first {
   background: var(--sun);
-  color: #13233f;
+  color: var(--on-sun);
   border-radius: var(--radius-disc);
 }
 

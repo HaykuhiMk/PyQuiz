@@ -16,6 +16,7 @@ const PATHS = {
   flag: '<path d="M5 21V4h12l-2 4 2 4H5"/>',
   clock: '<path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/><path d="M12 7v5l3 3"/>',
   play: '<path d="M7 4v16l13-8z"/>',
+  settings: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><path d="M14 4v6h4V4zM6 14v6h4v-6z"/>',
   topics: '<path d="M4 4h7v7H4z"/><path d="M13 4h7v7h-7z"/><path d="M4 13h7v7H4z"/><path d="M13 16.5h7M16.5 13v7"/>',
   chart: '<path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/>',
   code: '<path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/>',

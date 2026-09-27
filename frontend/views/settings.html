@@ -75,14 +75,15 @@
 
             <section class="card settings-card" aria-labelledby="settings-security-heading">
                 <h2 class="pq-heading settings-card__title" id="settings-security-heading">Password</h2>
-                <form id="password-form" class="settings-form">
+                <form id="password-form" class="settings-form" method="post">
                     <div class="pq-field">
                         <label for="current-password">Current password</label>
                         <input class="pq-input" type="password" id="current-password" required autocomplete="current-password" />
                     </div>
                     <div class="pq-field">
                         <label for="new-password">New password</label>
-                        <input class="pq-input" type="password" id="new-password" required autocomplete="new-password" />
+                        <input class="pq-input" type="password" id="new-password" required autocomplete="new-password" aria-describedby="new-password-help" />
+                        <span class="pq-help" id="new-password-help">At least 8 characters, with an uppercase letter, a lowercase letter, a number and one of @ $ ! % * ? &amp; _</span>
                     </div>
                     <div class="pq-field">
                         <label for="confirm-password">Confirm new password</label>
@@ -100,7 +101,7 @@
                     <span data-icon="alert" data-size="20"></span>Delete account
                 </h2>
                 <p class="pq-small pq-muted settings-danger__copy">This permanently removes your account, progress and achievements. It can't be undone.</p>
-                <form id="delete-form" class="settings-form">
+                <form id="delete-form" class="settings-form" method="post">
                     <div class="pq-field">
                         <label for="delete-password">Password</label>
                         <input class="pq-input" type="password" id="delete-password" required autocomplete="current-password" aria-describedby="delete-password-help" />

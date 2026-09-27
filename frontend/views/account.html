@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/account.css">
     <link rel="stylesheet" href="/css/header_footer.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="pq-with-sidebar" data-page-title="Dashboard">
     <div id="header-container"></div>
@@ -20,31 +19,31 @@
                 <p class="pq-body-lg pq-muted">Your Python learning command center</p>
             </div>
             <a href="/questions.html" class="primary-btn primary-btn--lg">
-                <i class="fas fa-play"></i>
+                <span data-icon="play"></span>
                 <span>Start a quiz</span>
             </a>
         </div>
 
         <div class="profile-info">
             <div class="profile-avatar" id="profile-avatar">
-                <i class="fas fa-user-circle" id="avatar-icon"></i>
+                <span id="avatar-icon"><span data-icon="user" data-size="24"></span></span>
                 <img id="avatar-image" alt="Profile photo" hidden />
             </div>
-            <div class="info-item"><i class="fas fa-envelope"></i><span id="email">Loading...</span></div>
-            <div class="info-item"><i class="fas fa-crown"></i><span id="rank">Loading...</span></div>
+            <div class="info-item"><span data-icon="mail" data-size="16"></span><span id="email">Loading...</span></div>
+            <div class="info-item"><span data-icon="trophy" data-size="16"></span><span id="rank">Loading...</span></div>
             <a href="/settings.html" class="secondary-btn info-settings-link" title="Account settings">
-                <i class="fas fa-cog"></i>
+                <span data-icon="settings" data-size="16"></span>
                 <span>Settings</span>
             </a>
         </div>
 
         <div class="dashboard-grid-2 reveal">
             <div class="card pq-card--ribbon" id="daily-card">
-                <h3 class="card-heading"><i class="fas fa-calendar-day"></i> Daily Challenge</h3>
+                <h3 class="card-heading">Daily Challenge</h3>
                 <div id="daily-status">Loading...</div>
             </div>
             <div class="card streak-card">
-                <h3 class="card-heading"><i class="fas fa-fire"></i> Streak</h3>
+                <h3 class="card-heading">Streak</h3>
                 <div class="streak-chip"><span class="streak-chip__dot"></span><span id="streak-count">0</span> <small>day streak</small></div>
                 <p class="pq-muted pq-small" id="best-streak-line">Best streak: 0 days</p>
             </div>
@@ -68,7 +67,7 @@
 
         <div class="progress-section card">
             <div class="progress-header">
-                <h3 class="card-heading"><i class="fas fa-chart-line"></i> Overall Progress</h3>
+                <h3 class="card-heading">Overall progress</h3>
                 <span class="progress-percentage" id="progress-percentage">0%</span>
             </div>
             <div class="progress-bar"><div id="progress-fill"></div></div>
@@ -77,31 +76,31 @@
 
         <div class="dashboard-grid-2">
             <div class="pq-stack" id="weak-topics-section" hidden>
-                <h3 class="card-heading"><i class="fas fa-bullseye"></i> Needs practice</h3>
+                <h3 class="card-heading">Needs practice</h3>
                 <div class="fold-card-grid" id="weak-topics-grid"></div>
             </div>
             <div class="card" id="mastery-card">
-                <h3 class="card-heading"><i class="fas fa-layer-group"></i> Topic Mastery</h3>
+                <h3 class="card-heading">Topic mastery</h3>
                 <div id="topic-mastery-list"></div>
             </div>
         </div>
 
         <div class="achievements card">
-            <h3 class="card-heading"><i class="fas fa-trophy"></i> Achievements</h3>
+            <h3 class="card-heading">Achievements</h3>
             <div class="achievements-grid" id="badges"></div>
         </div>
 
         <div class="quick-actions card">
-            <h3 class="card-heading"><i class="fas fa-bolt"></i> Play</h3>
+            <h3 class="card-heading">Play</h3>
             <div class="btn-row btn-row--stretch">
-                <a href="/questions.html" class="primary-btn"><i class="fas fa-play"></i> Quiz</a>
-                <a href="/daily.html" class="secondary-btn"><i class="fas fa-calendar-day"></i> Daily</a>
-                <a href="/study.html" class="secondary-btn"><i class="fas fa-book"></i> Study</a>
-                <a href="/leaderboard.html" class="secondary-btn"><i class="fas fa-trophy"></i> Leaderboard</a>
+                <a href="/questions.html" class="primary-btn"><span data-icon="play" data-size="16"></span> Quiz</a>
+                <a href="/daily.html" class="secondary-btn"><span data-icon="flag" data-size="16"></span> Daily</a>
+                <a href="/study.html" class="secondary-btn"><span data-icon="code" data-size="16"></span> Study</a>
+                <a href="/leaderboard.html" class="secondary-btn"><span data-icon="trophy" data-size="16"></span> Leaderboard</a>
             </div>
             <div class="account-actions">
                 <button id="logout" class="danger-btn" type="button">
-                    <i class="fas fa-sign-out-alt"></i> Logout
+                    Logout
                 </button>
             </div>
         </div>

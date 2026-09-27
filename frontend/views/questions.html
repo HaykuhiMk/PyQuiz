@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="/css/components.css" />
     <link rel="stylesheet" href="/css/quiz-page.css" />
     <link rel="stylesheet" href="/css/header_footer.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   </head>
   <body class="pq-with-sidebar" data-page-title="Quiz">
     <div id="header-container"></div>
@@ -33,13 +32,15 @@
           <small>One mistake ends the run</small>
         </button>
       </div>
-      <label for="difficulty-filter">Difficulty</label>
-      <select id="difficulty-filter">
-        <option value="">All difficulties</option>
-        <option value="easy">Easy</option>
-        <option value="medium">Medium</option>
-        <option value="hard">Hard</option>
-      </select>
+      <div class="pq-field quiz-difficulty">
+        <label for="difficulty-filter">Difficulty</label>
+        <select class="pq-input" id="difficulty-filter">
+          <option value="">All difficulties</option>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
     </div>
 
     <div id="topic-selection" class="reveal">
@@ -48,9 +49,12 @@
         <p>Select the topics you'd like to practice. Mix and match to create your perfect quiz!</p>
       </div>
 
-      <div class="search-container">
-        <i class="fas fa-search"></i>
-        <input type="text" id="topic-search" placeholder="Search topics..." />
+      <div class="pq-field search-container">
+        <label for="topic-search" class="pq-sr-only">Search topics</label>
+        <div class="pq-inputwrap">
+          <span data-icon="search"></span>
+          <input class="pq-input" type="search" id="topic-search" placeholder="Search topics" autocomplete="off" />
+        </div>
       </div>
 
       <div class="categories-container">
@@ -64,10 +68,10 @@
 
       <div class="bulk-actions">
         <button id="select-all-btn" class="action-btn" type="button">
-          <i class="fas fa-check-square"></i> Select All
+          Select all
         </button>
         <button id="clear-all-btn" class="action-btn" type="button">
-          <i class="fas fa-square"></i> Clear All
+          Clear all
         </button>
       </div>
 

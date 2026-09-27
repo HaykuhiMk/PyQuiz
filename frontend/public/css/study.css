@@ -75,20 +75,10 @@
   box-shadow: inset 0 0 0 2px var(--sun-ink);
 }
 
-.study-card__reveal:empty {
-  display: none;
-}
-
-.study-card__reveal .study-reveal-btn {
-  align-self: flex-start;
-}
-
-.study-card__answer:focus {
-  outline: none;
-}
-
-/* The explanation unfolds (quiz Explanation motion) when revealed. */
+/* Static reading content: the explanation is already open, so it skips
+   the quiz's unfold reveal. */
 .study-card__explain {
+  animation: none;
   padding: var(--space-4);
 }
 

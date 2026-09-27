@@ -33,20 +33,6 @@
   margin: var(--space-6) 0;
 }
 
-.search-container input {
-  padding-left: 2.75rem;
-  border-radius: var(--radius-full);
-}
-
-.search-container i {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-}
-
 .categories-container {
   display: flex;
   flex-wrap: wrap;
@@ -62,7 +48,7 @@
   color: var(--text-secondary);
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-none);
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out);
 }
@@ -87,7 +73,7 @@
   overflow-y: auto;
   padding: var(--space-4);
   background: var(--bg-elevated);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-none);
   border: 1px solid var(--border-subtle);
 }
 
@@ -100,8 +86,19 @@
   border-radius: var(--radius-full);
 }
 
+/* Visually hidden but still focusable, so topics can be picked from the
+   keyboard; the label shows the checked and focus states. */
 .topic-checkbox {
-  display: none;
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.topic-checkbox:focus-visible + .topic-label {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .topic-label {
@@ -113,7 +110,7 @@
   color: var(--text-secondary);
   background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-none);
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out);
 }
@@ -174,8 +171,8 @@
   min-width: 200px;
 }
 
-#difficulty-filter {
-  margin-top: var(--space-3);
+.quiz-difficulty {
+  margin-top: var(--space-5);
 }
 
 /* Quiz container — the page shell around the question card */
@@ -469,7 +466,7 @@
 
 .pq-answer.is-correct .pq-answer__key {
   background: var(--sun);
-  color: #13233f;
+  color: var(--on-sun);
   border-radius: var(--radius-disc);
   transform: scale(1.12);
 }
@@ -485,7 +482,7 @@
 
 .pq-answer.is-wrong .pq-answer__key {
   background: var(--coral);
-  color: #fff;
+  color: var(--on-coral);
 }
 
 .pq-answer.is-wrong .pq-answer__tag {
@@ -629,7 +626,7 @@
   height: 220px;
   border-radius: var(--radius-disc);
   background: var(--sun);
-  color: #13233f;
+  color: var(--on-sun);
   display: flex;
   flex-direction: column;
   align-items: center;

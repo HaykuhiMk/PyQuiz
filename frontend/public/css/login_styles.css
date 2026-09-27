@@ -1,36 +1,6 @@
-/* Auth pages. Login and registration use the shared .pq-auth layout from
-   public.css; the rules for the forgot/reset password containers below
-   are kept as they were for those (not yet redesigned) pages. */
-
-#forgot-password-container,
-#reset-container,
-#reset-password-container {
-  width: min(420px, 92vw);
-  margin: calc(var(--nav-height) + var(--space-12)) auto var(--space-12);
-  padding: var(--space-8);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
-}
-
-#forgot-password-container h2,
-#reset-container h2,
-#reset-password-container h2 {
-  text-align: center;
-  font-size: var(--text-2xl);
-  font-weight: 700;
-  margin-bottom: var(--space-6);
-  letter-spacing: -0.02em;
-}
-
-#helper-text {
-  text-align: center;
-  font-size: var(--text-sm);
-  margin-top: var(--space-4);
-  color: var(--text-muted);
-  max-width: none;
-}
+/* Auth pages (login, registration, forgot/reset password) use the shared
+   .pq-auth layout from public.css; this file adds their specifics. The
+   generic form rules below are also relied on by admin_login.css. */
 
 .form-footer {
   margin-top: var(--space-2);
@@ -52,11 +22,7 @@ form .primary-btn {
   margin-top: var(--space-2);
 }
 
-/* ─── Login / registration ─── */
-.pq-auth #helper-text {
-  margin: 0;
-  text-align: left;
-}
+/* ─── Auth pages ─── */
 
 .pq-auth__labelrow {
   display: flex;

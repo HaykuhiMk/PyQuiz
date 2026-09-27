@@ -119,6 +119,12 @@ function bindSettings() {
       return;
     }
 
+    // Same rule the API enforces; checked here so the message is specific.
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$/.test(newPassword)) {
+      setStatus('password-status', 'New password must be at least 8 characters long, with an uppercase letter, a lowercase letter, a number and one of @ $ ! % * ? & _.', true);
+      return;
+    }
+
     try {
       await api.changePassword({ currentPassword, newPassword });
       event.target.reset();

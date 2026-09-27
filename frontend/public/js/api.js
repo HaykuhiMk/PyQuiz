@@ -1,11 +1,11 @@
 import API_BASE_URL from './config.js';
 
 const ACHIEVEMENT_LABELS = {
-  first_correct: { icon: 'fa-star', label: 'First Correct' },
-  streak_5: { icon: 'fa-fire', label: '5 Streak' },
-  streak_10: { icon: 'fa-bolt', label: '10 Streak' },
-  points_100: { icon: 'fa-medal', label: '100 Points' },
-  points_500: { icon: 'fa-crown', label: '500 Points' },
+  first_correct: { label: 'First Correct' },
+  streak_5: { label: '5 Streak' },
+  streak_10: { label: '10 Streak' },
+  points_100: { label: '100 Points' },
+  points_500: { label: '500 Points' },
 };
 
 function readCookie(name) {
@@ -150,7 +150,7 @@ export const api = {
 };
 
 export function getAchievementMeta(key) {
-  return ACHIEVEMENT_LABELS[key] || { icon: 'fa-award', label: key };
+  return ACHIEVEMENT_LABELS[key] || { label: key };
 }
 
 // The auth token itself lives only in an httpOnly cookie (invisible to JS).

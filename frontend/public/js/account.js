@@ -1,8 +1,10 @@
 import { api, getAchievementMeta, requireAuth } from './api.js';
+import { mountIcons } from './icons.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (!requireAuth()) return;
 
+  mountIcons(document.querySelector('.account-container'));
   document.getElementById('logout').addEventListener('click', handleLogout);
 
   try {
@@ -151,9 +153,12 @@ function renderAchievements(achievements) {
   document.getElementById('badges').innerHTML = allKeys
     .map((key) => {
       const meta = getAchievementMeta(key);
-      return `<div class="achievement-card ${unlocked.has(key) ? 'unlocked' : 'locked'}">
-        <i class="fas ${meta.icon}"></i>
-        <span>${meta.label}</span>
+      const isUnlocked = unlocked.has(key);
+      // The sun disc marks a reward earned; a locked one is its outline.
+      return `<div class="achievement-card ${isUnlocked ? 'unlocked' : 'locked'}">
+        <span class="achievement-card__disc" aria-hidden="true"></span>
+        <span class="achievement-card__label">${meta.label}</span>
+        <span class="pq-sr-only">${isUnlocked ? 'Unlocked' : 'Locked'}</span>
       </div>`;
     })
     .join('');

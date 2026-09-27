@@ -13,6 +13,8 @@
   --brand: #2d6fbc;
   --on-brand: #ffffff;
   --sun: #f7d35b;
+  /* Text on a sun fill is light-theme ink in both themes. */
+  --on-sun: #13233f;
 
   /* Dark theme (default) */
   --ground: #0e1726;
@@ -29,6 +31,7 @@
   --sun-ink: #f7d35b;
   --coral: #f07a70;
   --coral-soft: #2a1c1c;
+  --on-coral: #13233f;
   --focus: #f7d35b;
   --shadow-lift: 0 12px 32px -12px rgba(0, 0, 0, 0.6);
   --shadow-crease: inset 0 -3px 0 rgba(0, 0, 0, 0.45);
@@ -153,6 +156,7 @@
   --sun-ink: #8a5a00;
   --coral: #c8382f;
   --coral-soft: #fbe5e2;
+  --on-coral: #ffffff;
   --focus: #1e4e7e;
   --shadow-lift: 0 12px 32px -12px rgba(19, 35, 63, 0.28);
   --shadow-crease: inset 0 -3px 0 rgba(38, 58, 86, 0.35);

@@ -186,6 +186,11 @@
   margin-top: var(--space-2);
 }
 
+.pq-auth__body {
+  margin: var(--space-4) 0 0;
+  max-width: none;
+}
+
 .pq-auth__alt {
   margin: var(--space-5) 0 0;
   padding-top: var(--space-4);

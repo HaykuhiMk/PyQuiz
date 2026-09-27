@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <div class="pq-app-topbar">
   <button id="sidebar-toggle" class="pq-drawer-toggle" type="button" aria-expanded="false" aria-controls="pq-sidebar" aria-label="Open navigation menu">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M4 6h16M4 12h16M4 18h16" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+      <path d="M4 6h16M4 12h16M4 18h10" />
     </svg>
   </button>
   <a href="/account.html" class="pq-app-topbar__logo">
-    <img src="/images/logo.png" alt="PyQuiz Logo" class="logo-img" />
+    <img src="/images/pyquiz-wordmark.png" alt="PyQuiz dashboard" class="pq-wordmark" width="111" height="20" />
   </a>
   <span class="pq-app-topbar__title" id="app-page-title"></span>
   <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to light theme">
@@ -25,10 +25,10 @@
 <aside class="pq-side" id="pq-sidebar" aria-label="Main navigation">
   <div class="pq-side__brand">
     <a href="/account.html" class="pq-side__logo">
-      <img src="/images/logo.png" alt="PyQuiz Logo" class="logo-img" />
+      <img src="/images/pyquiz-wordmark.png" alt="PyQuiz dashboard" class="pq-wordmark" width="133" height="24" />
     </a>
     <button id="sidebar-close" class="pq-drawer-close" type="button" aria-label="Close navigation menu">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
         <path d="M6 6l12 12M18 6L6 18" />
       </svg>
     </button>
@@ -36,23 +36,23 @@
 
   <nav aria-label="Primary" class="pq-side__nav">
     <a class="pq-sidelink" href="/account.html" data-nav="account">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M3 11 12 3l9 8"/><path d="M5 9v12h14V9"/><path d="M10 21v-6h4v6"/></svg>
       <span>Dashboard</span>
     </a>
     <a class="pq-sidelink" href="/questions.html" data-nav="questions">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4l14 8-14 8V4z" /></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg>
       <span>Quiz</span>
     </a>
     <a class="pq-sidelink" href="/daily.html" data-nav="daily">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="1" /><path d="M8 3v4M16 3v4M3 10h18" /></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M5 21V4h12l-2 4 2 4H5"/></svg>
       <span>Daily Challenge</span>
     </a>
     <a class="pq-sidelink" href="/study.html" data-nav="study">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg>
       <span>Study</span>
     </a>
     <a class="pq-sidelink" href="/leaderboard.html" data-nav="leaderboard">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z" /><path d="M7 6H4a2 2 0 0 0 2 4M17 6h3a2 2 0 0 1-2 4" /></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/><path d="M12 14v4M8 21h8"/></svg>
       <span>Leaderboard</span>
     </a>
   </nav>
@@ -60,7 +60,7 @@
   <div class="pq-side__label">Account</div>
   <nav aria-label="Account" class="pq-side__nav">
     <a class="pq-sidelink" href="/settings.html" data-nav="settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><path d="M14 4v6h4V4zM6 14v6h4v-6z"/></svg>
       <span>Settings</span>
     </a>
   </nav>

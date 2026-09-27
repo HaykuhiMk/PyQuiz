@@ -48,12 +48,10 @@ function renderExplanation(answer, explanation) {
 
 function renderCard(question) {
   const topicsLabel = (question.topics || []).join(', ');
-  // The study endpoint currently omits answer/explanation; when absent the
-  // card reveals them on request through the existing check endpoint.
   const hasAnswer = question.answer !== undefined && question.answer !== null;
   const correctIndex = hasAnswer ? (question.options || []).indexOf(question.answer) : -1;
   return `
-    <article class="card study-card" data-question-id="${escapeHTML(String(question._id))}">
+    <article class="card study-card">
       <div class="card__meta">
         ${question.difficulty ? `<span class="badge">${escapeHTML(capitalize(question.difficulty))}</span>` : '<span></span>'}
         ${topicsLabel ? `<span class="study-card__topics">${escapeHTML(topicsLabel)}</span>` : ''}
@@ -80,41 +78,8 @@ function renderCard(question) {
         </ol>`
           : ''
       }
-      <div class="study-card__reveal">
-        ${
-          hasAnswer
-            ? renderExplanation(question.answer, question.explanation)
-            : '<button type="button" class="secondary-btn study-reveal-btn">Show answer</button>'
-        }
-      </div>
+      ${hasAnswer ? renderExplanation(question.answer, question.explanation) : ''}
     </article>`;
-}
-
-async function revealAnswer(button) {
-  const card = button.closest('.study-card');
-  const slot = card.querySelector('.study-card__reveal');
-  button.disabled = true;
-  button.setAttribute('aria-busy', 'true');
-
-  try {
-    const result = await api.checkAnswer(card.dataset.questionId, { reveal: true });
-    const options = card.querySelectorAll('.study-option');
-    const correct = options[result.correctIndex];
-    if (correct) {
-      correct.classList.add('is-correct');
-      correct.insertAdjacentHTML('beforeend', '<span class="pq-answer__tag">Correct</span>');
-    }
-    slot.innerHTML = renderExplanation(result.correctAnswer, result.explanation);
-    slot.querySelector('.study-card__answer')?.setAttribute('tabindex', '-1');
-    slot.querySelector('.study-card__answer')?.focus();
-  } catch (error) {
-    button.disabled = false;
-    button.removeAttribute('aria-busy');
-    slot.insertAdjacentHTML(
-      'beforeend',
-      `<p class="pq-status error">${escapeHTML(`Couldn't load the answer. ${error.message}`)}</p>`
-    );
-  }
 }
 
 function renderSkeletons() {
@@ -205,11 +170,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       page += 1;
       loadCards();
     }
-  });
-
-  document.getElementById('study-cards').addEventListener('click', (event) => {
-    const button = event.target.closest('.study-reveal-btn');
-    if (button) revealAnswer(button);
   });
 
   updateSearchHelp();

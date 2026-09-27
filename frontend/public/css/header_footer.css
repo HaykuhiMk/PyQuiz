@@ -4,19 +4,45 @@
    so it can't bleed onto the logged-in app shell below.
    ═══════════════════════════════════════════════════════════════ */
 
-/* Sticky footer: public pages are a full-height column and the footer
-   takes up the remaining space above it, so short pages (login,
-   registration) keep the footer at the bottom of the viewport while
-   long pages let it follow the content. */
-body:not(.pq-with-sidebar) {
+/* Sticky footer, shared by public pages and the logged-in app shell:
+   the page is a full-height column and the footer takes the remaining
+   space above it, so short pages keep the footer at the bottom of the
+   viewport while long pages let it follow the content. */
+body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
 }
 
-body:not(.pq-with-sidebar) > #footer-container {
+body > #footer-container {
   margin-top: auto;
+}
+
+/* Flex items centred with `margin: 0 auto` would shrink to their content
+   width; the app pages' main containers stay full width up to their own
+   max-width. (Fixed layers such as #toast-root are left alone.) */
+body.pq-with-sidebar > main,
+body.pq-with-sidebar > .account-container,
+body.pq-with-sidebar > #mode-selection,
+body.pq-with-sidebar > #topic-selection,
+body.pq-with-sidebar > #quiz-container {
+  width: 100%;
+}
+
+/* Flex items don't collapse adjacent margins; keep the quiz setup cards'
+   single 32px gap. */
+body.pq-with-sidebar > #mode-selection {
+  margin-bottom: 0;
+}
+
+/* On small screens the quiz setup cards trade their auto side margins for
+   fixed ones (quiz-page.css), so they stretch to fill instead. */
+@media (max-width: 768px) {
+  body.pq-with-sidebar > #mode-selection,
+  body.pq-with-sidebar > #topic-selection {
+    width: auto;
+  }
 }
 
 /* ─── TopBar ─── */
@@ -428,9 +454,8 @@ body:not(.pq-with-sidebar) > #footer-container {
   align-items: center;
 }
 
-.pq-app-topbar__logo .logo-img {
-  height: 28px;
-  width: auto;
+.pq-app-topbar__logo .pq-wordmark {
+  height: 20px;
 }
 
 .pq-app-topbar__title {
@@ -491,11 +516,13 @@ body:not(.pq-with-sidebar) > #footer-container {
 .pq-side__logo {
   display: flex;
   align-items: center;
+  padding: 4px 0;
 }
 
-.pq-side__logo .logo-img {
-  height: 28px;
-  width: auto;
+.pq-side__logo:focus-visible,
+.pq-app-topbar__logo:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
 }
 
 .pq-side__nav {

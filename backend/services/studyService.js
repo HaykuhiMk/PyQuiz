@@ -1,7 +1,7 @@
 const questionService = require('./questionService');
 
 async function getStudyQuestions({ topics = [], difficulty, page = 1, limit = 10 }) {
-  const result = await questionService.getQuestionsByFilters({
+  const result = await questionService.getQuestionsForStudy({
     topics,
     difficulty,
     page,

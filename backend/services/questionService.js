@@ -33,13 +33,13 @@ async function getTopics() {
   return topics.filter(Boolean).sort();
 }
 
-async function getQuestionsByFilters({ topics = [], difficulty, page = 1, limit = 20 }) {
+async function findQuestionPage({ topics = [], difficulty, page = 1, limit = 20 }) {
   const query = buildQuestionQuery({ topics, difficulty });
   const total = await questionRepository.countQuestions(query);
   const questions = await questionRepository.findQuestionsPaginated(query, { page, limit });
 
   return {
-    questions: questions.map(sanitizeQuestion),
+    questions,
     meta: {
       total,
       page,
@@ -48,6 +48,18 @@ async function getQuestionsByFilters({ topics = [], difficulty, page = 1, limit 
       hasNextPage: page * limit < total,
     },
   };
+}
+
+// Public quiz listing: answers and explanations are stripped.
+async function getQuestionsByFilters(filters) {
+  const result = await findQuestionPage(filters);
+  return { questions: result.questions.map(sanitizeQuestion), meta: result.meta };
+}
+
+// Study mode shows each question with its answer and explanation, so it
+// gets the full documents; studyService picks the fields it returns.
+async function getQuestionsForStudy(filters) {
+  return findQuestionPage(filters);
 }
 
 async function getRandomQuestion({ topics = [], difficulty, excludeIds = [] }) {
@@ -81,21 +93,8 @@ async function addQuestion(payload) {
   return questionRepository.createQuestion(payload);
 }
 
-async function getQuestionsForAdmin({ topics = [], difficulty, page = 1, limit = 20 }) {
-  const query = buildQuestionQuery({ topics, difficulty });
-  const total = await questionRepository.countQuestions(query);
-  const questions = await questionRepository.findQuestionsPaginated(query, { page, limit });
-
-  return {
-    questions,
-    meta: {
-      total,
-      page,
-      limit,
-      totalPages: total ? Math.ceil(total / limit) : 0,
-      hasNextPage: page * limit < total,
-    },
-  };
+async function getQuestionsForAdmin(filters) {
+  return findQuestionPage(filters);
 }
 
 async function getQuestionByIdForAdmin(id) {
@@ -160,6 +159,7 @@ async function checkAnswer(questionId, { selectedIndex, reveal = false } = {}) {
 module.exports = {
   getTopics,
   getQuestionsByFilters,
+  getQuestionsForStudy,
   getQuestionsForAdmin,
   getQuestionByIdForAdmin,
   updateQuestion,

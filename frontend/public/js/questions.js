@@ -1,5 +1,6 @@
-import { api, isLoggedIn } from "./api.js";
+import { api, getAchievementMeta, isLoggedIn } from "./api.js";
 import { celebrateQuizComplete, initRipples, countUp } from "./ui.js";
+import { mountIcons } from "./icons.js";
 
 const BLITZ_SECONDS = 45;
 
@@ -7,6 +8,7 @@ const ICON_CHECK = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" 
 const ICON_CROSS = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
 document.addEventListener("DOMContentLoaded", () => {
+    mountIcons(document.getElementById("topic-selection"));
     const topicSelectionContainer = document.getElementById("topic-selection");
     const topicsList = document.getElementById("topics-list");
     const topicSearch = document.getElementById("topic-search");
@@ -171,8 +173,8 @@ document.addEventListener("DOMContentLoaded", () => {
             let delay = 0;
             const topicsHtml = allTopics.map(topic => `
                 <div class="topic-item" style="animation-delay: ${delay}s">
-                    <input type="checkbox" id="topic-${topic}" class="topic-checkbox" value="${topic}">
-                    <label for="topic-${topic}" class="topic-label">${topic}</label>
+                    <input type="checkbox" id="topic-${escapeHTML(topic)}" class="topic-checkbox" value="${escapeHTML(topic)}">
+                    <label for="topic-${escapeHTML(topic)}" class="topic-label">${escapeHTML(topic)}</label>
                 </div>
             `).join('');
             
@@ -188,7 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
         } catch (error) {
             console.error("Error fetching topics:", error);
-            topicsList.innerHTML = `<div style="color: red; padding: 10px; text-align: center;"><p>Error loading topics: ${error.message}</p></div>`;
+            topicsList.innerHTML = `<p class="pq-status error" role="alert">Couldn't load topics. ${escapeHTML(String(error.message || ""))}</p>`;
         }
     }
 
@@ -256,7 +258,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (quizMode === "blitz") startBlitzTimer();
         } catch (error) {
             console.error("Error fetching question:", error);
-            resultContainer.innerHTML = `<div style="color: red; padding: 10px; text-align: center;"><p>Error loading question: ${error.message}</p></div>`;
+            resultContainer.innerHTML = `<p class="pq-status error" role="alert">Couldn't load the question. ${escapeHTML(String(error.message || ""))}</p>`;
         }
     }
 
@@ -504,7 +506,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 session.points = result.totalPoints || session.points;
                 if (result.pointsAwarded) session.points = result.totalPoints;
                 if (result.newAchievements?.length) {
-                    resultContainer.innerHTML += `<br><small>🏆 Unlocked: ${result.newAchievements.join(", ")}</small>`;
+                    const labels = result.newAchievements.map((key) => escapeHTML(getAchievementMeta(key).label));
+                    resultContainer.innerHTML += `<br><small>Achievement unlocked: ${labels.join(", ")}</small>`;
                 }
                 answeredQuestions.add(currentQuestion._id);
                 updateHud(result.currentStreak);
