@@ -69,28 +69,30 @@ async function submitDailyChallenge(userId, answers = []) {
 
   const questions = await getDailyQuestions(dateKey);
   const questionMap = new Map(questions.map((q) => [String(q._id), q]));
+  const scored = new Set();
   let score = 0;
 
+  // Each of today's questions counts once, using its first answer; repeated
+  // or unknown question IDs in the payload are ignored.
   for (const entry of answers) {
-    const question = questionMap.get(String(entry.questionId));
-    if (!question) continue;
+    const id = String(entry.questionId);
+    const question = questionMap.get(id);
+    if (!question || scored.has(id)) continue;
+    scored.add(id);
     const correctIndex = question.options.indexOf(question.answer);
     if (Number(entry.selectedIndex) === correctIndex) {
       score += 1;
     }
   }
 
-  user.dailyChallenge = {
-    date: dateKey,
+  const claimed = await userRepository.claimDailyChallenge(userId, dateKey, {
     score,
     total: questions.length,
-    completedAt: new Date(),
-  };
-
-  user.stats = user.stats || {};
-  user.stats.totalPoints = (user.stats.totalPoints || 0) + score * 20;
-  user.stats.lastAnsweredAt = new Date();
-  await userRepository.saveUser(user);
+    points: score * 20,
+  });
+  if (!claimed) {
+    throw new AppError('Daily challenge already completed today', 400);
+  }
 
   return {
     score,

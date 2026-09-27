@@ -452,6 +452,7 @@ body.pq-with-sidebar > #mode-selection {
 .pq-app-topbar__logo {
   display: flex;
   align-items: center;
+  padding: 4px 0;
 }
 
 .pq-app-topbar__logo .pq-wordmark {
@@ -496,12 +497,17 @@ body.pq-with-sidebar > #mode-selection {
   background: var(--surface);
   border-right: 1px solid var(--line);
   transform: translateX(-100%);
-  transition: transform var(--dur-2) var(--ease-fold);
+  /* Hidden while closed so its links leave the tab order and the
+     accessibility tree; the delay lets the slide-out finish first. */
+  visibility: hidden;
+  transition: transform var(--dur-2) var(--ease-fold), visibility 0s var(--dur-2);
   overflow-y: auto;
 }
 
 .pq-side.is-open {
   transform: translateX(0);
+  visibility: visible;
+  transition: transform var(--dur-2) var(--ease-fold);
 }
 
 .pq-side__brand {
@@ -661,6 +667,7 @@ body.pq-with-sidebar #quiz-container {
 
   .pq-side {
     transform: none;
+    visibility: visible;
   }
 
   body.pq-with-sidebar {

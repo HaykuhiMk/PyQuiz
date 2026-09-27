@@ -13,7 +13,6 @@ const { setupSwagger } = require('./docs/swagger');
 const { setupMetrics } = require('./observability/metrics');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
-const dashboardRoutes = require('./routes/dashboard');
 const authV1Routes = require('./routes/v1/authRoutes');
 const userV1Routes = require('./routes/v1/userRoutes');
 const questionV1Routes = require('./routes/v1/questionRoutes');
@@ -40,7 +39,14 @@ app.use(cors({
 app.use(helmet());
 app.use(cookieParser());
 app.use(express.json());
-app.use(pinoHttp({ logger }));
+app.use(
+  pinoHttp({
+    logger,
+    serializers: {
+      req: (req) => ({ ...req, url: logger.redactUrl(req.url) }),
+    },
+  })
+);
 app.use(express.static(path.join(__dirname, 'public')));
 
 const generalLimiter = rateLimit({
@@ -98,8 +104,6 @@ if (process.env.SKIP_DB_CONNECT !== 'true') {
 
 setupSwagger(app);
 setupMetrics(app);
-
-app.use('/api', dashboardRoutes);
 
 // Versioned API with layered architecture and standardized responses.
 app.use('/api/v1/auth', authV1Routes);

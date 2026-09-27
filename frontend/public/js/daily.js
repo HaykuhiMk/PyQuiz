@@ -191,7 +191,12 @@ function renderResult({ score, total, pointsAwarded = null, alreadyCompleted = f
   if (pointsEl) countUp(pointsEl, pointsAwarded, 1000);
 }
 
+// Guards against a double click sending the submission twice.
+let submitting = false;
+
 async function submitChallenge() {
+  if (submitting) return;
+  submitting = true;
   quizEl().hidden = true;
   statusEl().innerHTML = banner('brand', 'Submitting your answers…');
 
@@ -207,6 +212,8 @@ async function submitChallenge() {
       '<button type="button" class="secondary-btn" id="daily-retry-submit">Try again</button>'
     );
     document.getElementById('daily-retry-submit').addEventListener('click', submitChallenge);
+  } finally {
+    submitting = false;
   }
 }
 
@@ -235,7 +242,12 @@ async function loadChallenge() {
     );
     renderQuestion();
   } catch (error) {
+    if (error.status === 401) {
+      window.location.href = '/login.html';
+      return;
+    }
     quizEl().hidden = true;
+    quizEl().removeAttribute('aria-busy');
     statusEl().innerHTML = banner(
       'coral',
       `We couldn't load today's challenge. ${escapeHTML(error.message)}`,

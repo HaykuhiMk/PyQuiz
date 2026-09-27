@@ -97,6 +97,9 @@ export function setActiveNav() {
 }
 
 export function celebrateQuizComplete() {
+  // Purely decorative, so skipped entirely for reduced motion.
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
   let canvas = document.getElementById('confetti-canvas');
   if (!canvas) {
     canvas = document.createElement('canvas');

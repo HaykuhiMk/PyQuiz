@@ -351,14 +351,17 @@ button[type="submit"]:not(.secondary-btn):not(.danger-btn):not(.quiz-option):not
   transform: translateY(-1px);
 }
 
+/* Coral text sits on surface: light-theme coral on coral-soft is only
+   4.3:1. Hover fills with coral and switches to on-coral text. */
 .danger-btn {
-  background: var(--coral-soft);
+  background: var(--surface);
   color: var(--coral);
   border-color: var(--coral);
 }
 
 .danger-btn:hover {
-  background: color-mix(in srgb, var(--coral) 24%, var(--coral-soft));
+  background: var(--coral);
+  color: var(--on-coral);
   transform: translateY(-1px);
 }
 

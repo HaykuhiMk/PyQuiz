@@ -291,3 +291,28 @@ describe('Answered-question tracking scales off the User document', () => {
     expect(await UserAnsweredQuestion.countDocuments({ userId: rawUser._id })).toBe(0);
   });
 });
+
+describe('Error responses', () => {
+  it('reports a malformed question id as a 400 without internal details', async () => {
+    const { cookieHeader, csrfToken } = await registerAndLogin('castid@example.com');
+
+    const res = await request(app)
+      .post('/api/v1/users/user-progress')
+      .set('Cookie', cookieHeader)
+      .set('X-CSRF-Token', csrfToken)
+      .send({ questionId: 'not-an-object-id', selectedIndex: 0 });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error.message).toBe('Invalid identifier.');
+    expect(JSON.stringify(res.body)).not.toMatch(/Cast to ObjectId/);
+  });
+
+  it('reports malformed JSON as a 400, not a server error', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Content-Type', 'application/json')
+      .send('{"email":');
+
+    expect(res.statusCode).toBe(400);
+  });
+});

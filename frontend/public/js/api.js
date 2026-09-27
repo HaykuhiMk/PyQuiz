@@ -30,16 +30,24 @@ async function request(path, options = {}) {
     if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: 'include',
-    ...options,
-    headers,
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      credentials: 'include',
+      ...options,
+      headers,
+    });
+  } catch {
+    // fetch only rejects when the request never got a response.
+    throw new Error("Couldn't reach PyQuiz. Check your connection and try again.");
+  }
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = payload.error?.message || payload.error || `Request failed (${response.status})`;
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   return payload.data;

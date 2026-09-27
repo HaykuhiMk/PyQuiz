@@ -84,6 +84,45 @@ describe('POST /api/v1/challenges/daily/submit', () => {
     expect(second.statusCode).toBe(400);
   });
 
+  it('counts each question once when the payload repeats an answer', async () => {
+    await seedQuestions();
+    const { cookieHeader, csrfToken } = await registerAndLogin('daily4@example.com');
+
+    const daily = await request(app).get('/api/v1/challenges/daily').set('Cookie', cookieHeader);
+    const first = daily.body.data.questions[0];
+    const answers = Array.from({ length: 50 }, () => ({ questionId: first._id, selectedIndex: 0 }));
+
+    const res = await request(app)
+      .post('/api/v1/challenges/daily/submit')
+      .set('Cookie', cookieHeader)
+      .set('X-CSRF-Token', csrfToken)
+      .send({ answers });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data.score).toBe(1);
+    expect(res.body.data.pointsAwarded).toBe(20);
+  });
+
+  it('awards points only once for concurrent submissions', async () => {
+    await seedQuestions();
+    const { cookieHeader, csrfToken } = await registerAndLogin('daily5@example.com');
+
+    const daily = await request(app).get('/api/v1/challenges/daily').set('Cookie', cookieHeader);
+    const answers = daily.body.data.questions.map((q) => ({ questionId: q._id, selectedIndex: 0 }));
+    const submit = () =>
+      request(app)
+        .post('/api/v1/challenges/daily/submit')
+        .set('Cookie', cookieHeader)
+        .set('X-CSRF-Token', csrfToken)
+        .send({ answers });
+
+    const results = await Promise.all([submit(), submit(), submit()]);
+    expect(results.filter((r) => r.statusCode === 200)).toHaveLength(1);
+
+    const me = await request(app).get('/api/v1/users/me').set('Cookie', cookieHeader);
+    expect(me.body.data.stats.totalPoints).toBe(answers.length * 20);
+  });
+
   it('rejects a submission with no CSRF header', async () => {
     await seedQuestions();
     const { cookieHeader } = await registerAndLogin('daily3@example.com');

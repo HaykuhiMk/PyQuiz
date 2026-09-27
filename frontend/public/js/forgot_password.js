@@ -46,7 +46,7 @@ forgotPasswordForm.addEventListener('submit', function (event) {
     })
     .catch(error => {
         console.error('Error:', error);
-        showError('An error occurred while sending the password reset link.');
+        showError(`Couldn't send the reset link. ${error.message}`);
         setBusy(false);
     });
 

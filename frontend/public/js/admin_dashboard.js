@@ -1,6 +1,11 @@
 import { api } from "./api.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+    if (!localStorage.getItem("adminToken")) {
+        window.location.href = "admin_login.html";
+        return;
+    }
+
     const questionForm = document.getElementById("question-form");
 
     if (questionForm) {

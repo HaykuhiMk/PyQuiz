@@ -11,12 +11,14 @@ Both services are independent Node.js apps and run on separate ports.
 
 ## Features
 
-- User registration and login
-- Topic-based random quiz flow
-- User progress tracking
-- Admin login and question creation
-- Forgot/reset password flow
-- Contact form email delivery
+- Registration, login and guest mode
+- Quiz modes: Classic, Blitz (45 seconds per question) and Survival
+- Topic and difficulty filters, with answers checked on the server
+- Daily challenge, study mode and a global leaderboard
+- Dashboard with points, streaks, topic mastery and achievements
+- Light and dark themes (follows the system setting until you choose one)
+- Forgot/reset password flow and a contact form with email delivery
+- Admin panel for questions, users and contact messages
 
 ## Tech Stack
 
@@ -42,22 +44,21 @@ cd ../frontend && npm install
 
 3. Configure environment variables.
 
-Create `backend/.env`:
+Create `backend/.env` (see `backend/env.example`):
 
 ```env
-PORT=3001
 MONGO_URI=your_mongodb_uri
 JWT_SECRET=your_jwt_secret
 CLIENT_URI=http://localhost:3000
-API_URI=http://localhost:3001
 EMAIL_USER=your_email
 EMAIL_PASS=your_email_password
 ```
 
-Create `frontend/.env`:
+`frontend/.env` is optional:
 
 ```env
 PORT=3000
+API_URL=http://localhost:7498
 ```
 
 4. Run both services:
@@ -67,22 +68,23 @@ cd backend && npm start
 cd ../frontend && npm start
 ```
 
+`npm start` in `backend/` runs the development server on port 7498 (or `PORT`). If `MONGO_URI` can't be reached it falls back to an in-memory MongoDB, and it seeds the questions from `database/questions.json` into an empty database.
+
 5. Open [http://localhost:3000](http://localhost:3000).
 
 ## Notes
 
-- Frontend API endpoint is configured in `frontend/public/js/config.js`.
-- Backend API defaults to `http://localhost:3001`.
+- The frontend serves `/js/config.js` from `frontend/app.js`: on `localhost`/`127.0.0.1` it points the browser at `API_URL` (default `http://localhost:7498`), elsewhere at `PRODUCTION_API_URL` (default `https://api-pyquiz.picsartacademy.am`).
 - Versioned API is available at `/api/v1/*` with standardized response format.
-- Swagger docs are available at `http://localhost:3001/api-docs`.
-- Prometheus metrics endpoint is available at `http://localhost:3001/metrics`.
+- Swagger docs are served at `/api-docs` and Prometheus metrics at `/metrics` on the backend.
+- In production, run the backend with `NODE_ENV=production` (`npm run build && npm run prod`) so auth cookies are marked `Secure` and logs are JSON, and set `CLIENT_URI` to the frontend's URL: it is the allowed CORS origin and the base of password-reset links.
 
 ## Backend Quality Tooling
 
 In `backend/`:
 
 - `npm run lint`
-- `npm run test`
+- `npm run test` (set `MONGOMS_VERSION=7.0.15` if the bundled in-memory MongoDB binary won't start on your machine)
 - `npm run typecheck`
 - `npm run build`
 

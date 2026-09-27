@@ -40,6 +40,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let quizMode = "classic";
     let difficulty = "";
     let timerInterval = null;
+    let blitzRemaining = 0;
+    let blitzDeadline = 0;
     let questionStartedAt = Date.now();
     const emptySession = () => ({ correct: 0, wrong: 0, points: 0, streak: 0, bestStreak: 0, answered: 0, history: [] });
     let session = emptySession();
@@ -276,7 +278,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } catch (error) {
             console.error("Error fetching user progress:", error);
-            if (error.message.includes("401") || error.message.includes("unauthorized")) {
+            if (error.status === 401) {
                 window.location.href = '/login.html';
             }
         }
@@ -400,8 +402,9 @@ document.addEventListener("DOMContentLoaded", () => {
             checkResult = await api.checkAnswer(currentQuestion._id, { selectedIndex: selectedOption });
         } catch (error) {
             console.error("Failed to check answer:", error);
-            resultContainer.innerText = `Error checking answer: ${error.message}`;
+            resultContainer.innerText = `Couldn't check your answer. ${error.message}`;
             submitBtn.disabled = false;
+            if (quizMode === "blitz") startBlitzTimer({ resume: true });
             return;
         }
 
@@ -425,7 +428,8 @@ document.addEventListener("DOMContentLoaded", () => {
             resultContainer.innerText = "Wrong — try again.";
             submitBtn.disabled = false;
             if (attempts >= 3) giveUpBtn.style.display = "block";
-            if (quizMode === "blitz") startBlitzTimer();
+            // A retry keeps the question's remaining time, not a fresh 45s.
+            if (quizMode === "blitz") startBlitzTimer({ resume: true });
         }
     };
 
@@ -558,7 +562,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                     <div class="pq-row action-row">
                         <button type="button" onclick="window.location.reload()" class="primary-btn">Play Again</button>
-                        <button type="button" onclick="window.location.href='/account.html'" class="secondary-btn">Dashboard</button>
+                        ${isGuest ? "" : `<button type="button" onclick="window.location.href='/account.html'" class="secondary-btn">Dashboard</button>`}
                         <button type="button" onclick="window.location.href='/leaderboard.html'" class="secondary-btn">Leaderboard</button>
                     </div>
                 </div>
@@ -602,34 +606,39 @@ document.addEventListener("DOMContentLoaded", () => {
         return `${m}:${String(s).padStart(2, "0")}`;
     }
 
-    function startBlitzTimer() {
+    // Counts down against a wall-clock deadline, so a throttled or
+    // backgrounded tab can't slow the clock. Pausing (clearBlitzTimer) keeps
+    // the time left; resuming continues from it instead of a fresh 45s.
+    function startBlitzTimer({ resume = false } = {}) {
         clearBlitzTimer();
-        let remaining = BLITZ_SECONDS;
+        if (!resume || blitzRemaining <= 0) blitzRemaining = BLITZ_SECONDS;
+        blitzDeadline = Date.now() + blitzRemaining * 1000;
         const ring = document.getElementById("timer-wrap");
         const label = document.getElementById("timer-label");
 
         const render = () => {
-            ring.style.setProperty("--p", remaining / BLITZ_SECONDS);
-            ring.classList.toggle("is-low", remaining <= 10);
-            label.textContent = formatTimer(remaining);
+            ring.style.setProperty("--p", blitzRemaining / BLITZ_SECONDS);
+            ring.classList.toggle("is-low", blitzRemaining <= 10);
+            label.textContent = formatTimer(blitzRemaining);
         };
         render();
 
         timerInterval = setInterval(() => {
-            remaining -= 1;
+            blitzRemaining = Math.max(0, Math.ceil((blitzDeadline - Date.now()) / 1000));
             render();
-            if (remaining <= 0) {
+            if (blitzRemaining <= 0) {
                 clearBlitzTimer();
                 resultContainer.innerText = "Time's up!";
                 handleAnswerResult(false, null).then(() => fetchQuestion());
             }
-        }, 1000);
+        }, 250);
     }
 
     function clearBlitzTimer() {
         if (timerInterval) {
             clearInterval(timerInterval);
             timerInterval = null;
+            blitzRemaining = Math.max(0, Math.ceil((blitzDeadline - Date.now()) / 1000));
         }
     }
 

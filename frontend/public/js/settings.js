@@ -1,6 +1,6 @@
 import { api, requireAuth } from './api.js';
 import { showToast } from './ui.js';
-import { mountIcons } from './icons.js';
+import { icon, mountIcons } from './icons.js';
 import { setTheme, getActiveTheme } from './theme.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -14,8 +14,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const profile = await api.getMe();
     updateUI(profile);
   } catch (error) {
-    console.error(error);
-    window.location.href = '/login.html';
+    // Only a missing or expired session (or a deleted account) means
+    // logging in again; otherwise say what went wrong and offer a retry.
+    if (error.status === 401 || error.status === 404) {
+      window.location.href = '/login.html';
+      return;
+    }
+    const banner = document.createElement('div');
+    banner.className = 'pq-banner pq-banner--coral';
+    banner.setAttribute('role', 'alert');
+    banner.innerHTML = `${icon('alert')}<span class="pq-banner__text"></span><button type="button" class="secondary-btn">Try again</button>`;
+    banner.querySelector('.pq-banner__text').textContent = `Your settings couldn't be loaded. ${error.message}`;
+    banner.querySelector('button').addEventListener('click', () => window.location.reload());
+    document.querySelector('main').prepend(banner);
   }
 });
 

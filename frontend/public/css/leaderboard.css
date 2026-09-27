@@ -199,6 +199,21 @@
     grid-area: player;
   }
 
+  /* The name keeps the line beside the avatar and the "You" badge sits
+     under it, so a long name isn't squeezed into a sliver by the badge. */
+  .lb-table .lb-player {
+    flex-wrap: wrap;
+    row-gap: var(--space-1);
+  }
+
+  .lb-table .lb-name {
+    flex: 1 1 calc(100% - 32px - var(--space-3));
+  }
+
+  .lb-table .lb-you {
+    margin-left: calc(32px + var(--space-3));
+  }
+
   .lb-table .lb-col-points {
     grid-area: points;
   }

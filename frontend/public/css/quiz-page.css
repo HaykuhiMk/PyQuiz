@@ -485,8 +485,10 @@
   color: var(--on-coral);
 }
 
+/* Ink, like the correct tag: coral text on coral-soft is under 4.5:1 in
+   the light theme. The coral edge and cross key still mark the state. */
 .pq-answer.is-wrong .pq-answer__tag {
-  color: var(--coral);
+  color: var(--ink);
 }
 
 .pq-answer.is-dim {

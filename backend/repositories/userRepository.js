@@ -20,6 +20,27 @@ async function saveUser(user) {
   return user.save();
 }
 
+// Records today's daily-challenge result only if it hasn't been recorded
+// yet, in one atomic update, so two concurrent submissions can't both
+// award points. Resolves to null when today's challenge is already done.
+async function claimDailyChallenge(userId, dateKey, { score, total, points }) {
+  const now = new Date();
+  return User.findOneAndUpdate(
+    {
+      _id: userId,
+      $or: [{ 'dailyChallenge.date': { $ne: dateKey } }, { 'dailyChallenge.completedAt': null }],
+    },
+    {
+      $set: {
+        dailyChallenge: { date: dateKey, score, total, completedAt: now },
+        'stats.lastAnsweredAt': now,
+      },
+      $inc: { 'stats.totalPoints': points },
+    },
+    { new: true }
+  );
+}
+
 async function deleteById(userId) {
   return User.findByIdAndDelete(userId);
 }
@@ -58,6 +79,7 @@ module.exports = {
   findAdminByUsername,
   createUser,
   saveUser,
+  claimDailyChallenge,
   deleteById,
   findLeaderboard,
   findAllUsers,
