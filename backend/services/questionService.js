@@ -14,7 +14,7 @@ function sanitizeQuestion(question) {
   };
 }
 
-function buildQuestionQuery({ topics = [], difficulty }) {
+function buildQuestionQuery({ topics = [], difficulty, excludeIds = [] }) {
   const query = {};
 
   if (topics.length) {
@@ -25,6 +25,14 @@ function buildQuestionQuery({ topics = [], difficulty }) {
     query.difficulty = difficulty;
   }
 
+  if (excludeIds.length) {
+    query._id = {
+      $nin: excludeIds
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+        .map((id) => new mongoose.Types.ObjectId(id)),
+    };
+  }
+
   return query;
 }
 
@@ -33,8 +41,8 @@ async function getTopics() {
   return topics.filter(Boolean).sort();
 }
 
-async function findQuestionPage({ topics = [], difficulty, page = 1, limit = 20 }) {
-  const query = buildQuestionQuery({ topics, difficulty });
+async function findQuestionPage({ topics = [], difficulty, excludeIds = [], page = 1, limit = 20 }) {
+  const query = buildQuestionQuery({ topics, difficulty, excludeIds });
   const total = await questionRepository.countQuestions(query);
   const questions = await questionRepository.findQuestionsPaginated(query, { page, limit });
 
@@ -63,14 +71,7 @@ async function getQuestionsForStudy(filters) {
 }
 
 async function getRandomQuestion({ topics = [], difficulty, excludeIds = [] }) {
-  const query = buildQuestionQuery({ topics, difficulty });
-  if (excludeIds.length) {
-    query._id = {
-      $nin: excludeIds
-        .filter((id) => mongoose.Types.ObjectId.isValid(id))
-        .map((id) => new mongoose.Types.ObjectId(id)),
-    };
-  }
+  const query = buildQuestionQuery({ topics, difficulty, excludeIds });
 
   const totalQuestions = await questionRepository.countQuestions(query);
   if (!totalQuestions) {

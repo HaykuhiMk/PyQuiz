@@ -115,7 +115,17 @@ async function getUserProgress(userId) {
 // `alreadyCorrectBefore`/`firstAttemptCorrect` tell the caller which of
 // these applied, so it can explain a 0-point correct answer instead of it
 // looking like a bug.
-async function applyAnswerOutcome(userId, question, { isCorrect, mode, timeSpentSec = 0, attemptNumber = 1 }) {
+//
+// `pointsOverride` bypasses the point calculation above entirely (still
+// updates streaks/accuracy/topicStats/everCorrect as usual): the Daily
+// Challenge pays a flat per-question bonus independent of the first-
+// correct-ever rule, so it calls this once per question with
+// `pointsOverride: 0` and awards its own points separately in one lump sum.
+async function applyAnswerOutcome(
+  userId,
+  question,
+  { isCorrect, mode, timeSpentSec = 0, attemptNumber = 1, pointsOverride }
+) {
   const user = await userRepository.findById(userId);
   if (!user) {
     throw new AppError('User not found', 404);
@@ -146,7 +156,11 @@ async function applyAnswerOutcome(userId, question, { isCorrect, mode, timeSpent
 
   user.stats.bestStreak = Math.max(user.stats.bestStreak, user.stats.currentStreak);
   const pointsAwarded =
-    firstAttemptCorrect && !alreadyCorrectBefore ? computePoints({ isCorrect: true, mode, timeSpentSec }) : 0;
+    pointsOverride !== undefined
+      ? pointsOverride
+      : firstAttemptCorrect && !alreadyCorrectBefore
+        ? computePoints({ isCorrect: true, mode, timeSpentSec })
+        : 0;
   user.stats.totalPoints += pointsAwarded;
   user.stats.lastAnsweredAt = new Date();
 

@@ -425,3 +425,83 @@ coverage gap mattered. Fixed by re-reading the just-pushed element from the arra
 (`user.topicStats[user.topicStats.length - 1]`) instead of mutating the pre-push local variable;
 only a first-topic-ever-seen case was affected, since `.find()` on an existing entry already
 returns the real, mutable subdocument.
+
+---
+
+## Phase 2 addendum — Study mode and Daily Challenge integrity (implemented)
+
+Closes AUDIT.md items 4 and 5. Decisions given in advance for this phase:
+
+**Study mode requires authentication, and excludes today's Daily Challenge questions.**
+`GET /api/v1/questions/study` now has `authenticateToken` in its middleware chain
+(`backend/routes/v1/questionRoutes.js`) — previously fully public. `studyService.getStudyQuestions`
+now fetches today's frozen Daily Challenge question ids
+(`dailyChallengeService.getDailyQuestions()`) and excludes them via the query itself, not a
+post-filter (`questionService.buildQuestionQuery`'s `excludeIds` support, extended to
+`findQuestionPage`/`getQuestionsForStudy` so pagination/`meta.total` stay accurate). The exclusion
+lifts automatically at the next Yerevan reset, since a new day means a new frozen set.
+`frontend/public/js/study.js` now calls `requireAuth()` on load and redirects to login on a 401,
+matching the pattern already used by the Daily Challenge and quiz pages.
+
+**Daily Challenge timezone: Asia/Yerevan (user's choice); next reset shown on the page.**
+`dailyChallengeService.getTodayKey()` now formats "today" via
+`Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Yerevan' })` instead of UTC. `getNextResetAt()`
+computes the next Yerevan midnight as a UTC instant by deriving the zone's actual offset from
+`Intl` rather than hardcoding `+04:00` — so this keeps working correctly even if Armenia's
+civil-time rules ever change (it has used a fixed UTC+4 with no DST since 2012, but nothing here
+assumes that permanently). `GET /api/v1/challenges/daily` now returns `nextResetAt`, rendered by
+`frontend/public/js/daily.js` as a live "Resets in Xh Ym" badge, computed against the viewer's own
+clock (no client-side timezone math needed, since the server already returns an absolute UTC
+timestamp).
+
+**Daily Challenge seed: HMAC-SHA256 + a documented deterministic PRNG, replacing the old
+chained-SHA256 shuffle.** `dailyChallengeService.buildDaySeed(dateKey)` computes
+`HMAC-SHA256(DAILY_CHALLENGE_SEED_SECRET, dateKey)` — unlike a plain hash of the date, this can't
+be predicted by someone without the server secret. The digest seeds `mulberry32`, a small, widely
+documented public-domain 32-bit PRNG, whose output stream drives a standard Fisher–Yates shuffle
+of the full question-id pool. This replaces the previous approach (a fresh SHA-256 per swap,
+keyed only by a public string `pyquiz-daily-<date>` with no secret at all — anyone could
+precompute a day's order). New required env var: `DAILY_CHALLENGE_SEED_SECRET`
+(`backend/env.example`). Unlike `MONGODB_URI`/`JWT_SECRET`, this is **not** enforced by a
+hard process-exit startup check in `app.js` — it's read lazily, and `buildDaySeed` throws a
+clear `AppError(500, 'Daily challenge is not configured.')` only when a *new* day's set actually
+needs to be generated. This was a deliberate choice to avoid forcing every test file in the suite
+to set yet another required secret just to boot the app (the existing `MONGODB_URI`/`JWT_SECRET`
+checks are already unconditional because literally every request needs them); tests that exercise
+Study or Daily Challenge set `DAILY_CHALLENGE_SEED_SECRET` in their own preamble, same as the
+existing `JWT_SECRET` convention.
+
+**`DailyChallengeSet` persists and freezes each day's questions.** A new model/repository
+(`backend/models/dailyChallengeSet.js`, `backend/repositories/dailyChallengeSetRepository.js`)
+stores `{date, questionIds}`, created on the first request for a given day
+(`dailyChallengeSetRepository.createIfMissing`, racing concurrent first-requests safely via the
+unique index on `date`) and read on every later request that day instead of reshuffling. Robust to
+a question being deleted after freezing: `getDailyQuestions` re-fetches only the ids that still
+exist (`Question.find({_id: {$in: set.questionIds}})`), silently dropping any that don't, so a
+mid-day deletion shrinks that day's challenge by one question instead of erroring the whole thing.
+
+**Daily Challenge answers now count as real evidence, consistently with quiz sessions.** Per the
+user's decision, each answer in a submission — not just the aggregate score — now goes through the
+same bookkeeping quiz sessions use: `answerEventRepository.createEvent` (mode: `'daily'`,
+`sessionId: null` — `AnswerEvent.sessionId` is now nullable and `mode`'s enum was extended to
+include `'daily'`, since Daily Challenge has no `QuizSession`), and
+`userService.applyAnswerOutcome` (updates `totalAnswered`/`totalCorrect`/`currentStreak`/
+`bestStreak`/`topicStats`, and — since every Daily Challenge question is single-shot, so
+`attemptNumber` is always `1` — sets `UserAnsweredQuestion.everCorrect` on a correct answer,
+exactly like a first-attempt-correct quiz answer would). The flat 20-points-per-correct bonus is
+awarded **separately** from the cross-session first-correct-ever rule (completing the day's
+challenge always pays, even on a question the user has already earned points for before):
+`applyAnswerOutcome` is called with `pointsOverride: 0` for every Daily question (so it never
+awards its own per-question points), and the real `score * 20` is applied once via the existing
+atomic `userRepository.claimDailyChallenge` increment. To keep this safe under a concurrent
+double-submission (already tested), all of the scoring/evidence work is split into a pure
+computation phase (no writes) followed by the atomic claim, with the per-question
+`AnswerEvent`/`applyAnswerOutcome` calls happening **only after** that claim succeeds — so a
+losing concurrent request can't double-count `topicStats`/streaks even though it does redundant
+(side-effect-free) computation first.
+
+**Tests added:** Yerevan-vs-UTC day-boundary and next-reset-time unit tests; a frozen set stays
+unchanged after new questions are added; a question deleted after freezing is dropped without
+erroring; a full evidence trail (AnswerEvent, `UserAnsweredQuestion.everCorrect`, `topicStats`,
+streak extension/reset) from a Daily Challenge submission; Study mode requiring auth and excluding
+today's Daily Challenge set.

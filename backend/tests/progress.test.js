@@ -1,10 +1,14 @@
 process.env.SKIP_DB_CONNECT = 'true';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
+process.env.DAILY_CHALLENGE_SEED_SECRET = process.env.DAILY_CHALLENGE_SEED_SECRET || 'test-daily-secret';
 
 const request = require('supertest');
 const app = require('../app');
 const db = require('./testUtils/db');
+const { registerAndLogin } = require('./testUtils/authHelpers');
 const Question = require('../models/questionModel');
+const DailyChallengeSet = require('../models/dailyChallengeSet');
+const dailyChallengeService = require('../services/dailyChallengeService');
 
 beforeAll(async () => {
   await db.connect();
@@ -28,6 +32,15 @@ function createQuestion(overrides = {}) {
     explanation: '2 + 2 = 4',
     ...overrides,
   });
+}
+
+// Freezes today's Daily Challenge set onto an unrelated decoy question, so
+// Study-mode tests below aren't affected by today's set happening to
+// randomly include (and therefore exclude from Study) the question(s) they
+// create and assert on.
+async function freezeUnrelatedDailySet() {
+  const decoy = await createQuestion({ question: 'Decoy daily question', topics: ['Decoy'] });
+  await DailyChallengeSet.create({ date: dailyChallengeService.getTodayKey(), questionIds: [decoy._id] });
 }
 
 describe('GET /api/v1/questions/random', () => {
@@ -55,9 +68,20 @@ describe('GET /api/v1/questions (public listing)', () => {
 });
 
 describe('GET /api/v1/questions/study', () => {
-  it('includes the answer and explanation for study cards', async () => {
+  // Study mode requires login as of Phase 2 (docs/AUDIT.md item 4) — it
+  // shows full answers/explanations and could otherwise be used to look up
+  // today's Daily Challenge answers.
+  it('requires authentication', async () => {
     await createQuestion();
     const res = await request(app).get('/api/v1/questions/study');
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('includes the answer and explanation for study cards', async () => {
+    await freezeUnrelatedDailySet();
+    await createQuestion();
+    const { cookieHeader } = await registerAndLogin('study1@example.com');
+    const res = await request(app).get('/api/v1/questions/study').set('Cookie', cookieHeader);
 
     expect(res.statusCode).toBe(200);
     expect(res.body.data).toHaveLength(1);
@@ -71,8 +95,10 @@ describe('GET /api/v1/questions/study', () => {
   });
 
   it('returns only the study fields, not the full document', async () => {
+    await freezeUnrelatedDailySet();
     await createQuestion();
-    const res = await request(app).get('/api/v1/questions/study');
+    const { cookieHeader } = await registerAndLogin('study2@example.com');
+    const res = await request(app).get('/api/v1/questions/study').set('Cookie', cookieHeader);
 
     expect(Object.keys(res.body.data[0]).sort()).toEqual(
       ['_id', 'answer', 'code', 'difficulty', 'explanation', 'options', 'question', 'topics'].sort()
@@ -80,12 +106,28 @@ describe('GET /api/v1/questions/study', () => {
   });
 
   it('applies the difficulty filter', async () => {
+    await freezeUnrelatedDailySet();
     await createQuestion();
     await createQuestion({ question: 'Hard one?', difficulty: 'hard' });
-    const res = await request(app).get('/api/v1/questions/study?difficulty=hard');
+    const { cookieHeader } = await registerAndLogin('study3@example.com');
+    const res = await request(app)
+      .get('/api/v1/questions/study?difficulty=hard')
+      .set('Cookie', cookieHeader);
 
     expect(res.body.data).toHaveLength(1);
     expect(res.body.data[0].question).toBe('Hard one?');
+  });
+
+  it("excludes today's Daily Challenge questions", async () => {
+    await createQuestion(); // the only question -> guaranteed to be in today's daily set too
+    const { cookieHeader } = await registerAndLogin('study4@example.com');
+
+    const daily = await request(app).get('/api/v1/challenges/daily').set('Cookie', cookieHeader);
+    expect(daily.body.data.questions).toHaveLength(1);
+
+    const res = await request(app).get('/api/v1/questions/study').set('Cookie', cookieHeader);
+    expect(res.body.data).toHaveLength(0);
+    expect(res.body.meta.total).toBe(0);
   });
 });
 

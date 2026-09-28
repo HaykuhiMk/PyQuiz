@@ -3,6 +3,7 @@ const questionController = require('../../controllers/questionController');
 const validate = require('../../middleware/validate');
 const cacheMiddleware = require('../../middleware/cache');
 const verifyAdmin = require('../../middleware/verifyAdmin');
+const authenticateToken = require('../../middleware/authenticateToken');
 const {
   addQuestionSchema,
   questionFilterSchema,
@@ -13,7 +14,16 @@ const {
 const router = express.Router();
 
 router.get('/topics', cacheMiddleware('questions:topics', 300), questionController.getTopics);
-router.get('/study', validate(questionFilterSchema, 'query'), questionController.getStudyQuestions);
+// Study mode requires login (Phase 2 decision, docs/AUDIT.md item 4): it
+// shows full answers/explanations, and unauthenticated access was also a
+// way to look up today's Daily Challenge answers before the exclusion added
+// alongside this.
+router.get(
+  '/study',
+  authenticateToken,
+  validate(questionFilterSchema, 'query'),
+  questionController.getStudyQuestions
+);
 router.get('/random', validate(randomQuestionFilterSchema, 'query'), questionController.getRandomQuestion);
 router.get('/', validate(questionFilterSchema, 'query'), questionController.getAllQuestions);
 router.post('/add', verifyAdmin, validate(addQuestionSchema), questionController.addQuestion);
