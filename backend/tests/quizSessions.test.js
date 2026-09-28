@@ -43,9 +43,9 @@ async function startSession(cookieHeader, csrfToken, body) {
     .send(body);
 }
 
-async function forceDeadlineIntoPast(sessionId) {
+async function forceDeadlineIntoPast(sessionToken) {
   await QuizSession.updateOne(
-    { _id: sessionId },
+    { token: sessionToken },
     { $set: { 'currentQuestion.deadlineAt': new Date(Date.now() - 1000) } }
   );
 }
@@ -274,7 +274,7 @@ describe('Points cannot be farmed by repetition', () => {
 
     expect(second.body.data.isCorrect).toBe(true);
     expect(second.body.data.pointsAwarded).toBe(0);
-    expect(second.body.data.alreadyMastered).toBe(true);
+    expect(second.body.data.pointsWithheldReason).toBe('already_mastered');
     expect(second.body.data.totalPoints).toBe(pointsAfterFirst);
 
     const rawUser = await User.findOne({ email: 'farm@example.com' }).lean();
@@ -313,14 +313,16 @@ describe('Session ownership and validity', () => {
     const { sessionId } = start.body.data;
 
     const malformed = await request(app)
-      .post('/api/v1/quiz/sessions/not-an-object-id/answer')
+      .post('/api/v1/quiz/sessions/not-a-valid-token/answer')
       .set('Cookie', userA.cookieHeader)
       .set('X-CSRF-Token', userA.csrfToken)
       .send({ questionId: q._id.toString(), selectedIndex: 0 });
     expect(malformed.statusCode).toBe(404);
 
+    // Well-formed (64 hex chars, like a real token) but no session ever
+    // issued it.
     const nonExistent = await request(app)
-      .post('/api/v1/quiz/sessions/507f1f77bcf86cd799439011/answer')
+      .post(`/api/v1/quiz/sessions/${'a'.repeat(64)}/answer`)
       .set('Cookie', userA.cookieHeader)
       .set('X-CSRF-Token', userA.csrfToken)
       .send({ questionId: q._id.toString(), selectedIndex: 0 });
@@ -382,10 +384,142 @@ describe('AnswerEvent groundwork', () => {
       .set('X-CSRF-Token', csrfToken)
       .send({ questionId: q._id.toString(), selectedIndex: 1 });
 
-    const events = await AnswerEvent.find({ sessionId }).sort({ attemptNumber: 1 }).lean();
+    // AnswerEvent.sessionId stores the internal _id (a normal foreign key),
+    // not the public token, so look the session up to get it.
+    const rawSession = await QuizSession.findOne({ token: sessionId }).lean();
+    const events = await AnswerEvent.find({ sessionId: rawSession._id }).sort({ attemptNumber: 1 }).lean();
     expect(events).toHaveLength(2);
     expect(events[0]).toMatchObject({ attemptNumber: 1, correct: false, mode: 'classic' });
     expect(events[1]).toMatchObject({ attemptNumber: 2, correct: true, mode: 'classic' });
+  });
+});
+
+describe('Scoring by attempt (Phase 1 follow-up)', () => {
+  it('awards no points and does not extend the streak for a correct answer after a wrong attempt', async () => {
+    await createQuestion(); // exactly one question
+    const { cookieHeader, csrfToken } = await registerAndLogin('lateattempt@example.com');
+    const start = await startSession(cookieHeader, csrfToken, { mode: 'classic', topics: [] });
+    const { sessionId, question } = start.body.data;
+
+    await request(app)
+      .post(`/api/v1/quiz/sessions/${sessionId}/answer`)
+      .set('Cookie', cookieHeader)
+      .set('X-CSRF-Token', csrfToken)
+      .send({ questionId: question._id, selectedIndex: 0 }); // wrong, attempt 1
+
+    const second = await request(app)
+      .post(`/api/v1/quiz/sessions/${sessionId}/answer`)
+      .set('Cookie', cookieHeader)
+      .set('X-CSRF-Token', csrfToken)
+      .send({ questionId: question._id, selectedIndex: 1 }); // correct, attempt 2
+
+    expect(second.body.data.isCorrect).toBe(true);
+    expect(second.body.data.pointsAwarded).toBe(0);
+    expect(second.body.data.pointsWithheldReason).toBe('not_first_attempt');
+    expect(second.body.data.currentStreak).toBe(0);
+
+    const rawUser = await User.findOne({ email: 'lateattempt@example.com' }).lean();
+    expect(rawUser.stats.totalPoints).toBe(0);
+    expect(rawUser.stats.totalCorrect).toBe(1); // still counts for accuracy
+    expect(rawUser.stats.currentStreak).toBe(0);
+
+    const tracked = await UserAnsweredQuestion.findOne({ userId: rawUser._id, questionId: question._id }).lean();
+    expect(tracked.everCorrect).toBe(false); // only a first-attempt correct sets this
+
+    // A later session (Survival doesn't cross-session-exclude) gets the same
+    // question and answers it correctly on the first attempt this time —
+    // still eligible for real points, since everCorrect was never set.
+    const survivalStart = await startSession(cookieHeader, csrfToken, { mode: 'survival', topics: [] });
+    const third = await request(app)
+      .post(`/api/v1/quiz/sessions/${survivalStart.body.data.sessionId}/answer`)
+      .set('Cookie', cookieHeader)
+      .set('X-CSRF-Token', csrfToken)
+      .send({ questionId: survivalStart.body.data.question._id, selectedIndex: 1 });
+
+    expect(third.body.data.isCorrect).toBe(true);
+    expect(third.body.data.pointsAwarded).toBeGreaterThan(0);
+    expect(third.body.data.pointsWithheldReason).toBeNull();
+
+    const trackedAfter = await UserAnsweredQuestion.findOne({ userId: rawUser._id, questionId: question._id }).lean();
+    expect(trackedAfter.everCorrect).toBe(true);
+  });
+});
+
+describe('Achievements, topicStats and bestStreak through the session endpoints', () => {
+  it('unlocks first_correct on a first-attempt correct answer', async () => {
+    const q = await createQuestion();
+    const { cookieHeader, csrfToken } = await registerAndLogin('achievement@example.com');
+    const start = await startSession(cookieHeader, csrfToken, { mode: 'classic', topics: [] });
+
+    const res = await request(app)
+      .post(`/api/v1/quiz/sessions/${start.body.data.sessionId}/answer`)
+      .set('Cookie', cookieHeader)
+      .set('X-CSRF-Token', csrfToken)
+      .send({ questionId: q._id.toString(), selectedIndex: 1 });
+
+    expect(res.body.data.newAchievements).toContain('first_correct');
+
+    const rawUser = await User.findOne({ email: 'achievement@example.com' }).lean();
+    expect(rawUser.achievements.map((a) => a.key)).toContain('first_correct');
+  });
+
+  it('updates topicStats attempted/correct counts', async () => {
+    const q = await createQuestion({ topics: ['Basic Arithmetic', 'Integers'] });
+    const { cookieHeader, csrfToken } = await registerAndLogin('topicstats@example.com');
+    const start = await startSession(cookieHeader, csrfToken, { mode: 'classic', topics: [] });
+
+    await request(app)
+      .post(`/api/v1/quiz/sessions/${start.body.data.sessionId}/answer`)
+      .set('Cookie', cookieHeader)
+      .set('X-CSRF-Token', csrfToken)
+      .send({ questionId: q._id.toString(), selectedIndex: 1 });
+
+    const rawUser = await User.findOne({ email: 'topicstats@example.com' }).lean();
+    const byTopic = Object.fromEntries(rawUser.topicStats.map((t) => [t.topic, t]));
+    expect(byTopic['Basic Arithmetic']).toMatchObject({ attempted: 1, correct: 1 });
+    expect(byTopic['Integers']).toMatchObject({ attempted: 1, correct: 1 });
+  });
+
+  it('grows bestStreak across consecutive first-attempt correct answers in a session', async () => {
+    await createQuestion({ question: 'Q1', answer: '4', options: ['1', '4', '9'] });
+    await createQuestion({ question: 'Q2', answer: '6', options: ['1', '6', '9'] });
+    const { cookieHeader, csrfToken } = await registerAndLogin('beststreak@example.com');
+    const start = await startSession(cookieHeader, csrfToken, { mode: 'classic', topics: [] });
+
+    const first = await request(app)
+      .post(`/api/v1/quiz/sessions/${start.body.data.sessionId}/answer`)
+      .set('Cookie', cookieHeader)
+      .set('X-CSRF-Token', csrfToken)
+      .send({
+        questionId: start.body.data.question._id,
+        selectedIndex: start.body.data.question.options.indexOf(
+          start.body.data.question.question === 'Q1' ? '4' : '6'
+        ),
+      });
+    expect(first.body.data.isCorrect).toBe(true);
+    expect(first.body.data.currentStreak).toBe(1);
+
+    const next = await request(app)
+      .post(`/api/v1/quiz/sessions/${start.body.data.sessionId}/next`)
+      .set('Cookie', cookieHeader)
+      .set('X-CSRF-Token', csrfToken)
+      .send();
+
+    const second = await request(app)
+      .post(`/api/v1/quiz/sessions/${start.body.data.sessionId}/answer`)
+      .set('Cookie', cookieHeader)
+      .set('X-CSRF-Token', csrfToken)
+      .send({
+        questionId: next.body.data.question._id,
+        selectedIndex: next.body.data.question.options.indexOf(next.body.data.question.question === 'Q1' ? '4' : '6'),
+      });
+
+    expect(second.body.data.isCorrect).toBe(true);
+    expect(second.body.data.currentStreak).toBe(2);
+    expect(second.body.data.bestStreak).toBe(2);
+
+    const rawUser = await User.findOne({ email: 'beststreak@example.com' }).lean();
+    expect(rawUser.stats.bestStreak).toBe(2);
   });
 });
 

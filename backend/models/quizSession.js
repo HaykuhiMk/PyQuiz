@@ -14,6 +14,12 @@ const currentQuestionSchema = new mongoose.Schema(
 );
 
 const quizSessionSchema = new mongoose.Schema({
+  // The bearer credential clients use as "sessionId" in the API — a
+  // cryptographically random token (see quizSessionRepository), never the
+  // Mongo _id. Guest sessions have no other proof of ownership, and even a
+  // logged-in session shouldn't be drivable by guessing/enumerating an
+  // ObjectId, so both use the same random token.
+  token: { type: String, required: true, unique: true },
   // Null for guest sessions: guests can play but never accrue persisted
   // points/stats (see quizSessionService).
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },

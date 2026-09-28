@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 const AppError = require('../core/AppError');
 const Question = require('../models/questionModel');
 const quizSessionRepository = require('../repositories/quizSessionRepository');
@@ -13,23 +12,26 @@ const {
   BLITZ_LATENCY_GRACE_MS,
 } = require('../config/quizConfig');
 
+const SESSION_TOKEN_REGEX = /^[a-f0-9]{64}$/;
+
 function isRetryable(mode) {
   return RETRYABLE_MODES.includes(mode);
 }
 
-async function loadOwnedSession(sessionId, requester) {
-  if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+async function loadOwnedSession(sessionToken, requester) {
+  if (typeof sessionToken !== 'string' || !SESSION_TOKEN_REGEX.test(sessionToken)) {
     throw new AppError('Quiz session not found.', 404);
   }
 
-  const session = await quizSessionRepository.findById(sessionId);
+  const session = await quizSessionRepository.findByToken(sessionToken);
   if (!session) {
     throw new AppError('Quiz session not found.', 404);
   }
 
-  // Guest sessions (userId null) have no owner check: the sessionId itself
-  // is the only credential, same as the rest of today's guest experience.
-  // A session created by a logged-in user can only be driven by that user.
+  // Guest sessions (userId null) have no owner check: the session token
+  // itself is the only credential, same as the rest of today's guest
+  // experience. A session created by a logged-in user can only be driven by
+  // that same user.
   if (session.userId && String(session.userId) !== String(requester?.userId)) {
     throw new AppError('Quiz session not found.', 404);
   }
@@ -66,7 +68,7 @@ async function serveNextQuestion(session) {
     session.currentQuestion = { questionId: null, servedAt: null, deadlineAt: null, attempts: 0, resolved: true };
     await quizSessionRepository.save(session);
     return {
-      sessionId: session._id,
+      sessionId: session.token,
       noMoreQuestions: true,
       message: result.message,
       totalAnswered: result.totalAnswered,
@@ -86,7 +88,7 @@ async function serveNextQuestion(session) {
   await quizSessionRepository.save(session);
 
   return {
-    sessionId: session._id,
+    sessionId: session.token,
     mode: session.mode,
     question: result,
     attemptsRemaining: isRetryable(session.mode) ? MAX_ATTEMPTS : 1,
@@ -107,6 +109,16 @@ async function recordAttempt({ session, question, selectedIndex, isCorrect, atte
     attemptNumber,
     timeTakenMs: Math.max(0, Math.round(timeTakenMs)),
   });
+}
+
+// Boils an outcomeResult (or its absence, for guests) down to why a correct
+// answer earned 0 points, so the client can explain it instead of it looking
+// like a bug. Null when points were awarded or the answer was wrong.
+function pointsWithheldReason(isCorrect, outcomeResult) {
+  if (!isCorrect || !outcomeResult || outcomeResult.pointsAwarded > 0) return null;
+  if (!outcomeResult.firstAttemptCorrect) return 'not_first_attempt';
+  if (outcomeResult.alreadyCorrectBefore) return 'already_mastered';
+  return null;
 }
 
 async function createSession(requester, { mode, topics, difficulty }) {
@@ -147,12 +159,13 @@ async function resolveBlitzTimeout(session) {
       isCorrect: false,
       mode: session.mode,
       timeSpentSec: (now - current.servedAt) / 1000,
+      attemptNumber: current.attempts,
     });
   }
 }
 
-async function getNextQuestion(sessionId, requester) {
-  const session = await loadOwnedSession(sessionId, requester);
+async function getNextQuestion(sessionToken, requester) {
+  const session = await loadOwnedSession(sessionToken, requester);
 
   if (session.status !== 'active') {
     throw new AppError('This quiz session has ended.', 400);
@@ -170,8 +183,8 @@ async function getNextQuestion(sessionId, requester) {
   return serveNextQuestion(session);
 }
 
-async function submitAnswer(sessionId, requester, { questionId, selectedIndex }) {
-  const session = await loadOwnedSession(sessionId, requester);
+async function submitAnswer(sessionToken, requester, { questionId, selectedIndex }) {
+  const session = await loadOwnedSession(sessionToken, requester);
 
   if (session.status !== 'active') {
     throw new AppError('This quiz session has ended.', 400);
@@ -207,6 +220,7 @@ async function submitAnswer(sessionId, requester, { questionId, selectedIndex })
     !timedOut && selectedIndex !== undefined && selectedIndex !== null && Number(selectedIndex) === correctIndex;
 
   current.attempts += 1;
+  const attemptNumber = current.attempts;
 
   let resolved;
   let outcome;
@@ -219,7 +233,7 @@ async function submitAnswer(sessionId, requester, { questionId, selectedIndex })
   } else if (session.mode === 'survival') {
     resolved = true;
     outcome = 'wrong';
-  } else if (current.attempts >= maxAttempts) {
+  } else if (attemptNumber >= maxAttempts) {
     resolved = false; // exhausted, but the client must explicitly reveal
     outcome = 'exhausted';
   } else {
@@ -234,7 +248,7 @@ async function submitAnswer(sessionId, requester, { questionId, selectedIndex })
     question,
     selectedIndex,
     isCorrect,
-    attemptNumber: current.attempts,
+    attemptNumber,
     timeTakenMs,
   });
 
@@ -253,6 +267,7 @@ async function submitAnswer(sessionId, requester, { questionId, selectedIndex })
         isCorrect,
         mode: session.mode,
         timeSpentSec: timeTakenMs / 1000,
+        attemptNumber,
       });
     }
   }
@@ -263,11 +278,11 @@ async function submitAnswer(sessionId, requester, { questionId, selectedIndex })
     isCorrect,
     resolved,
     outcome,
-    attemptsRemaining: isRetryable(session.mode) ? Math.max(0, maxAttempts - current.attempts) : 0,
+    attemptsRemaining: isRetryable(session.mode) ? Math.max(0, maxAttempts - attemptNumber) : 0,
     sessionStatus: session.status,
     endedReason: session.endedReason,
     pointsAwarded: outcomeResult?.pointsAwarded || 0,
-    alreadyMastered: Boolean(isCorrect && outcomeResult?.alreadyCorrectBefore),
+    pointsWithheldReason: pointsWithheldReason(isCorrect, outcomeResult),
     totalPoints: outcomeResult?.totalPoints,
     currentStreak: outcomeResult?.currentStreak,
     bestStreak: outcomeResult?.bestStreak,
@@ -283,8 +298,8 @@ async function submitAnswer(sessionId, requester, { questionId, selectedIndex })
   return response;
 }
 
-async function revealAnswer(sessionId, requester) {
-  const session = await loadOwnedSession(sessionId, requester);
+async function revealAnswer(sessionToken, requester) {
+  const session = await loadOwnedSession(sessionToken, requester);
 
   if (session.status !== 'active') {
     throw new AppError('This quiz session has ended.', 400);
@@ -311,6 +326,7 @@ async function revealAnswer(sessionId, requester) {
       isCorrect: false,
       mode: session.mode,
       timeSpentSec: (Date.now() - current.servedAt) / 1000,
+      attemptNumber: current.attempts,
     });
   }
 
@@ -323,6 +339,7 @@ async function revealAnswer(sessionId, requester) {
     explanation: question.explanation,
     sessionStatus: session.status,
     pointsAwarded: 0,
+    pointsWithheldReason: null,
     totalPoints: outcomeResult?.totalPoints,
     currentStreak: outcomeResult?.currentStreak,
     bestStreak: outcomeResult?.bestStreak,

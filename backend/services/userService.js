@@ -100,18 +100,28 @@ async function getUserProgress(userId) {
 // from the session, never from client input, so this function never
 // re-derives correctness itself.
 //
-// Points are awarded only the first time this user ever answers this exact
-// question correctly, across all modes and sessions (see
-// docs/AUDIT.md Phase 1 addendum). A repeat correct answer still updates
-// streaks/accuracy/topicStats below, just not points — `alreadyCorrectBefore`
-// tells the caller whether that's what happened, so it can show
-// "already mastered" instead of it looking like a bug.
-async function applyAnswerOutcome(userId, question, { isCorrect, mode, timeSpentSec = 0 }) {
+// Points and streaks reward a *first-attempt* correct answer specifically
+// (`attemptNumber === 1`): getting it right after one or more wrong Classic/
+// Blitz attempts on the same question still counts toward accuracy and
+// topicStats below, but earns no points and does not extend the streak — a
+// wrong attempt already broke it. Daily Challenge questions are single-shot
+// by construction, so every correct answer there is attempt 1.
+//
+// On top of that, points are awarded only the first time this user has ever
+// gotten this exact question right on a first attempt, across all modes and
+// sessions (see docs/AUDIT.md Phase 1 addendum) — `UserAnsweredQuestion.
+// everCorrect` records exactly that, so a question only ever guessed right
+// on a later attempt remains eligible for real points in a future session.
+// `alreadyCorrectBefore`/`firstAttemptCorrect` tell the caller which of
+// these applied, so it can explain a 0-point correct answer instead of it
+// looking like a bug.
+async function applyAnswerOutcome(userId, question, { isCorrect, mode, timeSpentSec = 0, attemptNumber = 1 }) {
   const user = await userRepository.findById(userId);
   if (!user) {
     throw new AppError('User not found', 404);
   }
 
+  const firstAttemptCorrect = isCorrect && attemptNumber === 1;
   const alreadyCorrectBefore = await userAnsweredQuestionRepository.wasEverCorrect(userId, question._id);
 
   user.stats = user.stats || {};
@@ -122,18 +132,21 @@ async function applyAnswerOutcome(userId, question, { isCorrect, mode, timeSpent
   user.stats.totalAnswered = user.stats.totalAnswered || 0;
   user.stats.timedModes = user.stats.timedModes || { blitzBestScore: 0, survivalBestStreak: 0 };
 
-  await userAnsweredQuestionRepository.markAnswered(userId, question._id, { correct: isCorrect });
+  await userAnsweredQuestionRepository.markAnswered(userId, question._id, { correct: firstAttemptCorrect });
 
   user.stats.totalAnswered += 1;
   if (isCorrect) {
     user.stats.totalCorrect += 1;
+  }
+  if (firstAttemptCorrect) {
     user.stats.currentStreak += 1;
   } else {
     user.stats.currentStreak = 0;
   }
 
   user.stats.bestStreak = Math.max(user.stats.bestStreak, user.stats.currentStreak);
-  const pointsAwarded = isCorrect && !alreadyCorrectBefore ? computePoints({ isCorrect, mode, timeSpentSec }) : 0;
+  const pointsAwarded =
+    firstAttemptCorrect && !alreadyCorrectBefore ? computePoints({ isCorrect: true, mode, timeSpentSec }) : 0;
   user.stats.totalPoints += pointsAwarded;
   user.stats.lastAnsweredAt = new Date();
 
@@ -152,8 +165,11 @@ async function applyAnswerOutcome(userId, question, { isCorrect, mode, timeSpent
     for (const topic of question.topics) {
       let entry = user.topicStats.find((item) => item.topic === topic);
       if (!entry) {
-        entry = { topic, correct: 0, attempted: 0 };
-        user.topicStats.push(entry);
+        // Mongoose casts a pushed plain object into a new subdocument rather
+        // than reusing this reference, so mutating `entry` after push would
+        // silently be lost — re-read the just-pushed element instead.
+        user.topicStats.push({ topic, correct: 0, attempted: 0 });
+        entry = user.topicStats[user.topicStats.length - 1];
       }
       entry.attempted += 1;
       if (isCorrect) entry.correct += 1;
@@ -166,6 +182,7 @@ async function applyAnswerOutcome(userId, question, { isCorrect, mode, timeSpent
   return {
     pointsAwarded,
     alreadyCorrectBefore,
+    firstAttemptCorrect,
     currentStreak: user.stats.currentStreak,
     bestStreak: user.stats.bestStreak,
     totalPoints: user.stats.totalPoints,

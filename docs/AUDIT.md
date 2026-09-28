@@ -331,9 +331,10 @@ modes and sessions; repeat correct answers award 0 points but still count toward
 streaks/accuracy/topicStats. Implemented via a new `UserAnsweredQuestion.everCorrect` flag
 (`backend/models/userAnsweredQuestion.js`), checked before scoring and updated atomically in the
 same upsert that marks the question answered (`userAnsweredQuestionRepository.markAnswered`).
-`userService.applyAnswerOutcome` returns `alreadyCorrectBefore`, which the API surfaces as
-`alreadyMastered: true` so the frontend can show "Already mastered — no points for repeat correct
-answers" instead of the points update looking silently broken.
+`userService.applyAnswerOutcome` returns `alreadyCorrectBefore`, which the API surfaces via
+`pointsWithheldReason` so the frontend can explain a 0-point correct answer instead of it looking
+like a bug. **Narrowed in the Phase 1 follow-ups below** to specifically mean "first-attempt
+correct," not just "correct."
 
 **DECISION 3 — Existing farmed points: left untouched, remediation script written but not run.**
 `backend/scripts/resetFarmedPoints.js` (`--dry-run` supported, idempotent) recomputes
@@ -352,7 +353,75 @@ documents are only created when `session.userId` is set
 (`quizSessionService.recordAttempt`/`resolveBlitzTimeout`).
 
 **Other behavior now enforced that wasn't before:** Classic and Blitz share a 3-attempt cap
-(`quizConfig.MAX_ATTEMPTS`) with an explicit `/reveal` step after exhaustion; Survival ends the
-session on the first wrong answer and rejects further answers/`next` calls; a client can no
-longer skip an unanswered Blitz question for free (`next` while unresolved auto-scores it as a
-timeout); a malformed, missing, or foreign `sessionId` returns 404 on every session endpoint.
+(`quizConfig.MAX_ATTEMPTS`) with an explicit `/reveal` step after exhaustion — this is a
+**deliberate change** for Blitz specifically (the pre-Phase-1 client had no server-side cap on
+Blitz at all): without it, a fast typist could brute-force all remaining options one after
+another within the 45s deadline at no cost beyond the clock running down, since nothing forced
+commitment to an answer. The shared 3-attempt cap makes Blitz require real recall under time
+pressure instead of exhaustive guessing. Survival ends the session on the first wrong answer and
+rejects further answers/`next` calls; a client can no longer skip an unanswered Blitz question
+for free (`next` while unresolved auto-scores it as a timeout); a malformed, missing, or foreign
+`sessionId` returns 404 on every session endpoint.
+
+---
+
+## Phase 1 follow-ups (implemented, separate commit)
+
+Four small corrections requested after reviewing Phase 1, before starting Phase 2.
+
+**1. Scoring by attempt.** Points and streak extension now require a *first-attempt* correct
+answer specifically (`attemptNumber === 1`), not just any correct answer within the 3-attempt
+window. Getting a Classic/Blitz question right on attempt 2 or 3 still counts toward
+`totalCorrect`/`topicStats` accuracy, but awards 0 points and resets `currentStreak` to 0 (a
+wrong attempt already preceded it). A revealed answer (`/reveal`) still always scores as
+incorrect, so it already awarded no points and broke the streak — unchanged. `UserAnsweredQuestion
+.everCorrect` is now set only on a first-attempt correct answer, so a question a user only ever
+guessed right on attempt 2/3 remains eligible for real points the next time they get it right on
+a first attempt, in a future session. Implemented in `userService.applyAnswerOutcome` (new
+`attemptNumber` parameter, `firstAttemptCorrect` derived from it) and threaded through from
+`quizSessionService`'s three call sites. **Did this conflict with anything already built?** No —
+Survival and Daily Challenge (Phase 2) are single-attempt by construction, so every correct
+answer there is already attempt 1 and behaves exactly as before; only Classic/Blitz's multi-attempt
+retry path changes. The API response's `alreadyMastered` boolean is replaced by a
+`pointsWithheldReason` field (`'not_first_attempt' | 'already_mastered' | null`) so the frontend
+can give the right explanation for a 0-point correct answer instead of collapsing both cases into
+one message.
+
+**2. Blitz's 3-attempt cap documented as deliberate** — see the paragraph directly above; added
+here per that instruction.
+
+**3. Guest sessions confirmed — hardened.** Yes, guests go through the same `QuizSession` flow as
+logged-in users (`userId: null`); this was already true in Phase 1 and is unchanged. Two
+follow-ups applied:
+   - `POST /api/v1/quiz/sessions` now has a dedicated rate limiter (60 new sessions per 15 minutes
+     per IP, `backend/routes/v1/quizRoutes.js`), scoped to that one route rather than its shared
+     path prefix so it doesn't also throttle in-progress answer/next/reveal calls.
+   - The public `sessionId` is no longer the Mongo `_id` (predictable-ish: a 4-byte timestamp +
+     a mostly-stable per-process/machine component + an incrementing counter, none of it designed
+     to resist guessing). `QuizSession` now has a `token` field — 32 bytes from `crypto.
+     randomBytes`, hex-encoded — generated in `quizSessionRepository.create` and used as the only
+     public session identifier; all lookups are by `token`, not `_id` (`AnswerEvent.sessionId`
+     still stores the internal `_id` as a normal foreign key — that's never exposed, so it didn't
+     need to change). This applies uniformly to guest and logged-in sessions alike, since there's
+     no reason a logged-in session should be enumerable either.
+
+**4. Test coverage audit.** Before this follow-up, **no test in the suite asserted on
+achievements, `topicStats`, or `bestStreak` at all** — not in the original `progress.test.js`
+(trimmed in Phase 1) and not yet in the new `quizSessions.test.js`. Added in this follow-up:
+achievement unlocking (`first_correct`) through the session `/answer` endpoint, `topicStats`
+`attempted`/`correct` counters, `bestStreak` growth across consecutive correct answers, and a
+first-attempt-vs-later-attempt scoring/streak test for item 1 above.
+
+**Bug found by the new topicStats test, fixed in this commit:** `topicStats` entries for a topic
+a user had never answered before were silently never incremented. `user.topicStats.push(entry)`
+pushes a plain object into a Mongoose `DocumentArray`, which casts it into a new subdocument
+rather than reusing that object reference — so the code's subsequent `entry.attempted += 1` /
+`entry.correct += 1` mutated an orphaned plain object that was never actually part of the saved
+array, while the real (freshly cast) array element stayed at its `{correct: 0, attempted: 0}`
+default. This bug existed unchanged from before Phase 1 (same code, `backend/services/
+userService.js`, originally in `updateUserProgress`) and had never been caught because, as noted
+above, nothing tested `topicStats` before this follow-up — it's a direct example of why that
+coverage gap mattered. Fixed by re-reading the just-pushed element from the array
+(`user.topicStats[user.topicStats.length - 1]`) instead of mutating the pre-push local variable;
+only a first-topic-ever-seen case was affected, since `.find()` on an existing entry already
+returns the real, mutable subdocument.

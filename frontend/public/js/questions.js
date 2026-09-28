@@ -504,8 +504,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 const labels = result.newAchievements.map((key) => escapeHTML(getAchievementMeta(key).label));
                 resultContainer.innerHTML += `<br><small>Achievement unlocked: ${labels.join(", ")}</small>`;
             }
-            if (result.alreadyMastered) {
+            if (result.pointsWithheldReason === "already_mastered") {
                 resultContainer.innerHTML += `<br><small>Already mastered — no points for repeat correct answers.</small>`;
+            } else if (result.pointsWithheldReason === "not_first_attempt") {
+                resultContainer.innerHTML += `<br><small>Correct, but only a first-attempt answer earns points.</small>`;
             }
         }
 
