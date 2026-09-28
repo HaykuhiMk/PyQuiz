@@ -22,4 +22,17 @@ function verifyCsrf(req, res, next) {
   return next();
 }
 
+// For routes that must also allow guests (no auth cookie at all, so no CSRF
+// cookie to check against): only enforce the double-submit check when the
+// request actually carries the httpOnly auth cookie, i.e. came from a
+// logged-in browser session. Guests skip the check entirely rather than
+// being unconditionally rejected.
+function verifyCsrfIfAuthenticated(req, res, next) {
+  if (!req.cookies?.token) {
+    return next();
+  }
+  return verifyCsrf(req, res, next);
+}
+
 module.exports = verifyCsrf;
+module.exports.verifyCsrfIfAuthenticated = verifyCsrfIfAuthenticated;

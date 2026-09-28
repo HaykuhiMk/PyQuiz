@@ -1,11 +1,16 @@
 const UserAnsweredQuestion = require('../models/userAnsweredQuestion');
 
-async function markAnswered(userId, questionId) {
-  await UserAnsweredQuestion.updateOne(
-    { userId, questionId },
-    { $setOnInsert: { userId, questionId, answeredAt: new Date() } },
-    { upsert: true }
-  );
+async function markAnswered(userId, questionId, { correct = false } = {}) {
+  const update = { $setOnInsert: { userId, questionId, answeredAt: new Date() } };
+  if (correct) {
+    update.$set = { everCorrect: true };
+  }
+  await UserAnsweredQuestion.updateOne({ userId, questionId }, update, { upsert: true });
+}
+
+async function wasEverCorrect(userId, questionId) {
+  const doc = await UserAnsweredQuestion.findOne({ userId, questionId }).select('everCorrect').lean();
+  return Boolean(doc?.everCorrect);
 }
 
 async function findAnsweredIds(userId) {
@@ -23,6 +28,7 @@ async function deleteAllForUser(userId) {
 
 module.exports = {
   markAnswered,
+  wasEverCorrect,
   findAnsweredIds,
   countAnswered,
   deleteAllForUser,

@@ -60,8 +60,6 @@ export const api = {
     request('/api/v1/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   getMe: () => request('/api/v1/users/me'),
   getProgress: () => request('/api/v1/users/user-progress'),
-  updateProgress: (body) =>
-    request('/api/v1/users/user-progress', { method: 'POST', body: JSON.stringify(body) }),
   getLeaderboard: (limit = 50) => request(`/api/v1/users/leaderboard?limit=${limit}`),
   getTopicMastery: () => request('/api/v1/users/topic-mastery'),
   updateProfile: (body) =>
@@ -90,6 +88,20 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ selectedIndex, reveal }),
     }),
+  startQuizSession: ({ mode, topics = [], difficulty = '' } = {}) =>
+    request('/api/v1/quiz/sessions', {
+      method: 'POST',
+      body: JSON.stringify({ mode, topics, ...(difficulty ? { difficulty } : {}) }),
+    }),
+  getNextQuizQuestion: (sessionId) =>
+    request(`/api/v1/quiz/sessions/${sessionId}/next`, { method: 'POST' }),
+  submitQuizAnswer: (sessionId, { questionId, selectedIndex }) =>
+    request(`/api/v1/quiz/sessions/${sessionId}/answer`, {
+      method: 'POST',
+      body: JSON.stringify({ questionId, selectedIndex }),
+    }),
+  revealQuizAnswer: (sessionId) =>
+    request(`/api/v1/quiz/sessions/${sessionId}/reveal`, { method: 'POST' }),
   getDailyChallenge: () => request('/api/v1/challenges/daily'),
   submitDailyChallenge: (answers) =>
     request('/api/v1/challenges/daily/submit', {

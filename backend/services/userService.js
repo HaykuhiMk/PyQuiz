@@ -3,7 +3,11 @@ const AppError = require('../core/AppError');
 const userRepository = require('../repositories/userRepository');
 const userAnsweredQuestionRepository = require('../repositories/userAnsweredQuestionRepository');
 const { getTotalQuestionCount } = require('../utils/questionCount');
-const Question = require('../models/questionModel');
+const {
+  BASE_POINTS_BY_MODE,
+  BLITZ_TIME_BONUS_MAX,
+  BLITZ_TIME_BONUS_DIVISOR_SEC,
+} = require('../config/quizConfig');
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$/;
 const MAX_AVATAR_LENGTH = 500_000;
@@ -15,17 +19,11 @@ const ACHIEVEMENTS = [
   { key: 'points_500', predicate: (s) => s.totalPoints >= 500 },
 ];
 
-function basePointsByMode(mode) {
-  if (mode === 'survival') return 15;
-  if (mode === 'blitz') return 12;
-  return 10;
-}
-
 function computePoints({ isCorrect, mode, timeSpentSec }) {
   if (!isCorrect) return 0;
-  const base = basePointsByMode(mode);
+  const base = BASE_POINTS_BY_MODE[mode] ?? BASE_POINTS_BY_MODE.classic;
   if (mode !== 'blitz') return base;
-  const timeBonus = Math.max(0, 10 - Math.floor(timeSpentSec / 3));
+  const timeBonus = Math.max(0, BLITZ_TIME_BONUS_MAX - Math.floor(timeSpentSec / BLITZ_TIME_BONUS_DIVISOR_SEC));
   return base + timeBonus;
 }
 
@@ -96,22 +94,25 @@ async function getUserProgress(userId) {
   };
 }
 
-async function updateUserProgress(userId, payload) {
+// Applies the outcome of a single, already-adjudicated answer to a user's
+// stats. The caller (quizSessionService) is the trust boundary: it derives
+// `isCorrect` from a server-side deadline/attempt check and takes `mode`
+// from the session, never from client input, so this function never
+// re-derives correctness itself.
+//
+// Points are awarded only the first time this user ever answers this exact
+// question correctly, across all modes and sessions (see
+// docs/AUDIT.md Phase 1 addendum). A repeat correct answer still updates
+// streaks/accuracy/topicStats below, just not points — `alreadyCorrectBefore`
+// tells the caller whether that's what happened, so it can show
+// "already mastered" instead of it looking like a bug.
+async function applyAnswerOutcome(userId, question, { isCorrect, mode, timeSpentSec = 0 }) {
   const user = await userRepository.findById(userId);
   if (!user) {
     throw new AppError('User not found', 404);
   }
 
-  const { questionId, selectedIndex, mode = 'classic', timeSpentSec = 0 } = payload;
-
-  const question = await Question.findById(questionId).lean();
-  if (!question) {
-    throw new AppError('Question not found', 404);
-  }
-
-  const correctIndex = question.options.indexOf(question.answer);
-  const isCorrect =
-    selectedIndex !== undefined && selectedIndex !== null && Number(selectedIndex) === correctIndex;
+  const alreadyCorrectBefore = await userAnsweredQuestionRepository.wasEverCorrect(userId, question._id);
 
   user.stats = user.stats || {};
   user.stats.currentStreak = user.stats.currentStreak || 0;
@@ -121,7 +122,7 @@ async function updateUserProgress(userId, payload) {
   user.stats.totalAnswered = user.stats.totalAnswered || 0;
   user.stats.timedModes = user.stats.timedModes || { blitzBestScore: 0, survivalBestStreak: 0 };
 
-  await userAnsweredQuestionRepository.markAnswered(userId, questionId);
+  await userAnsweredQuestionRepository.markAnswered(userId, question._id, { correct: isCorrect });
 
   user.stats.totalAnswered += 1;
   if (isCorrect) {
@@ -132,12 +133,12 @@ async function updateUserProgress(userId, payload) {
   }
 
   user.stats.bestStreak = Math.max(user.stats.bestStreak, user.stats.currentStreak);
-  const points = computePoints({ isCorrect, mode, timeSpentSec });
-  user.stats.totalPoints += points;
+  const pointsAwarded = isCorrect && !alreadyCorrectBefore ? computePoints({ isCorrect, mode, timeSpentSec }) : 0;
+  user.stats.totalPoints += pointsAwarded;
   user.stats.lastAnsweredAt = new Date();
 
   if (mode === 'blitz') {
-    user.stats.timedModes.blitzBestScore = Math.max(user.stats.timedModes.blitzBestScore || 0, points);
+    user.stats.timedModes.blitzBestScore = Math.max(user.stats.timedModes.blitzBestScore || 0, pointsAwarded);
   }
   if (mode === 'survival') {
     user.stats.timedModes.survivalBestStreak = Math.max(
@@ -163,7 +164,8 @@ async function updateUserProgress(userId, payload) {
   await userRepository.saveUser(user);
 
   return {
-    pointsAwarded: points,
+    pointsAwarded,
+    alreadyCorrectBefore,
     currentStreak: user.stats.currentStreak,
     bestStreak: user.stats.bestStreak,
     totalPoints: user.stats.totalPoints,
@@ -267,7 +269,7 @@ async function deleteAccount(userId, { password }) {
 module.exports = {
   getUserProfile,
   getUserProgress,
-  updateUserProgress,
+  applyAnswerOutcome,
   getGlobalLeaderboard,
   updateProfile,
   changePassword,

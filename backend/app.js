@@ -19,6 +19,7 @@ const questionV1Routes = require('./routes/v1/questionRoutes');
 const challengeV1Routes = require('./routes/v1/challengeRoutes');
 const adminV1Routes = require('./routes/v1/adminRoutes');
 const contactV1Routes = require('./routes/v1/contactRoutes');
+const quizV1Routes = require('./routes/v1/quizRoutes');
 
 const app = express();
 
@@ -112,6 +113,7 @@ app.use('/api/v1/questions', questionV1Routes);
 app.use('/api/v1/challenges', challengeV1Routes);
 app.use('/api/v1/admin', adminV1Routes);
 app.use('/api/v1/contact', contactV1Routes);
+app.use('/api/v1/quiz', quizV1Routes);
 
 app.get('/healthz', (req, res) => {
   res.json({ status: 'ok', uptimeSeconds: Math.floor(process.uptime()) });

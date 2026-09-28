@@ -4,7 +4,6 @@ const authenticateToken = require('../../middleware/authenticateToken');
 const verifyCsrf = require('../../middleware/csrf');
 const validate = require('../../middleware/validate');
 const {
-  updateProgressSchema,
   updateProfileSchema,
   changePasswordSchema,
   deleteAccountSchema,
@@ -13,14 +12,11 @@ const {
 const router = express.Router();
 
 router.get('/me', authenticateToken, userController.me);
+// Scoring moved to the server-authoritative quiz session endpoints
+// (POST /api/v1/quiz/sessions/:sessionId/answer) in Phase 1: a client can no
+// longer report a mode/outcome directly here, since that was the exact gap
+// that let quiz mode and points be forged. This GET (read-only) is unaffected.
 router.get('/user-progress', authenticateToken, userController.getProgress);
-router.post(
-  '/user-progress',
-  authenticateToken,
-  verifyCsrf,
-  validate(updateProgressSchema),
-  userController.updateProgress
-);
 router.get('/leaderboard', userController.getLeaderboard);
 router.get('/topic-mastery', authenticateToken, userController.getTopicMastery);
 router.patch(

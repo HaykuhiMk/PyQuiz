@@ -35,18 +35,16 @@ document.addEventListener("DOMContentLoaded", () => {
     let allTopics = [];
     let currentQuestion = null;
     let selectedOption = null;
-    let attempts = 0;
+    let sessionId = null;
+    let attemptsRemaining = null;
     let selectedTopics = [];
     let quizMode = "classic";
     let difficulty = "";
     let timerInterval = null;
-    let blitzRemaining = 0;
     let blitzDeadline = 0;
-    let questionStartedAt = Date.now();
     const emptySession = () => ({ correct: 0, wrong: 0, points: 0, streak: 0, bestStreak: 0, answered: 0, history: [] });
     let session = emptySession();
     const isGuest = getCookie("guestMode") === "true";
-    const answeredQuestions = isGuest ? null : new Set();
 
     const categoryMapping = {
         'basics': ['Data Types', 'Basic Arithmetic', 'Strings', 'Integers', 'Integer', 'Bool', 'String', 'Comparison Operators', 'Type Conversion', 'Assignment', 'Variable Assignment', 'Case Sensitivity', 'print', 'stdout', 'Files', 'None'],
@@ -196,7 +194,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    startQuizBtn.onclick = () => {
+    startQuizBtn.onclick = async () => {
+        if (!isGuest && !isLoggedIn()) {
+            window.location.href = '/login.html';
+            return;
+        }
+
         document.getElementById("mode-selection").style.display = "none";
         topicSelectionContainer.style.display = "none";
         quizContainer.style.display = "block";
@@ -204,7 +207,8 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("timer-wrap").style.display = quizMode === "blitz" ? "grid" : "none";
         session = emptySession();
         finishBtn.style.display = "none";
-        fetchQuestion();
+        sessionId = null;
+        await startSession();
     };
 
     function topicsForApi() {
@@ -213,75 +217,58 @@ document.addEventListener("DOMContentLoaded", () => {
         return selectedTopics;
     }
 
-    async function fetchQuestion(retries = 5) {
+    async function startSession() {
         try {
-            if (!isGuest) await fetchUserProgress();
-
-            const excludeIds =
-                !isGuest && answeredQuestions && quizMode === "classic"
-                    ? Array.from(answeredQuestions)
-                    : [];
-
-            const data = await api.getRandomQuestion({
+            const data = await api.startQuizSession({
+                mode: quizMode,
                 topics: topicsForApi(),
                 difficulty,
-                excludeIds,
             });
-
-            if (data.noMoreQuestions) {
-                const selectedTopicsText = selectedTopics.length > 0 
-                    ? selectedTopics.join(', ')
-                    : 'all topics';
-
-                const progressText = data.totalAnswered 
-                    ? `You've answered ${data.totalAnswered} questions in this category!` 
-                    : '';
-
-                resultContainer.innerHTML = `
-                    <div class="quiz-summary">
-                        <h2>All caught up!</h2>
-                        <p>You've completed all available questions for ${selectedTopicsText}.</p>
-                        <p>${progressText}</p>
-                        <div class="action-row">
-                            <button type="button" onclick="window.location.reload()" class="primary-btn">Choose New Topics</button>
-                            <button type="button" onclick="window.location.href='/account.html'" class="secondary-btn">View Progress</button>
-                        </div>
-                    </div>
-                `;
-                submitBtn.style.display = "none";
-                nextBtn.style.display = "none";
-                return;
-            }
-
-            currentQuestion = data;
-            displayQuestion(currentQuestion);
-            resetUI();
-            questionStartedAt = Date.now();
-            if (quizMode === "blitz") startBlitzTimer();
+            handleSessionQuestion(data);
         } catch (error) {
-            console.error("Error fetching question:", error);
-            resultContainer.innerHTML = `<p class="pq-status error" role="alert">Couldn't load the question. ${escapeHTML(String(error.message || ""))}</p>`;
+            console.error("Error starting quiz session:", error);
+            resultContainer.innerHTML = `<p class="pq-status error" role="alert">Couldn't start the quiz. ${escapeHTML(String(error.message || ""))}</p>`;
         }
     }
 
-    async function fetchUserProgress() {
-        try {
-            if (!isLoggedIn()) {
-                window.location.href = '/login.html';
-                return;
-            }
-
-            const data = await api.getProgress();
-            if (data.answeredQuestions) {
-                answeredQuestions.clear();
-                data.answeredQuestions.forEach(q => answeredQuestions.add(q));
-            }
-        } catch (error) {
-            console.error("Error fetching user progress:", error);
-            if (error.status === 401) {
-                window.location.href = '/login.html';
-            }
+    function handleSessionQuestion(data) {
+        if (data.noMoreQuestions) {
+            showNoMoreQuestions(data);
+            return;
         }
+
+        sessionId = data.sessionId || sessionId;
+        attemptsRemaining = data.attemptsRemaining;
+        currentQuestion = data.question;
+        displayQuestion(currentQuestion);
+        resetUI();
+        if (quizMode === "blitz" && data.deadlineAt) {
+            startBlitzTimer(new Date(data.deadlineAt).getTime());
+        }
+    }
+
+    function showNoMoreQuestions(data) {
+        const selectedTopicsText = selectedTopics.length > 0
+            ? selectedTopics.join(', ')
+            : 'all topics';
+
+        const progressText = data.totalAnswered
+            ? `You've answered ${data.totalAnswered} questions in this category!`
+            : '';
+
+        resultContainer.innerHTML = `
+            <div class="quiz-summary">
+                <h2>All caught up!</h2>
+                <p>You've completed all available questions for ${selectedTopicsText}.</p>
+                <p>${progressText}</p>
+                <div class="action-row">
+                    <button type="button" onclick="window.location.reload()" class="primary-btn">Choose New Topics</button>
+                    <button type="button" onclick="window.location.href='/account.html'" class="secondary-btn">View Progress</button>
+                </div>
+            </div>
+        `;
+        submitBtn.style.display = "none";
+        nextBtn.style.display = "none";
     }
 
     function showExplanation() {
@@ -388,64 +375,72 @@ document.addEventListener("DOMContentLoaded", () => {
         if (index !== -1) markAnswerState(index, "is-correct", "Correct answer");
     }
 
-    submitBtn.onclick = async () => {
-        if (selectedOption === null) {
+    async function submitAnswer({ isTimeout = false } = {}) {
+        if (selectedOption === null && !isTimeout) {
             resultContainer.innerText = "Please select an option.";
             return;
         }
 
-        clearBlitzTimer();
         submitBtn.disabled = true;
 
-        let checkResult;
+        let result;
         try {
-            checkResult = await api.checkAnswer(currentQuestion._id, { selectedIndex: selectedOption });
+            result = await api.submitQuizAnswer(sessionId, {
+                questionId: currentQuestion._id,
+                selectedIndex: selectedOption,
+            });
         } catch (error) {
-            console.error("Failed to check answer:", error);
-            resultContainer.innerText = `Couldn't check your answer. ${error.message}`;
+            console.error("Failed to submit answer:", error);
+            resultContainer.innerText = `Couldn't submit your answer. ${error.message}`;
             submitBtn.disabled = false;
-            if (quizMode === "blitz") startBlitzTimer({ resume: true });
             return;
         }
 
-        const isCorrect = checkResult.isCorrect;
+        attemptsRemaining = result.attemptsRemaining;
 
-        if (isCorrect) {
-            currentQuestion.explanation = checkResult.explanation;
-            markAnswerState(selectedOption, "is-correct", "Correct answer");
-            dimOtherOptions(selectedOption);
+        if (result.resolved) {
+            clearBlitzTimer();
+            if (result.isCorrect) {
+                markAnswerState(selectedOption, "is-correct", "Correct answer");
+                dimOtherOptions(selectedOption);
+            } else {
+                if (selectedOption !== null) {
+                    markAnswerState(selectedOption, "is-wrong", "Your answer");
+                }
+                if (result.outcome === "timeout") {
+                    resultContainer.innerText = "Time's up!";
+                }
+                markCorrectAnswerByText(result.correctAnswer);
+                const correctIndex = findOptionIndexByText(result.correctAnswer);
+                dimOtherOptions(selectedOption, correctIndex);
+            }
+            currentQuestion.explanation = result.explanation;
             lockOptions();
-            await handleAnswerResult(true, selectedOption);
-        } else if (quizMode === "survival") {
-            markAnswerState(selectedOption, "is-wrong", "Your answer");
-            dimOtherOptions(selectedOption);
-            lockOptions();
-            await handleAnswerResult(false, selectedOption);
-            showQuizSummary("Survival run ended");
+            applyOutcome(result.isCorrect, result);
         } else {
-            attempts++;
             optionsContainer.querySelectorAll(".pq-answer")[selectedOption]?.classList.add("is-wrong");
-            resultContainer.innerText = "Wrong — try again.";
+            resultContainer.innerText = `Wrong — try again. (${attemptsRemaining} attempt${attemptsRemaining === 1 ? "" : "s"} left)`;
+            selectedOption = null;
             submitBtn.disabled = false;
-            if (attempts >= 3) giveUpBtn.style.display = "block";
-            // A retry keeps the question's remaining time, not a fresh 45s.
-            if (quizMode === "blitz") startBlitzTimer({ resume: true });
+            if (attemptsRemaining <= 0) giveUpBtn.style.display = "block";
         }
-    };
+    }
+
+    submitBtn.onclick = () => submitAnswer();
 
     giveUpBtn.onclick = async () => {
         clearBlitzTimer();
         submitBtn.disabled = true;
         giveUpBtn.style.display = "none";
 
-        let checkResult = {};
+        let result = {};
         try {
-            checkResult = await api.checkAnswer(currentQuestion._id, { reveal: true });
+            result = await api.revealQuizAnswer(sessionId);
         } catch (error) {
             console.error("Failed to reveal answer:", error);
         }
 
-        const correctAnswer = checkResult.correctAnswer ?? "N/A";
+        const correctAnswer = result.correctAnswer ?? "N/A";
         resultContainer.innerHTML = `<strong>Correct Answer:</strong> ${escapeHTML(correctAnswer)}`;
         if (selectedOption !== null) {
             markAnswerState(selectedOption, "is-wrong", "Your answer");
@@ -454,13 +449,23 @@ document.addEventListener("DOMContentLoaded", () => {
         const correctIndex = findOptionIndexByText(correctAnswer);
         dimOtherOptions(selectedOption, correctIndex);
         lockOptions();
-        currentQuestion.explanation = checkResult.explanation;
+        currentQuestion.explanation = result.explanation;
         showExplanation();
-        await handleAnswerResult(false, null);
-        if (quizMode === "survival") showQuizSummary("Survival run ended");
+        applyOutcome(false, result);
     };
 
-    nextBtn.onclick = fetchQuestion;
+    nextBtn.onclick = async () => {
+        nextBtn.disabled = true;
+        try {
+            const data = await api.getNextQuizQuestion(sessionId);
+            handleSessionQuestion(data);
+        } catch (error) {
+            console.error("Error fetching next question:", error);
+            resultContainer.innerHTML = `<p class="pq-status error" role="alert">Couldn't load the next question. ${escapeHTML(String(error.message || ""))}</p>`;
+        } finally {
+            nextBtn.disabled = false;
+        }
+    };
 
     finishBtn.onclick = () => showQuizSummary("Session complete");
 
@@ -470,54 +475,49 @@ document.addEventListener("DOMContentLoaded", () => {
         explanationContainer.classList.remove("show");
         explanationContainer.innerText = "";
         selectedOption = null;
-        attempts = 0;
         giveUpBtn.style.display = "none";
         submitBtn.style.display = "block";
         submitBtn.disabled = false;
         nextBtn.style.display = "block";
     }
 
-    async function handleAnswerResult(isCorrect, selectedIndex) {
+    // Trusts the server's isCorrect/points/streak — the client no longer
+    // computes anything that affects scoring, only local display state
+    // (this run's own correct/wrong/streak tally and answer ribbon).
+    function applyOutcome(isCorrect, result) {
         session.answered += 1;
         session.history.push(isCorrect ? "r" : "w");
         if (isCorrect) {
             session.correct += 1;
             session.streak += 1;
             session.bestStreak = Math.max(session.bestStreak, session.streak);
-            resultContainer.innerText = "Correct!";
-            submitBtn.disabled = true;
+            if (!resultContainer.innerText) resultContainer.innerText = "Correct!";
             showExplanation();
         } else {
             session.wrong += 1;
             session.streak = 0;
         }
-        updateHud();
+
+        if (!isGuest) {
+            if (typeof result.totalPoints === "number") session.points = result.totalPoints;
+            if (result.newAchievements?.length) {
+                const labels = result.newAchievements.map((key) => escapeHTML(getAchievementMeta(key).label));
+                resultContainer.innerHTML += `<br><small>Achievement unlocked: ${labels.join(", ")}</small>`;
+            }
+            if (result.alreadyMastered) {
+                resultContainer.innerHTML += `<br><small>Already mastered — no points for repeat correct answers.</small>`;
+            }
+        }
+
+        updateHud(isGuest ? undefined : result.currentStreak);
         renderRibbon();
 
         if (quizMode !== "survival" && session.answered > 0) {
             finishBtn.style.display = "inline-flex";
         }
 
-        if (!isGuest) {
-            try {
-                const timeSpentSec = Math.max(1, Math.round((Date.now() - questionStartedAt) / 1000));
-                const result = await api.updateProgress({
-                    questionId: currentQuestion._id,
-                    selectedIndex,
-                    mode: quizMode,
-                    timeSpentSec,
-                });
-                session.points = result.totalPoints || session.points;
-                if (result.pointsAwarded) session.points = result.totalPoints;
-                if (result.newAchievements?.length) {
-                    const labels = result.newAchievements.map((key) => escapeHTML(getAchievementMeta(key).label));
-                    resultContainer.innerHTML += `<br><small>Achievement unlocked: ${labels.join(", ")}</small>`;
-                }
-                answeredQuestions.add(currentQuestion._id);
-                updateHud(result.currentStreak);
-        } catch (error) {
-            console.error("Failed to update user progress:", error);
-            }
+        if (result.sessionStatus === "ended") {
+            showQuizSummary(result.endedReason === "mistake" ? "Survival run ended" : "Session complete");
         }
     }
 
@@ -606,30 +606,32 @@ document.addEventListener("DOMContentLoaded", () => {
         return `${m}:${String(s).padStart(2, "0")}`;
     }
 
-    // Counts down against a wall-clock deadline, so a throttled or
-    // backgrounded tab can't slow the clock. Pausing (clearBlitzTimer) keeps
-    // the time left; resuming continues from it instead of a fresh 45s.
-    function startBlitzTimer({ resume = false } = {}) {
+    // Counts down against the server-issued deadline (fixed when the
+    // question was served) so a throttled/backgrounded tab can't slow the
+    // clock. The deadline never pauses or extends on a wrong retry — the
+    // server enforces the same fixed cutoff regardless of how many attempts
+    // are used against it.
+    function startBlitzTimer(deadlineTimestamp) {
         clearBlitzTimer();
-        if (!resume || blitzRemaining <= 0) blitzRemaining = BLITZ_SECONDS;
-        blitzDeadline = Date.now() + blitzRemaining * 1000;
+        blitzDeadline = deadlineTimestamp;
         const ring = document.getElementById("timer-wrap");
         const label = document.getElementById("timer-label");
 
         const render = () => {
-            ring.style.setProperty("--p", blitzRemaining / BLITZ_SECONDS);
-            ring.classList.toggle("is-low", blitzRemaining <= 10);
-            label.textContent = formatTimer(blitzRemaining);
+            const remainingSec = Math.max(0, Math.ceil((blitzDeadline - Date.now()) / 1000));
+            ring.style.setProperty("--p", Math.max(0, remainingSec / BLITZ_SECONDS));
+            ring.classList.toggle("is-low", remainingSec <= 10);
+            label.textContent = formatTimer(remainingSec);
+            return remainingSec;
         };
         render();
 
         timerInterval = setInterval(() => {
-            blitzRemaining = Math.max(0, Math.ceil((blitzDeadline - Date.now()) / 1000));
-            render();
-            if (blitzRemaining <= 0) {
+            const remainingSec = render();
+            if (remainingSec <= 0) {
                 clearBlitzTimer();
                 resultContainer.innerText = "Time's up!";
-                handleAnswerResult(false, null).then(() => fetchQuestion());
+                submitAnswer({ isTimeout: true });
             }
         }, 250);
     }
@@ -638,7 +640,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (timerInterval) {
             clearInterval(timerInterval);
             timerInterval = null;
-            blitzRemaining = Math.max(0, Math.ceil((blitzDeadline - Date.now()) / 1000));
         }
     }
 

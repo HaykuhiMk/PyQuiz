@@ -4,10 +4,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
 const request = require('supertest');
 const app = require('../app');
 const db = require('./testUtils/db');
-const { registerAndLogin } = require('./testUtils/authHelpers');
 const Question = require('../models/questionModel');
-const User = require('../models/user');
-const UserAnsweredQuestion = require('../models/userAnsweredQuestion');
 
 beforeAll(async () => {
   await db.connect();
@@ -118,195 +115,15 @@ describe('POST /api/v1/questions/:id/check', () => {
   });
 });
 
-describe('POST /api/v1/users/user-progress (scoring integrity)', () => {
-  it('requires authentication', async () => {
-    const res = await request(app)
-      .post('/api/v1/users/user-progress')
-      .send({ questionId: '507f1f77bcf86cd799439011', selectedIndex: 0 });
-
-    expect(res.statusCode).toBe(401);
-  });
-
-  it('regression: a forged isCorrect:true with a wrong selectedIndex is ignored', async () => {
-    const { cookieHeader, csrfToken } = await registerAndLogin('forge@example.com');
-    const q = await createQuestion();
-
-    const res = await request(app)
-      .post('/api/v1/users/user-progress')
-      .set('Cookie', cookieHeader)
-      .set('X-CSRF-Token', csrfToken)
-      .send({ questionId: q._id.toString(), selectedIndex: 0, isCorrect: true, mode: 'classic' });
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body.data.pointsAwarded).toBe(0);
-
-    const me = await request(app).get('/api/v1/users/me').set('Cookie', cookieHeader);
-    expect(me.body.data.stats.totalCorrect).toBe(0);
-  });
-
-  it('regression: omitting selectedIndex entirely no longer defaults to correct', async () => {
-    const { cookieHeader, csrfToken } = await registerAndLogin('omit@example.com');
-    const q = await createQuestion();
-
-    const res = await request(app)
-      .post('/api/v1/users/user-progress')
-      .set('Cookie', cookieHeader)
-      .set('X-CSRF-Token', csrfToken)
-      .send({ questionId: q._id.toString(), mode: 'classic' });
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body.data.pointsAwarded).toBe(0);
-  });
-
-  it('awards points for an honest correct selectedIndex', async () => {
-    const { cookieHeader, csrfToken } = await registerAndLogin('honest@example.com');
-    const q = await createQuestion();
-
-    const res = await request(app)
-      .post('/api/v1/users/user-progress')
-      .set('Cookie', cookieHeader)
-      .set('X-CSRF-Token', csrfToken)
-      .send({ questionId: q._id.toString(), selectedIndex: 1, mode: 'classic', timeSpentSec: 5 });
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body.data.pointsAwarded).toBeGreaterThan(0);
-
-    const me = await request(app).get('/api/v1/users/me').set('Cookie', cookieHeader);
-    expect(me.body.data.stats.totalCorrect).toBe(1);
-  });
-
-  it('returns 404 for a question that does not exist', async () => {
-    const { cookieHeader, csrfToken } = await registerAndLogin('missingq@example.com');
-
-    const res = await request(app)
-      .post('/api/v1/users/user-progress')
-      .set('Cookie', cookieHeader)
-      .set('X-CSRF-Token', csrfToken)
-      .send({ questionId: '507f1f77bcf86cd799439011', selectedIndex: 0 });
-
-    expect(res.statusCode).toBe(404);
-  });
-
-  it('regression: a request with a valid session cookie but no CSRF header is rejected', async () => {
-    const { cookieHeader } = await registerAndLogin('nocsrf@example.com');
-    const q = await createQuestion();
-
-    const res = await request(app)
-      .post('/api/v1/users/user-progress')
-      .set('Cookie', cookieHeader)
-      .send({ questionId: q._id.toString(), selectedIndex: 1, mode: 'classic' });
-
-    expect(res.statusCode).toBe(403);
-  });
-
-  it('regression: a mismatched CSRF header is rejected', async () => {
-    const { cookieHeader } = await registerAndLogin('badcsrf@example.com');
-    const q = await createQuestion();
-
-    const res = await request(app)
-      .post('/api/v1/users/user-progress')
-      .set('Cookie', cookieHeader)
-      .set('X-CSRF-Token', 'not-the-real-token')
-      .send({ questionId: q._id.toString(), selectedIndex: 1, mode: 'classic' });
-
-    expect(res.statusCode).toBe(403);
-  });
-});
-
-describe('Answered-question tracking scales off the User document', () => {
-  it('never writes an answeredQuestions array onto the User document', async () => {
-    const { cookieHeader, csrfToken } = await registerAndLogin('scale@example.com');
-    const q1 = await createQuestion();
-    const q2 = await createQuestion({ question: 'What is 3 + 3?', answer: '6', options: ['5', '6', '7'] });
-
-    for (const q of [q1, q2]) {
-      await request(app)
-        .post('/api/v1/users/user-progress')
-        .set('Cookie', cookieHeader)
-        .set('X-CSRF-Token', csrfToken)
-        .send({ questionId: q._id.toString(), selectedIndex: 0, mode: 'classic' });
-    }
-
-    const rawUser = await User.findOne({ email: 'scale@example.com' }).lean();
-    expect(rawUser.answeredQuestions).toBeUndefined();
-
-    const trackedCount = await UserAnsweredQuestion.countDocuments({ userId: rawUser._id });
-    expect(trackedCount).toBe(2);
-  });
-
-  it('GET /user-progress reflects answered questions from the separate collection', async () => {
-    const { cookieHeader, csrfToken } = await registerAndLogin('reflect@example.com');
-    const q = await createQuestion();
-
-    await request(app)
-      .post('/api/v1/users/user-progress')
-      .set('Cookie', cookieHeader)
-      .set('X-CSRF-Token', csrfToken)
-      .send({ questionId: q._id.toString(), selectedIndex: 1, mode: 'classic' });
-
-    const res = await request(app).get('/api/v1/users/user-progress').set('Cookie', cookieHeader);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body.data.answered).toBe(1);
-    expect(res.body.data.answeredQuestions).toEqual([q._id.toString()]);
-  });
-
-  it('answering the same question twice does not create a duplicate tracking record', async () => {
-    const { cookieHeader, csrfToken } = await registerAndLogin('dupe@example.com');
-    const q = await createQuestion();
-
-    for (let i = 0; i < 2; i += 1) {
-      await request(app)
-        .post('/api/v1/users/user-progress')
-        .set('Cookie', cookieHeader)
-        .set('X-CSRF-Token', csrfToken)
-        .send({ questionId: q._id.toString(), selectedIndex: 1, mode: 'classic' });
-    }
-
-    const rawUser = await User.findOne({ email: 'dupe@example.com' }).lean();
-    const trackedCount = await UserAnsweredQuestion.countDocuments({ userId: rawUser._id });
-    expect(trackedCount).toBe(1);
-  });
-
-  it('deleting the account removes its answered-question tracking records', async () => {
-    const { cookieHeader, csrfToken } = await registerAndLogin('cleanup@example.com');
-    const q = await createQuestion();
-
-    await request(app)
-      .post('/api/v1/users/user-progress')
-      .set('Cookie', cookieHeader)
-      .set('X-CSRF-Token', csrfToken)
-      .send({ questionId: q._id.toString(), selectedIndex: 1, mode: 'classic' });
-
-    const rawUser = await User.findOne({ email: 'cleanup@example.com' }).lean();
-    expect(await UserAnsweredQuestion.countDocuments({ userId: rawUser._id })).toBe(1);
-
-    const del = await request(app)
-      .delete('/api/v1/users/me')
-      .set('Cookie', cookieHeader)
-      .set('X-CSRF-Token', csrfToken)
-      .send({ password: 'Passw0rd!' });
-
-    expect(del.statusCode).toBe(200);
-    expect(await UserAnsweredQuestion.countDocuments({ userId: rawUser._id })).toBe(0);
-  });
-});
+// Scoring-integrity and answered-question-tracking coverage for what used
+// to be POST /api/v1/users/user-progress now lives in quizSessions.test.js:
+// that endpoint was removed in Phase 1 because taking `mode`/outcome
+// directly from the client was the exact gap that let quiz mode and points
+// be forged (docs/AUDIT.md items 1-3). Scoring is now only reachable through
+// the server-authoritative POST /api/v1/quiz/sessions/:sessionId/answer
+// endpoint, which independently re-derives correctness and mode.
 
 describe('Error responses', () => {
-  it('reports a malformed question id as a 400 without internal details', async () => {
-    const { cookieHeader, csrfToken } = await registerAndLogin('castid@example.com');
-
-    const res = await request(app)
-      .post('/api/v1/users/user-progress')
-      .set('Cookie', cookieHeader)
-      .set('X-CSRF-Token', csrfToken)
-      .send({ questionId: 'not-an-object-id', selectedIndex: 0 });
-
-    expect(res.statusCode).toBe(400);
-    expect(res.body.error.message).toBe('Invalid identifier.');
-    expect(JSON.stringify(res.body)).not.toMatch(/Cast to ObjectId/);
-  });
-
   it('reports malformed JSON as a 400, not a server error', async () => {
     const res = await request(app)
       .post('/api/v1/auth/login')

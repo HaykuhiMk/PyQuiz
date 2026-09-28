@@ -20,15 +20,6 @@ async function getProgress(req, res, next) {
   }
 }
 
-async function updateProgress(req, res, next) {
-  try {
-    const payload = await userService.updateUserProgress(req.user.userId, req.body);
-    return res.json(successResponse({ message: 'Progress updated successfully.', ...payload }));
-  } catch (error) {
-    return next(error);
-  }
-}
-
 async function getLeaderboard(req, res, next) {
   try {
     const leaderboard = await userService.getGlobalLeaderboard(req.query.limit);
@@ -77,7 +68,6 @@ async function deleteAccount(req, res, next) {
 module.exports = {
   me,
   getProgress,
-  updateProgress,
   getLeaderboard,
   getTopicMastery,
   updateProfile,

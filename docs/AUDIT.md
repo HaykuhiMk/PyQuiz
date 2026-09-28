@@ -286,3 +286,73 @@ tag mapping for review before any migration is written.
 | 14 | Reset tokens stored in plain text | CONFIRMED |
 | 15 | `/metrics`, `/api-docs` public; no `trust proxy` | CONFIRMED |
 | 16 | 92 tags on 47 questions, 64 single-occurrence | CONFIRMED |
+
+---
+
+## Phase 1 addendum — server-authoritative quiz sessions (implemented)
+
+Phase 1 closed items 1, 2, 3 and (for Classic/Blitz/Survival) 8. Summary of what changed and
+the decisions taken, for the final report and for Phase 6's rewrite of the system description.
+
+**New/changed backend surface:**
+- `QuizSession` model (`backend/models/quizSession.js`) and `AnswerEvent` model
+  (`backend/models/answerEvent.js`, one document per attempt; groundwork for future
+  adaptive-difficulty features, not yet consumed anywhere).
+- `POST /api/v1/quiz/sessions`, `POST /api/v1/quiz/sessions/:id/next`,
+  `POST /api/v1/quiz/sessions/:id/answer`, `POST /api/v1/quiz/sessions/:id/reveal`
+  (`backend/routes/v1/quizRoutes.js`, `backend/services/quizSessionService.js`). Guests may use
+  all four (no `authenticateToken`); a session belonging to a logged-in user can only be driven
+  by that same user (`loadOwnedSession`, 404 on mismatch/missing/malformed id).
+- **Breaking change:** `POST /api/v1/users/user-progress` is removed. It took `mode` and an
+  implied outcome directly from the client, which was exactly the item-2/item-3 bypass; scoring
+  now only happens inside `submitAnswer`/`revealAnswer`, which derive `mode` from the session and
+  `isCorrect` from a server-side lookup, never from the request body. The read-only
+  `GET /api/v1/users/user-progress` is unchanged. `frontend/public/js/api.js` and
+  `frontend/public/js/questions.js` were updated in this same phase to use the new endpoints.
+
+**DECISION 1 — Blitz pause-on-wrong-answer: simplified, no pause (user's choice).**
+*Old behavior:* the frontend timer (`frontend/public/js/questions.js`, pre-Phase-1) called
+`clearBlitzTimer()` on every submit and, on a wrong retry, `startBlitzTimer({ resume: true })`,
+which resumed the countdown from whatever time was left when the answer was submitted — so the
+clock effectively paused for the round-trip and any thinking time between attempts, and every
+attempt (1st, 2nd, 3rd) reset which timestamp "remaining time" was measured from. There was also
+no server involved at all: the entire 45s limit was client-side state.
+*New behavior:* the deadline (`servedAt + 45000ms + 1500ms` grace) is computed once, server-side,
+when the question is served (`quizConfig.BLITZ_TIME_LIMIT_MS`/`BLITZ_LATENCY_GRACE_MS`,
+`quizSessionService.serveNextQuestion`), and never recomputed or extended on a retry. Every
+attempt against that question (1st, 2nd, 3rd) is checked against the same fixed deadline; a
+submission after it is forced incorrect and immediately resolved regardless of remaining
+attempts (`outcome: 'timeout'`). The frontend timer now just renders a countdown to that
+server timestamp and never pauses/resumes.
+
+**DECISION 2 — Cross-session points policy: first-correct-only (user's choice).**
+Points are awarded the first time a user answers a given question correctly, ever, across all
+modes and sessions; repeat correct answers award 0 points but still count toward
+streaks/accuracy/topicStats. Implemented via a new `UserAnsweredQuestion.everCorrect` flag
+(`backend/models/userAnsweredQuestion.js`), checked before scoring and updated atomically in the
+same upsert that marks the question answered (`userAnsweredQuestionRepository.markAnswered`).
+`userService.applyAnswerOutcome` returns `alreadyCorrectBefore`, which the API surfaces as
+`alreadyMastered: true` so the frontend can show "Already mastered — no points for repeat correct
+answers" instead of the points update looking silently broken.
+
+**DECISION 3 — Existing farmed points: left untouched, remediation script written but not run.**
+`backend/scripts/resetFarmedPoints.js` (`--dry-run` supported, idempotent) recomputes
+`stats.totalPoints` and drops now-unqualified points achievements. It does **not** touch
+`totalAnswered`/`totalCorrect`/`topicStats`/streaks. Documented limitation: `UserAnsweredQuestion`
+never tracked per-question correctness before this phase, so the exact historical set of
+correctly-answered questions can't be recovered; the script estimates it as
+`min(totalCorrect, distinct questions ever answered)` priced at the Classic base rate, which is a
+conservative upper bound, not an exact reconstruction. Not run against any database as part of
+this phase — the author will decide separately whether/when to run it.
+
+**DECISION 4 — `AnswerEvent` and guests: guest attempts are not recorded.**
+Guests have no durable identity to attribute events to across sessions, so recording their raw
+attempts would add storage/privacy surface with no analytical benefit later; `AnswerEvent`
+documents are only created when `session.userId` is set
+(`quizSessionService.recordAttempt`/`resolveBlitzTimeout`).
+
+**Other behavior now enforced that wasn't before:** Classic and Blitz share a 3-attempt cap
+(`quizConfig.MAX_ATTEMPTS`) with an explicit `/reveal` step after exhaustion; Survival ends the
+session on the first wrong answer and rejects further answers/`next` calls; a client can no
+longer skip an unanswered Blitz question for free (`next` while unresolved auto-scores it as a
+timeout); a malformed, missing, or foreign `sessionId` returns 404 on every session endpoint.
