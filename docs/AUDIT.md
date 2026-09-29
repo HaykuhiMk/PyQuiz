@@ -580,91 +580,115 @@ self-heals within one day for every affected account.
 
 ---
 
-## Phase 3 — taxonomy proposal (awaiting approval — nothing below this migrated yet)
+## Phase 3 — taxonomy proposal, revised (awaiting approval — nothing below this migrated yet)
 
-Closes AUDIT.md item 16's remediation. **No `Question.topics` data has been changed, no seed
-data updated, and no admin-form restriction added.** This section is a proposal only, per the
-ground rule to stop and wait for approval of the mapping before writing any migration.
+Closes AUDIT.md item 16's remediation. **No `Question.topics` data has been changed, no seed data
+updated, and no admin-form restriction added.** This section replaces the earlier tag-based
+proposal, which was not approved. Per the revision request:
 
-### Canonical topics (12) and how many of the 47 questions each would contain
+- **Variables & Assignment merged into Mutability & Identity**, renamed **Names, Mutability &
+  Identity** — 11 canonical topics now, not 12.
+- **Every one of the 47 questions was re-read in full** (code, options, answer, explanation — not
+  just its old tags) and assigned exactly **one primary topic**: the concept a learner must
+  understand to answer it correctly, not the data type that happens to appear in the code (e.g. a
+  question about aliasing a list is primary **Names, Mutability & Identity**, not Lists — same
+  principle applied throughout the table below). Secondary topics are optional and listed only for
+  filtering/search; **mastery will be computed from primary topics only.**
 
-Computed by mapping every one of the 47 questions' existing tags through the table below and
-counting **distinct questions** per canonical topic (not a sum of old per-tag counts, which would
-double-count a question whose several old tags collapse into the same new topic — the same
-double-counting risk flagged for the topicStats migration below).
+### Revised canonical topics (11) and primary-question counts
 
-| # | Canonical topic | Questions |
-|---|------------------|-----------|
-| 1 | Lists | 23 |
-| 2 | Loops & Control Flow | 18 |
-| 3 | Strings | 16 |
-| 4 | Mutability & Identity | 10 |
-| 5 | Dictionaries | 8 |
-| 6 | Numbers & Arithmetic | 7 |
-| 7 | Functions & Built-ins | 7 |
-| 8 | Data Types & Conversion | 6 |
-| 9 | Indexing & Slicing | 5 |
-| 10 | Sets | 5 |
-| 11 | Tuples | 4 |
-| 12 | Variables & Assignment | 4 |
+| # | Canonical topic | Primary questions |
+|---|------------------|--------------------|
+| 1 | Names, Mutability & Identity | 12 |
+| 2 | Loops & Control Flow | 6 |
+| 3 | Dictionaries | 6 |
+| 4 | Data Types & Conversion | 5 |
+| 5 | Strings | 4 |
+| 6 | Functions & Built-ins | 4 |
+| 7 | Sets | 4 |
+| 8 | Lists | 3 |
+| 9 | Indexing & Slicing | 2 |
+| 10 | Tuples | 1 |
+| 11 | Numbers & Arithmetic | 0 |
 
-(Counts sum to more than 47 because most questions carry multiple tags spanning more than one
-canonical topic — the same is already true of the current 92-tag scheme.)
+**Three topics fall below the proposed `MIN_QUESTIONS_FOR_MASTERY = 3`** and would show "Not
+enough questions yet" for every user under that rule: Indexing & Slicing (2), Tuples (1), and
+Numbers & Arithmetic (**0** — see below). This is a direct, honest consequence of picking one
+primary concept per question rather than letting every question count toward every topic its code
+happens to touch, and is worth your review before approval:
 
-### Full old-tag → canonical-topic mapping (all 92 tags accounted for)
+- **Numbers & Arithmetic has zero primary questions.** Several questions touch arithmetic (modulo,
+  exponentiation, bool-in-arithmetic) but in every case the thing that actually determines the
+  right answer is something else — a type-conversion rule or a loop/break condition — so arithmetic
+  itself was never the deciding concept. This taxonomy, applied to the current 47 questions, simply
+  doesn't have a question whose primary lesson is arithmetic. Options: leave the topic in place
+  (it'll read "Not enough questions yet" until such questions are added), fold it into **Data Types
+  & Conversion** (where its closest relatives — Q9, Q25 — already live), or treat it as a flagged
+  gap for future question-writing. Flagging rather than deciding for you.
+- **Tuples (1) and Indexing & Slicing (2)** are thin because most tuple- and slicing-adjacent
+  questions turned out to primarily test something else once re-read in full (unpacking mechanics
+  → Names, Mutability & Identity; aliasing → same). Same options apply: leave them, merge them into
+  a neighboring topic, or accept the "not enough questions yet" state as accurate for now.
+- **Names, Mutability & Identity is large (12 of 47, ~26%)** — expected from merging two categories
+  into one, and from this taxonomy's rule that pure name-binding/aliasing/identity questions (the
+  swap idiom, extended unpacking, `is` vs `==`, rebinding vs. mutation) all land here regardless of
+  which container type appears in the code, since that's exactly the kind of "data type in the code
+  isn't the point" case the revision asked for.
 
-**Lists** (23 questions) ← Lists, List Methods, List Manipulation, List Modification, List
-Multiplication, List References, List Unpacking, Extended Unpacking, Nested Lists, Data
-Structures, Duplicate Removal
+### One row per question: summary, primary topic, secondary topics, reason
 
-**Loops & Control Flow** (18) ← Loops, For Loop, while loop, Break Statement, Continue Statement,
-Control Statements, Conditional Statements, Iteration, Range, Range Function
+| # | Question summary | Primary topic | Secondary topics | Why this primary |
+|---|---|---|---|---|
+| 1 | List index assignment beyond current length | Lists | Names/Mutability/Identity, Indexing & Slicing | List-specific mechanic: assignment can't extend a list past its length (IndexError). |
+| 2 | Assigning to a tuple index | Names, Mutability & Identity | Tuples | Fails specifically because tuples are immutable — the immutability itself is the lesson. |
+| 3 | Looping over a list of strings, printing each one's first char | Strings | Lists, Loops & Control Flow | The loop is trivial; getting `word[0]` right requires string indexing. |
+| 4 | Looping directly over a string's characters | Strings | Loops & Control Flow | Tests that strings are iterable character-by-character. |
+| 5 | Comparing an int to a string with `>` | Data Types & Conversion | Numbers & Arithmetic | Python disallows ordering comparisons across incompatible types — a type-compatibility fact. |
+| 6 | Assigning to a string index | Names, Mutability & Identity | Strings | Same immutability lesson as Q2, applied to strings. |
+| 7 | For-loop with `continue` and `break` | Loops & Control Flow | — | Tests precise continue/break sequencing. |
+| 8 | Converting a list with duplicates to a set | Sets | Lists | Tests that `set()` de-duplicates automatically. |
+| 9 | String concatenation vs. int/bool addition, then `str()` | Data Types & Conversion | Strings, Numbers & Arithmetic | Decisive step is knowing `True` behaves as `1` in arithmetic before conversion. |
+| 10 | Assigning one list variable to another, then mutating | Names, Mutability & Identity | Lists | Textbook aliasing: `l2 = l1` binds a second name to the same mutable object. |
+| 11 | `is`/`==`, `sys.getrefcount`, small-int interning | Names, Mutability & Identity | Lists, Numbers & Arithmetic | Entirely about identity vs. equality and reference semantics. |
+| 12 | `len()` on a list containing a nested list | Lists | Functions & Built-ins | Tests that a nested list counts as one top-level element. |
+| 13 | Loop with a conditional print and a break | Loops & Control Flow | Lists | Tests conditional-print-then-break sequencing inside a loop. |
+| 14 | Loop with continue, break, and modulo | Loops & Control Flow | Numbers & Arithmetic | The modulo check is incidental; the ordering of continue vs. break is the lesson. |
+| 15 | Loop that breaks once a squared value equals 9 | Loops & Control Flow | Numbers & Arithmetic | Tests exactly when the break condition is reached. |
+| 16 | Reassigning a name to a repeated list (`list1 * 5`) | Names, Mutability & Identity | Lists | `list1 * 5` creates a new object; rebinding `list1` doesn't touch the original. |
+| 17 | Aliased list mutated via slice assignment | Names, Mutability & Identity | Lists, Indexing & Slicing | Slice assignment mutates in place, so every alias sees it — contrasts directly with Q16. |
+| 18 | Indexing into a dict's `.keys()` view | Dictionaries | Indexing & Slicing | `.keys()` returns a view object, not a list — it doesn't support indexing. |
+| 19 | `str.maketrans` + `.translate()` | Strings | Dictionaries | Tests character-level string substitution mechanics. |
+| 20 | Chained `removesuffix`/`removeprefix`/`strip` | Strings | — | Tests that each method strips only what's explicitly at the edges, once. |
+| 21 | `swapcase()` then `sort(key=len, reverse=True)` | Functions & Built-ins | Strings | Getting the final order right requires understanding sorting by a key function. |
+| 22 | `sorted(set(ls), reverse=True)` | Sets | Functions & Built-ins | `set()` determines which values exist at all, before `sorted()` orders them. |
+| 23 | Three slices with different start:stop:step | Indexing & Slicing | Lists | Requires reasoning through several step/negative-index combinations. |
+| 24 | Dict with mixed int/str keys, some repeated | Dictionaries | Data Types & Conversion | `1` and `'1'` are different keys — tests key identity by type and value. |
+| 25 | `int(bool())` / `bool(int())` and arithmetic | Data Types & Conversion | Numbers & Arithmetic | Tests round-tripping between `bool` and `int` and their default falsy values. |
+| 26 | `for i in x` where `x` is an int | Data Types & Conversion | Loops & Control Flow | Tests that `int` is not an iterable type, unlike `str`/`list`. |
+| 27 | `for i in di` — default dict iteration | Dictionaries | Loops & Control Flow | Tests that iterating a dict by default yields its keys. |
+| 28 | Mixed identity/equality/type checks across containers | Names, Mutability & Identity | Data Types & Conversion, Sets, Lists | Decisive checks are `is` (interning) and that `{}` is a dict, not a set. |
+| 29 | `.keys()` then `di[x]` lookup in a loop | Dictionaries | Loops & Control Flow | Tests combining key iteration with key-based value lookup. |
+| 30 | `.values()` used mistakenly as keys | Dictionaries | Loops & Control Flow | Tests the difference between `.values()` and `.keys()` — using a value as a key raises KeyError. |
+| 31 | `.values()` called on a set literal | Sets | Dictionaries | `{0, 1, 2}` is a set, not a dict — the confusion between the two literal syntaxes is the point. |
+| 32 | `.add()` on a set while iterating it | Sets | — | Tests that `.add()` returns `None` and is a no-op for an already-present element. |
+| 33 | `for i in range(0)` — an empty range | Loops & Control Flow | Functions & Built-ins | `range(0)` is empty, so the loop body never executes. |
+| 34 | Swapping two variables; unpacking a string | Names, Mutability & Identity | Tuples, Strings | Tests the multiple-assignment swap idiom and unpacking a string into separate names. |
+| 35 | Iterating a tuple of tuples, unpacking each | Tuples | Loops & Control Flow | Tests unpacking nested tuples during iteration — the tuple structure is central. |
+| 36 | `a, *b = ls` and unpacking a `range` | Names, Mutability & Identity | Lists | Tests extended-unpacking syntax — how a starred name absorbs remaining items. |
+| 37 | `a, *b, c = range(4)` and `*x, y = ls` | Names, Mutability & Identity | Lists | Tests extended unpacking in two positions in the same snippet. |
+| 38 | Chained assignment aliasing vs. list rebinding | Names, Mutability & Identity | Lists | Contrasts `a = b = []` aliasing with a rebind (`ls = ls + [3]`) that breaks an alias. |
+| 39 | Aliased list mutated, then `list + str` | Data Types & Conversion | Names/Mutability/Identity, Lists | The answer hinges on `list + str` raising TypeError, not on the (correctly-behaving) aliasing step. |
+| 40 | Referencing an undefined, differently-cased name | Names, Mutability & Identity | Lists | Python is case-sensitive — `LS` is a different name from `ls` and is undefined. |
+| 41 | Reassigning a variable to `.append()`'s return value | Lists | Data Types & Conversion | Tests that `.append()` mutates in place and returns `None`. |
+| 42 | Redirecting and restoring `sys.stdout` | Functions & Built-ins | — | Tests how `print()` writes to whichever stream `sys.stdout` currently is. |
+| 43 | `while x:` shrinking a string via slicing each iteration | Loops & Control Flow | Strings, Data Types & Conversion | Tests a while-loop terminating on an empty (falsy) string. |
+| 44 | `.items()` unpacked in a for-loop with custom `sep`/`end` | Dictionaries | Strings | Tests unpacking key-value pairs from `.items()` during iteration. |
+| 45 | `zip()` over two equal-length lists | Functions & Built-ins | Lists | Tests how `zip()` pairs two sequences element-by-element. |
+| 46 | `zip()`/`map()` over two different-length strings | Functions & Built-ins | Strings | Tests `zip()` stopping at the shorter sequence and `map()` applying a function per character. |
+| 47 | A big-step slice feeding `enumerate()`'s start value | Indexing & Slicing | Functions & Built-ins | A large slice step reduces the slice to one character, which then sets enumerate's start. |
 
-**Strings** (16) ← Strings, String, String Indexing, String Iteration, String Concatenation,
-string slicing, string formatting, string manipulation, String Translation, maketrans, translate,
-strip, removeprefix, removesuffix, swapcase, String Unpacking, String Keys
-
-**Mutability & Identity** (10) ← Mutable, Immutable, Aliasing, Mutability, Identity, Identity
-Operators, Equality, Reference Counting, Memory Management
-
-**Dictionaries** (8) ← Dictionaries, Dictionary Methods, dict_keys, Keys, Hashing, Integer Keys
-
-**Numbers & Arithmetic** (7) ← Integers, Integer, Bool, Basic Arithmetic, Modulo Operator,
-Exponentiation Operator, Integer Operations, Boolean in Arithmetic
-
-**Functions & Built-ins** (7) ← map, zip, enumerate, chr, ord, len, print, stdout, Files, Sorting,
-Sorting with key function
-
-**Data Types & Conversion** (6) ← Data Types, Type Conversion, Type Checking, None, Boolean Logic
-
-**Indexing & Slicing** (5) ← Indexing, Slicing, List Slicing, Negative Indexing, boolean indexing,
-Step Values
-
-**Sets** (5) ← Sets, Set Methods
-
-**Tuples** (4) ← Tuples, Tuple Unpacking
-
-**Variables & Assignment** (4) ← Assignment, Variable Assignment, Multiple Assignment, Comparison
-Operators, Case Sensitivity
-
-### Notes on judgment calls made while mapping
-
-- A handful of tags are genuinely cross-cutting and were assigned to the single best-fit topic
-  rather than split: `Slicing`/`List Slicing`/`Negative Indexing`/`Step Values`/`boolean indexing`
-  went to **Indexing & Slicing** rather than being split between Lists and Strings, since slicing
-  syntax itself (not the container) is what these questions test. `Data Structures` (a generic
-  tag on 2 questions) went to **Lists** as the closest concrete topic, since inspecting those two
-  questions shows they're both list-focused.
-- This mapping was derived from tag names only, not by re-reading all 47 questions' actual content
-  — most assignments are unambiguous (e.g. `dict_keys` → Dictionaries), but a few of the
-  judgment calls above are worth a second look before approval, especially if any single question
-  feels miscategorized once the mapping is applied.
-- 12 topics (within the requested ~10-15 range) keeps every topic large enough to be a meaningful
-  mastery unit (smallest is 4 questions) while staying recognizable as a normal
-  intro-Python-course syllabus section.
-
-**Waiting for approval of this mapping before writing the migration script, updating seed data, or
-touching the admin question form**, per the ground rule.
+**Waiting for your approval of this revised table before writing any migration script, updating
+seed data, or touching the admin question form**, per the ground rule.
 
 ---
 
@@ -753,3 +777,61 @@ points; case-insensitive rejection at both registration and profile update (and 
 case of your own name is allowed); leaderboard `isCurrentUser` for the viewer/other rows/guests,
 and that avatar is never present in its response; topic mastery's attempted/correct now asserted
 via the public endpoint instead of reading the (now-removed) `topicStats` field directly.
+
+---
+
+## Phase 3 follow-ups (implemented, separate commit)
+
+Three items requested before approving the revised taxonomy.
+
+**1. General `/api` rate limiter — same user/IP keying as the sessions limiter.**
+`app.js`'s `generalLimiter` (previously flat 300/15min by IP) now mirrors the quiz-sessions
+limiter's approach: `optionalAuthenticate` runs first (mounted globally on `/api`), then
+`generalLimiter` keys by `user:<id>` for authenticated requests (300/15min, unchanged budget, now
+per-account) and `ip:<address>` for guests (raised to 1000/15min — this limiter covers virtually
+every request the app makes, not just session creation, so a shared classroom/office IP needs more
+headroom here than anywhere else).
+
+**`TRUST_PROXY` — documented and enforced-by-warning that it must be an exact hop count, never
+`true`.** `true` trusts every hop in `X-Forwarded-For`, including whatever the client itself put
+there — a client can set that header to a different value on every request and be treated as a
+"different IP" each time, which bypasses every IP-keyed rate limiter in the app outright, including
+login/register brute-force protection (`createAuthLimiter`). This is now documented explicitly in
+`backend/env.example` (never `true`; set the exact hop count, e.g. `1`) and `backend/config/
+trustProxy.js` now logs a startup warning if `TRUST_PROXY=true` is set anyway (kept functional,
+since Express itself supports it and a small number of legitimate all-hops-owned topologies exist,
+but made impossible to miss). Tested directly: `backend/tests/trustProxy.test.js` shows that with
+`TRUST_PROXY=true`, two requests with different `X-Forwarded-For` values are reported as two
+different `req.ip`s — the exact mechanism of the bypass.
+
+**2. Mastery for existing users — accuracy history gap made visible instead of silently
+misclassifying.** Coverage has full history (`UserAnsweredQuestion` existed from the start);
+accuracy only exists from the Phase 1 deployment (`AnswerEvent`). A topic with real coverage but
+very few recorded attempts previously risked a confident-looking but statistically thin
+classification (in the worst case, a single lucky/unlucky attempt swinging a topic in or out of
+"master"). `topicMasteryService` now checks attempt count first: below `MIN_ACCURACY_EVENTS` (new
+named constant in `masteryConfig.js`, value `3`) a topic with any coverage shows `level:
+'measuring'` ("Accuracy being measured") instead of new/beginner/intermediate/master.
+`WEAK_TOPIC_MIN_ATTEMPTS` is now defined as `MIN_ACCURACY_EVENTS` (rather than a separately-chosen
+smaller number) so a topic can never be flagged "weak" while still in "measuring" state.
+
+**3. AnswerEvent rows for a deleted question — confirmed, and now tested.** They are kept
+permanently as history (`questionService.deleteQuestion` only cascades `UserAnsweredQuestion`,
+never touches `AnswerEvent` — unchanged from the original Phase 3 commit). The live mastery
+computation already ignored them correctly by construction: it looks up each `AnswerEvent`'s
+topics via the *current* `Question` collection, and a deleted question simply isn't in that lookup
+anymore, so its events silently contribute to no topic at all. This wasn't previously tested;
+`backend/tests/topicMastery.test.js` now proves it directly — answering 3 of 4 questions in a topic,
+deleting one of the answered ones, and confirming both that its `AnswerEvent` row still exists in
+the database and that the topic's live `attempted`/`correct`/`answered`/`total` all drop by exactly
+one rather than staying at the pre-deletion counts.
+
+**New named constants** (`masteryConfig.js`): `MIN_ACCURACY_EVENTS = 3` (above) and
+`MIN_QUESTIONS_FOR_MASTERY = 3` (a topic with fewer questions than this shows `level:
+'unavailable'`, "Not enough questions yet" — added for the taxonomy revision below, but applies
+today against the current tag set too).
+
+**Tests added:** `TRUST_PROXY=true` request-spoofing demonstration; "measuring" state appearing
+with thin attempt history and clearing once attempts reach the threshold; "unavailable" state for
+a topic below the minimum question count; AnswerEvent history surviving question deletion while
+being excluded from live mastery numbers.

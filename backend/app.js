@@ -6,10 +6,11 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
-const rateLimit = require('express-rate-limit');
 const pinoHttp = require('pino-http');
 const logger = require('./config/logger');
 const { configureTrustProxy } = require('./config/trustProxy');
+const optionalAuthenticate = require('./middleware/optionalAuth');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { setupSwagger } = require('./docs/swagger');
 const { setupMetrics } = require('./observability/metrics');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
@@ -56,11 +57,21 @@ app.use(
 );
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Keyed by user ID for authenticated requests and by IP for guests (not
+// just for session creation — see docs/AUDIT.md Phase 3 follow-up): a
+// shared IP is the normal case for guests specifically (a classroom or
+// office behind one NAT/proxy address), so it gets a much higher budget
+// than any one legitimate authenticated user should need. Requires
+// optionalAuthenticate to run first so req.user is populated when the key
+// is computed.
+const GENERAL_LIMIT_PER_USER = 300;
+const GENERAL_LIMIT_PER_GUEST_IP = 1000;
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: (req) => (req.user?.userId ? GENERAL_LIMIT_PER_USER : GENERAL_LIMIT_PER_GUEST_IP),
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => (req.user?.userId ? `user:${req.user.userId}` : `ip:${ipKeyGenerator(req.ip)}`),
 });
 
 // A factory, not a single shared instance: each mount below gets its own
@@ -84,6 +95,7 @@ const contactLimiter = rateLimit({
   message: { error: 'Too many messages sent. Please try again later.' },
 });
 
+app.use('/api', optionalAuthenticate);
 app.use('/api', generalLimiter);
 app.use('/api/v1/admin/login', createAuthLimiter());
 app.use('/api/v1/auth/login', createAuthLimiter());

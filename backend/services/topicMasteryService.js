@@ -7,6 +7,8 @@ const {
   MASTER_COVERAGE_THRESHOLD,
   MASTER_ACCURACY_THRESHOLD,
   INTERMEDIATE_COVERAGE_THRESHOLD,
+  MIN_ACCURACY_EVENTS,
+  MIN_QUESTIONS_FOR_MASTERY,
   WEAK_TOPIC_MIN_ATTEMPTS,
   WEAK_TOPIC_ACCURACY_THRESHOLD,
   WEAK_TOPIC_MAX_COUNT,
@@ -28,6 +30,13 @@ const {
 // of sync with deletions/retagging the way an incrementally-updated counter
 // did (docs/AUDIT.md items 6/7, and the topicStats push bug found in the
 // Phase 1 follow-ups) — see docs/AUDIT.md's Phase 3 addendum.
+//
+// `level` is one of: 'unavailable' (fewer than MIN_QUESTIONS_FOR_MASTERY
+// questions exist in the topic at all — not a property of this user),
+// 'new' (no coverage yet), 'measuring' (some coverage, but fewer than
+// MIN_ACCURACY_EVENTS recorded attempts to trust the accuracy figure —
+// see the note above about AnswerEvent's Phase-1-onward history),
+// 'beginner', 'intermediate', or 'master'.
 async function getTopicMastery(userId) {
   const user = await userRepository.findById(userId);
   if (!user) {
@@ -75,28 +84,40 @@ async function getTopicMastery(userId) {
       const correct = topicCorrect.get(topic) || 0;
       const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
       const coverage = Math.round((answered / total) * 100);
-      return {
-        topic,
-        total,
-        answered,
-        coverage,
-        correct,
-        attempted,
-        accuracy,
-        level:
-          coverage >= MASTER_COVERAGE_THRESHOLD && accuracy >= MASTER_ACCURACY_THRESHOLD
-            ? 'master'
-            : coverage >= INTERMEDIATE_COVERAGE_THRESHOLD
-              ? 'intermediate'
-              : answered > 0
-                ? 'beginner'
-                : 'new',
-      };
+
+      // Order matters: a topic too small to classify at all comes first,
+      // then "no coverage yet", then — since AnswerEvent (accuracy's source)
+      // only exists from the Phase 1 deployment onward — a topic can have
+      // real coverage history but too few recorded attempts to trust its
+      // accuracy figure, which must not be silently classified as
+      // beginner/intermediate/master using that unreliable number.
+      let level;
+      if (total < MIN_QUESTIONS_FOR_MASTERY) {
+        level = 'unavailable'; // "Not enough questions yet" — a property of the topic itself
+      } else if (answered === 0) {
+        level = 'new';
+      } else if (attempted < MIN_ACCURACY_EVENTS) {
+        level = 'measuring'; // "Accuracy being measured" — has coverage, but too little AnswerEvent data
+      } else if (coverage >= MASTER_COVERAGE_THRESHOLD && accuracy >= MASTER_ACCURACY_THRESHOLD) {
+        level = 'master';
+      } else if (coverage >= INTERMEDIATE_COVERAGE_THRESHOLD) {
+        level = 'intermediate';
+      } else {
+        level = 'beginner';
+      }
+
+      return { topic, total, answered, coverage, correct, attempted, accuracy, level };
     })
     .sort((a, b) => b.coverage - a.coverage || a.topic.localeCompare(b.topic));
 
   const weakTopics = mastery
-    .filter((item) => item.attempted >= WEAK_TOPIC_MIN_ATTEMPTS && item.accuracy < WEAK_TOPIC_ACCURACY_THRESHOLD)
+    .filter(
+      (item) =>
+        item.level !== 'unavailable' &&
+        item.level !== 'measuring' &&
+        item.attempted >= WEAK_TOPIC_MIN_ATTEMPTS &&
+        item.accuracy < WEAK_TOPIC_ACCURACY_THRESHOLD
+    )
     .slice(0, WEAK_TOPIC_MAX_COUNT);
 
   return { mastery, weakTopics };

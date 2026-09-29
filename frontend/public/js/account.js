@@ -79,6 +79,8 @@ const MASTERY_LEVEL_LABEL = {
   intermediate: 'Progressing',
   beginner: 'Started',
   new: 'Not started',
+  measuring: 'Accuracy being measured',
+  unavailable: 'Not enough questions yet',
 };
 
 function renderTopicMastery(mastery) {

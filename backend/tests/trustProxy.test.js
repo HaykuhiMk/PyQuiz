@@ -37,4 +37,20 @@ describe('configureTrustProxy', () => {
 
     expect(res.body.ip).not.toBe('203.0.113.7');
   });
+
+  it('TRUST_PROXY=true lets a client freely spoof req.ip on every request (documents why it must never be used)', async () => {
+    process.env.TRUST_PROXY = 'true';
+    const app = buildTestApp();
+
+    // With every proxy trusted, the client's own X-Forwarded-For value is
+    // taken as req.ip outright — a real attacker can present as a
+    // different "client" on every single request just by changing this
+    // header, which defeats any IP-keyed rate limiter (including
+    // login/register brute-force protection) outright.
+    const first = await request(app).get('/__ip').set('X-Forwarded-For', '10.0.0.1');
+    const second = await request(app).get('/__ip').set('X-Forwarded-For', '10.0.0.2');
+
+    expect(first.body.ip).toBe('10.0.0.1');
+    expect(second.body.ip).toBe('10.0.0.2');
+  });
 });
