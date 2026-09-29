@@ -8,6 +8,7 @@ const {
   BLITZ_TIME_BONUS_MAX,
   BLITZ_TIME_BONUS_DIVISOR_SEC,
 } = require('../config/quizConfig');
+const { RANK_THRESHOLDS } = require('../config/masteryConfig');
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$/;
 const MAX_AVATAR_LENGTH = 500_000;
@@ -43,7 +44,10 @@ function unlockAchievements(user) {
 }
 
 async function getUserProfile(userId) {
-  const user = await userRepository.findById(userId);
+  // The only read path that needs the (up-to-500KB) avatar field —
+  // findById excludes it by default so it isn't loaded on every other
+  // user lookup (docs/AUDIT.md item 9).
+  const user = await userRepository.findByIdWithAvatar(userId);
   if (!user) {
     throw new AppError('User not found', 404);
   }
@@ -67,10 +71,8 @@ async function getUserProfile(userId) {
 
 function computeRank(stats = {}) {
   const points = stats.totalPoints || 0;
-  if (points >= 500) return 'Python Master';
-  if (points >= 200) return 'Advanced';
-  if (points >= 50) return 'Intermediate';
-  return 'Beginner';
+  const tier = RANK_THRESHOLDS.find((candidate) => points >= candidate.minPoints);
+  return tier ? tier.rank : 'Beginner';
 }
 
 async function getUserProgress(userId) {
@@ -102,10 +104,12 @@ async function getUserProgress(userId) {
 //
 // Points and streaks reward a *first-attempt* correct answer specifically
 // (`attemptNumber === 1`): getting it right after one or more wrong Classic/
-// Blitz attempts on the same question still counts toward accuracy and
-// topicStats below, but earns no points and does not extend the streak — a
-// wrong attempt already broke it. Daily Challenge questions are single-shot
-// by construction, so every correct answer there is attempt 1.
+// Blitz attempts on the same question still counts toward totalCorrect (and
+// toward topic accuracy/coverage, computed separately by
+// topicMasteryService from AnswerEvent/UserAnsweredQuestion), but earns no
+// points and does not extend the streak — a wrong attempt already broke it.
+// Daily Challenge questions are single-shot by construction, so every
+// correct answer there is attempt 1.
 //
 // On top of that, points are awarded only the first time this user has ever
 // gotten this exact question right on a first attempt, across all modes and
@@ -117,10 +121,10 @@ async function getUserProgress(userId) {
 // looking like a bug.
 //
 // `pointsOverride` bypasses the point calculation above entirely (still
-// updates streaks/accuracy/topicStats/everCorrect as usual): the Daily
-// Challenge pays a flat per-question bonus independent of the first-
-// correct-ever rule, so it calls this once per question with
-// `pointsOverride: 0` and awards its own points separately in one lump sum.
+// updates streaks/accuracy/everCorrect as usual): the Daily Challenge pays a
+// flat per-question bonus independent of the first-correct-ever rule, so it
+// calls this once per question with `pointsOverride: 0` and awards its own
+// points separately in one lump sum.
 async function applyAnswerOutcome(
   userId,
   question,
@@ -174,22 +178,6 @@ async function applyAnswerOutcome(
     );
   }
 
-  if (question.topics?.length) {
-    user.topicStats = user.topicStats || [];
-    for (const topic of question.topics) {
-      let entry = user.topicStats.find((item) => item.topic === topic);
-      if (!entry) {
-        // Mongoose casts a pushed plain object into a new subdocument rather
-        // than reusing this reference, so mutating `entry` after push would
-        // silently be lost — re-read the just-pushed element instead.
-        user.topicStats.push({ topic, correct: 0, attempted: 0 });
-        entry = user.topicStats[user.topicStats.length - 1];
-      }
-      entry.attempted += 1;
-      if (isCorrect) entry.correct += 1;
-    }
-  }
-
   const newAchievements = unlockAchievements(user);
   await userRepository.saveUser(user);
 
@@ -204,7 +192,7 @@ async function applyAnswerOutcome(
   };
 }
 
-async function getGlobalLeaderboard(limit = 50) {
+async function getGlobalLeaderboard(limit = 50, viewerUserId = null) {
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
   const users = await userRepository.findLeaderboard(safeLimit);
   return users.map((user, index) => ({
@@ -213,6 +201,12 @@ async function getGlobalLeaderboard(limit = 50) {
     totalPoints: user.stats?.totalPoints || 0,
     bestStreak: user.stats?.bestStreak || 0,
     totalCorrect: user.stats?.totalCorrect || 0,
+    // Server-computed instead of the frontend matching by username+stats
+    // (docs/AUDIT.md item 9) — that heuristic broke down whenever two users
+    // shared a username, which case-insensitive uniqueness now prevents
+    // going forward, but this is also just a more direct, correct way to
+    // identify "my row."
+    isCurrentUser: viewerUserId ? String(user._id) === String(viewerUserId) : false,
     achievements: (user.achievements || []).map((a) => a.key),
   }));
 }
@@ -238,6 +232,12 @@ async function updateProfile(userId, { username, avatar }) {
     const trimmed = username.trim();
     if (trimmed.length < 2 || trimmed.length > 50) {
       throw new AppError('Username must be between 2 and 50 characters', 400);
+    }
+    if (trimmed.toLowerCase() !== user.usernameLower) {
+      const existing = await userRepository.findByUsernameLower(trimmed.toLowerCase());
+      if (existing) {
+        throw new AppError('Username already exists.', 400);
+      }
     }
     user.username = trimmed;
   }

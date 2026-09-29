@@ -24,6 +24,11 @@ const quizSessionSchema = new mongoose.Schema({
   // points/stats (see quizSessionService).
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   mode: { type: String, enum: QUIZ_MODES, required: true },
+  // Classic only: skips the everCorrect exclusion so a user can replay
+  // already-mastered questions (docs/AUDIT.md Phase 3 addendum) — never
+  // earns points either way, since the first-correct-ever rule already
+  // zeroes them for an everCorrect question.
+  practiceMode: { type: Boolean, default: false },
   filters: {
     topics: { type: [String], default: [] },
     difficulty: { type: String, default: null },

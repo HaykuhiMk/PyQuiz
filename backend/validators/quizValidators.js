@@ -7,6 +7,7 @@ const createSessionSchema = z.object({
   mode: z.enum(QUIZ_MODES),
   topics: z.array(z.string().min(1)).max(150).optional().default([]),
   difficulty: difficultyEnum.optional(),
+  practiceMode: z.boolean().optional().default(false),
 });
 
 const submitAnswerSchema = z.object({

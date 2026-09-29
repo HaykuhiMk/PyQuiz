@@ -577,3 +577,179 @@ time-of-day, so there's no way to reconstruct which UTC hour a past completion a
 in, and even a perfect fix would only prevent a handful of one-time 20-point bonuses — not worth
 the complexity of migration/compatibility code for a scheme that's now permanently changed and
 self-heals within one day for every affected account.
+
+---
+
+## Phase 3 — taxonomy proposal (awaiting approval — nothing below this migrated yet)
+
+Closes AUDIT.md item 16's remediation. **No `Question.topics` data has been changed, no seed
+data updated, and no admin-form restriction added.** This section is a proposal only, per the
+ground rule to stop and wait for approval of the mapping before writing any migration.
+
+### Canonical topics (12) and how many of the 47 questions each would contain
+
+Computed by mapping every one of the 47 questions' existing tags through the table below and
+counting **distinct questions** per canonical topic (not a sum of old per-tag counts, which would
+double-count a question whose several old tags collapse into the same new topic — the same
+double-counting risk flagged for the topicStats migration below).
+
+| # | Canonical topic | Questions |
+|---|------------------|-----------|
+| 1 | Lists | 23 |
+| 2 | Loops & Control Flow | 18 |
+| 3 | Strings | 16 |
+| 4 | Mutability & Identity | 10 |
+| 5 | Dictionaries | 8 |
+| 6 | Numbers & Arithmetic | 7 |
+| 7 | Functions & Built-ins | 7 |
+| 8 | Data Types & Conversion | 6 |
+| 9 | Indexing & Slicing | 5 |
+| 10 | Sets | 5 |
+| 11 | Tuples | 4 |
+| 12 | Variables & Assignment | 4 |
+
+(Counts sum to more than 47 because most questions carry multiple tags spanning more than one
+canonical topic — the same is already true of the current 92-tag scheme.)
+
+### Full old-tag → canonical-topic mapping (all 92 tags accounted for)
+
+**Lists** (23 questions) ← Lists, List Methods, List Manipulation, List Modification, List
+Multiplication, List References, List Unpacking, Extended Unpacking, Nested Lists, Data
+Structures, Duplicate Removal
+
+**Loops & Control Flow** (18) ← Loops, For Loop, while loop, Break Statement, Continue Statement,
+Control Statements, Conditional Statements, Iteration, Range, Range Function
+
+**Strings** (16) ← Strings, String, String Indexing, String Iteration, String Concatenation,
+string slicing, string formatting, string manipulation, String Translation, maketrans, translate,
+strip, removeprefix, removesuffix, swapcase, String Unpacking, String Keys
+
+**Mutability & Identity** (10) ← Mutable, Immutable, Aliasing, Mutability, Identity, Identity
+Operators, Equality, Reference Counting, Memory Management
+
+**Dictionaries** (8) ← Dictionaries, Dictionary Methods, dict_keys, Keys, Hashing, Integer Keys
+
+**Numbers & Arithmetic** (7) ← Integers, Integer, Bool, Basic Arithmetic, Modulo Operator,
+Exponentiation Operator, Integer Operations, Boolean in Arithmetic
+
+**Functions & Built-ins** (7) ← map, zip, enumerate, chr, ord, len, print, stdout, Files, Sorting,
+Sorting with key function
+
+**Data Types & Conversion** (6) ← Data Types, Type Conversion, Type Checking, None, Boolean Logic
+
+**Indexing & Slicing** (5) ← Indexing, Slicing, List Slicing, Negative Indexing, boolean indexing,
+Step Values
+
+**Sets** (5) ← Sets, Set Methods
+
+**Tuples** (4) ← Tuples, Tuple Unpacking
+
+**Variables & Assignment** (4) ← Assignment, Variable Assignment, Multiple Assignment, Comparison
+Operators, Case Sensitivity
+
+### Notes on judgment calls made while mapping
+
+- A handful of tags are genuinely cross-cutting and were assigned to the single best-fit topic
+  rather than split: `Slicing`/`List Slicing`/`Negative Indexing`/`Step Values`/`boolean indexing`
+  went to **Indexing & Slicing** rather than being split between Lists and Strings, since slicing
+  syntax itself (not the container) is what these questions test. `Data Structures` (a generic
+  tag on 2 questions) went to **Lists** as the closest concrete topic, since inspecting those two
+  questions shows they're both list-focused.
+- This mapping was derived from tag names only, not by re-reading all 47 questions' actual content
+  — most assignments are unambiguous (e.g. `dict_keys` → Dictionaries), but a few of the
+  judgment calls above are worth a second look before approval, especially if any single question
+  feels miscategorized once the mapping is applied.
+- 12 topics (within the requested ~10-15 range) keeps every topic large enough to be a meaningful
+  mastery unit (smallest is 4 questions) while staying recognizable as a normal
+  intro-Python-course syllabus section.
+
+**Waiting for approval of this mapping before writing the migration script, updating seed data, or
+touching the admin question form**, per the ground rule.
+
+---
+
+## Phase 3 addendum — data consistency and statistics (implemented, everything except the taxonomy)
+
+**Topic mastery is now computed live from source-of-truth collections, not a stored counter.**
+`User.topicStats` (the array field incremented on every answer) is removed entirely.
+`topicMasteryService.getTopicMastery` now computes, on every call: **coverage** from
+`UserAnsweredQuestion` joined against the live `Question` collection (unchanged from before — this
+was already how coverage worked), and **accuracy** from `AnswerEvent` (one document per attempt)
+joined the same way — this part is new. This was chosen over "provide a recompute script" (the
+original spec's other offered option) because a live-derived view can never drift out of sync with
+a deletion or a retag the way an incrementally-updated counter did: it structurally cannot push
+coverage above 100% (a deleted question simply can't appear in either numerator or denominator,
+since both are computed by iterating the *current* `Question` collection) and a retagged
+question's topics are correct on the very next read, with no migration step needed at all. The
+tradeoff, stated plainly: **there is no attempt-level accuracy history before the Phase 1
+deployment**, since `AnswerEvent` didn't exist before then — a long-time user's topic accuracy
+will only reflect activity from Phase 1 onward, not their full history. All response field names
+(`topic`, `total`, `answered`, `coverage`, `correct`, `attempted`, `accuracy`, `level`) and the
+`{mastery, weakTopics}` shape are unchanged, so `frontend/public/js/account.js` needed no changes.
+
+**Found and fixed while making this change:** removing the incremental-update code path also
+removed the topicStats-push bug fixed in the Phase 1 follow-ups (it's simply gone, along with the
+buggy pattern) — noted here for the record, not a new fix.
+
+**Named constants** (`backend/config/masteryConfig.js`): mastery thresholds
+(`MASTER_COVERAGE_THRESHOLD`, `MASTER_ACCURACY_THRESHOLD`, `INTERMEDIATE_COVERAGE_THRESHOLD`), the
+weak-topic cutoff (`WEAK_TOPIC_MIN_ATTEMPTS`, `WEAK_TOPIC_ACCURACY_THRESHOLD`,
+`WEAK_TOPIC_MAX_COUNT`), and the point-based rank tiers (`RANK_THRESHOLDS`, replacing an inline
+if-chain in `userService.computeRank`) all live in one module now, values unchanged from before.
+
+**Orphan/drift fixes.** Question deletion (`questionService.deleteQuestion`) now cascades to
+`UserAnsweredQuestion` (so a deleted question can never keep counting toward "answered"/coverage —
+closes item 7's first half); `AnswerEvent` is deliberately left alone, since it's an immutable
+attempt log rather than a current-state record, and the live topic-mastery computation above
+already excludes a deleted question's events from contributing to any topic (no topics to look up
+for a question that no longer exists). Retagging consistency (item 7's second half) is resolved by
+the same live-derivation choice above — nothing to migrate, no drift possible.
+
+**Classic exclusion, made explicit and narrower (user's decision).** Classic mode's server-side
+exclusion (`quizSessionService.serveNextQuestion`) now excludes only questions with
+`UserAnsweredQuestion.everCorrect === true` (a new `findEverCorrectIds` repository query) —
+**not** every previously-answered question as Phase 1 had it. A question only ever answered wrong,
+or only ever guessed right on attempt 2/3, remains eligible for a real Classic attempt later. When
+the pool is exhausted, the response now includes `canPracticeAgain: true` (Classic only, and only
+for a non-practice session); the frontend (`frontend/public/js/questions.js`) offers **"Practice
+again (no points)"**, which starts a new session with a `practiceMode` flag
+(`QuizSession.practiceMode`, threaded through `createSessionSchema`) that skips the everCorrect
+exclusion entirely, alongside **"Widen filters"** (returns to topic/difficulty selection). Practice
+sessions can never earn points regardless — the first-correct-ever rule from Phase 1 already zeroes
+points for an everCorrect question — so "no points" is accurate labeling, not a new restriction.
+
+**Case-insensitive username uniqueness (user's decision: enforce it).** `User.usernameLower`
+(lowercased, kept in sync by a `pre('validate')` hook — not `pre('save')`, which runs too late
+relative to Mongoose's own required-field validation, a bug caught while testing this) carries a
+`unique, sparse` index; `authService.registerUser` and `userService.updateProfile` both check it
+explicitly first, so a collision is a clean 400 ("Username already exists.") rather than a raw
+MongoDB duplicate-key error. **Deployment-order caveat:** existing accounts predate this field, so
+before deploying this schema change to any database with existing users,
+run `backend/scripts/backfillUsernameLower.js --apply` first (safe, idempotent, no renaming) and
+then `backend/scripts/reportDuplicateUsernames.js` (report-only by default; `--apply` renames all
+but the oldest account in each colliding group with a numeric suffix) if it reports any
+collisions — the index is `sparse` specifically so a deployment that skips this step doesn't hard-
+fail building it, but duplicates would still not be caught until the report script runs. **Neither
+script has been run against any database in this commit** (dry-run only, against the local dev
+database, confirmed 0 duplicates there).
+
+**Avatar excluded by default (item 9).** `userRepository.findById`/`findByEmail`/
+`findAdminByUsername` now `.select('-avatar')` — the only place that needs the (up to 500KB)
+avatar is `getUserProfile`, which now calls a new `findByIdWithAvatar`. This matters most for
+`applyAnswerOutcome`, called on every single answer, which no longer loads avatar data it never
+reads. Excluding a field from what's read doesn't block writing it — `updateProfile` still sets
+`user.avatar` and saves normally.
+
+**Leaderboard `isCurrentUser` (item 9).** `GET /api/v1/users/leaderboard` now takes
+`optionalAuthenticate` (still fully public for guests) and `userService.getGlobalLeaderboard`
+compares each row's `_id` against the viewer's own id, returning `isCurrentUser: true` on at most
+one row. `frontend/public/js/leaderboard.js`'s `findCurrentUserRank` heuristic (username + three
+stats fields, ambiguous whenever two rows matched) is deleted along with the now-unnecessary
+`api.getMe()` call it required.
+
+**Tests added:** Classic re-serving a wrong-only question across sessions; the everCorrect
+exclusion triggering `canPracticeAgain`, and practice mode bypassing it while still paying no
+points; case-insensitive rejection at both registration and profile update (and that changing only
+case of your own name is allowed); leaderboard `isCurrentUser` for the viewer/other rows/guests,
+and that avatar is never present in its response; topic mastery's attempted/correct now asserted
+via the public endpoint instead of reading the (now-removed) `topicStats` field directly.

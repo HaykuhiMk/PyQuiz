@@ -217,12 +217,13 @@ document.addEventListener("DOMContentLoaded", () => {
         return selectedTopics;
     }
 
-    async function startSession() {
+    async function startSession({ practiceMode = false } = {}) {
         try {
             const data = await api.startQuizSession({
                 mode: quizMode,
                 topics: topicsForApi(),
                 difficulty,
+                practiceMode,
             });
             handleSessionQuestion(data);
         } catch (error) {
@@ -256,19 +257,41 @@ document.addEventListener("DOMContentLoaded", () => {
             ? `You've answered ${data.totalAnswered} questions in this category!`
             : '';
 
+        // Classic specifically excludes only questions already mastered
+        // (answered correctly on a first attempt); once that pool is
+        // exhausted, offer replaying them (never for points, so the button
+        // says so) alongside the option to widen the filters instead.
+        const primaryAction = data.canPracticeAgain
+            ? '<button type="button" id="practice-again-btn" class="primary-btn">Practice again (no points)</button>'
+            : '<button type="button" onclick="window.location.reload()" class="primary-btn">Choose New Topics</button>';
+        const secondaryAction = data.canPracticeAgain
+            ? '<button type="button" onclick="window.location.reload()" class="secondary-btn">Widen filters</button>'
+            : '<button type="button" onclick="window.location.href=\'/account.html\'" class="secondary-btn">View Progress</button>';
+        const headline = data.canPracticeAgain
+            ? "You've mastered every question for"
+            : "You've completed all available questions for";
+
         resultContainer.innerHTML = `
             <div class="quiz-summary">
                 <h2>All caught up!</h2>
-                <p>You've completed all available questions for ${selectedTopicsText}.</p>
+                <p>${headline} ${selectedTopicsText}.</p>
                 <p>${progressText}</p>
                 <div class="action-row">
-                    <button type="button" onclick="window.location.reload()" class="primary-btn">Choose New Topics</button>
-                    <button type="button" onclick="window.location.href='/account.html'" class="secondary-btn">View Progress</button>
+                    ${primaryAction}
+                    ${secondaryAction}
                 </div>
             </div>
         `;
         submitBtn.style.display = "none";
         nextBtn.style.display = "none";
+
+        if (data.canPracticeAgain) {
+            document.getElementById("practice-again-btn").addEventListener("click", () => {
+                session = emptySession();
+                sessionId = null;
+                startSession({ practiceMode: true });
+            });
+        }
     }
 
     function showExplanation() {

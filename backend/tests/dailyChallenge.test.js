@@ -206,7 +206,7 @@ describe("Daily Challenge set is frozen for the day", () => {
 });
 
 describe('Daily Challenge answers count as real evidence', () => {
-  it('records AnswerEvent, UserAnsweredQuestion.everCorrect, topicStats and streaks', async () => {
+  it('records AnswerEvent, UserAnsweredQuestion.everCorrect, topic mastery and streaks', async () => {
     await Question.create([
       { question: 'Q1', options: ['a', 'b'], answer: 'a', difficulty: 'easy', topics: ['Loops'], explanation: 'e' },
       { question: 'Q2', options: ['a', 'b'], answer: 'a', difficulty: 'easy', topics: ['Loops'], explanation: 'e' },
@@ -246,7 +246,8 @@ describe('Daily Challenge answers count as real evidence', () => {
     const correctlyTracked = tracked.find((t) => t.questionId === String(answers[0].questionId));
     expect(correctlyTracked.everCorrect).toBe(true);
 
-    const loopsStats = rawUser.topicStats.find((t) => t.topic === 'Loops');
+    const mastery = await request(app).get('/api/v1/users/topic-mastery').set('Cookie', cookieHeader);
+    const loopsStats = mastery.body.data.mastery.find((t) => t.topic === 'Loops');
     expect(loopsStats).toMatchObject({ attempted: 2, correct: 1 });
 
     // First (correct) answer extends the streak; the second (wrong) resets

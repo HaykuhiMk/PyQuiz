@@ -14,6 +14,15 @@ async function registerUser({ username, email, password }) {
     throw new AppError('Email already exists.', 400);
   }
 
+  // Case-insensitive: "Alice" and "alice" collide (docs/AUDIT.md item 9 /
+  // Phase 3 addendum). The unique index on usernameLower is the actual
+  // guarantee; this check exists to turn a race-condition duplicate into a
+  // clean 400 instead of a raw MongoDB duplicate-key error.
+  const existingUsername = await userRepository.findByUsernameLower(username.trim().toLowerCase());
+  if (existingUsername) {
+    throw new AppError('Username already exists.', 400);
+  }
+
   const hashedPassword = await bcrypt.hash(password, 10);
   await userRepository.createUser({
     username,

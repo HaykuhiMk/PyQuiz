@@ -16,8 +16,9 @@
 // answer isn't recoverable either. Treat the result as "at most this many
 // points," not an exact reconstruction of what was legitimately earned.
 //
-// totalAnswered/totalCorrect/topicStats/streaks are left untouched — this
-// script only touches stats.totalPoints and points-based achievements.
+// totalAnswered/totalCorrect/streaks and topic mastery (derived separately,
+// see docs/AUDIT.md Phase 3 addendum) are left untouched — this script only
+// touches stats.totalPoints and points-based achievements.
 //
 // Usage:
 //   node backend/scripts/resetFarmedPoints.js --dry-run   # prints changes only, writes nothing

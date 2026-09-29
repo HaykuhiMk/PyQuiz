@@ -44,16 +44,22 @@ function sanitizeFilters({ topics = [], difficulty } = {}) {
 }
 
 // Fetches and serves the next question for a session, applying Classic's
-// permanent (cross-session) exclusion of already-answered questions and each
-// session's own never-repeat-within-this-run exclusion. Mutates and saves
-// `session`. Shared by session creation (first question) and the "next"
-// action.
+// permanent (cross-session) exclusion of questions this user has already
+// gotten right on a first attempt (everCorrect — docs/AUDIT.md Phase 3
+// addendum: a question only ever answered wrong, or guessed on a later
+// attempt, stays eligible for a real Classic retry) and each session's own
+// never-repeat-within-this-run exclusion. A `practiceMode` session skips the
+// everCorrect exclusion entirely, letting a user replay already-mastered
+// questions — they can never earn points for it (the first-correct-ever
+// rule already guarantees that), so the frontend labels it accordingly.
+// Mutates and saves `session`. Shared by session creation (first question)
+// and the "next" action.
 async function serveNextQuestion(session) {
   const excludeIds = new Set(session.servedQuestionIds.map(String));
 
-  if (session.mode === 'classic' && session.userId) {
-    const answeredIds = await userAnsweredQuestionRepository.findAnsweredIds(session.userId);
-    answeredIds.forEach((id) => excludeIds.add(String(id)));
+  if (session.mode === 'classic' && session.userId && !session.practiceMode) {
+    const everCorrectIds = await userAnsweredQuestionRepository.findEverCorrectIds(session.userId);
+    everCorrectIds.forEach((id) => excludeIds.add(String(id)));
   }
 
   const result = await questionService.getRandomQuestion({
@@ -73,6 +79,10 @@ async function serveNextQuestion(session) {
       message: result.message,
       totalAnswered: result.totalAnswered,
       sessionStatus: session.status,
+      // Only meaningful for a non-practice Classic session: Blitz/Survival
+      // have no everCorrect-based exclusion to bypass, and a practice
+      // session that's already exhausted has nothing further to offer.
+      canPracticeAgain: session.mode === 'classic' && !session.practiceMode,
     };
   }
 
@@ -90,6 +100,7 @@ async function serveNextQuestion(session) {
   return {
     sessionId: session.token,
     mode: session.mode,
+    practiceMode: session.practiceMode,
     question: result,
     attemptsRemaining: isRetryable(session.mode) ? MAX_ATTEMPTS : 1,
     deadlineAt: session.currentQuestion.deadlineAt,
@@ -121,10 +132,13 @@ function pointsWithheldReason(isCorrect, outcomeResult) {
   return null;
 }
 
-async function createSession(requester, { mode, topics, difficulty }) {
+async function createSession(requester, { mode, topics, difficulty, practiceMode }) {
   const session = await quizSessionRepository.create({
     userId: requester?.userId || null,
     mode,
+    // Only meaningful for Classic; harmless if sent for another mode, since
+    // only Classic ever checks it.
+    practiceMode: mode === 'classic' && Boolean(practiceMode),
     filters: sanitizeFilters({ topics, difficulty }),
     servedQuestionIds: [],
     currentQuestion: { questionId: null, servedAt: null, deadlineAt: null, attempts: 0, resolved: true },

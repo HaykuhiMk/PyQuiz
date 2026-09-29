@@ -1,4 +1,5 @@
 const questionRepository = require('../repositories/questionRepository');
+const userAnsweredQuestionRepository = require('../repositories/userAnsweredQuestionRepository');
 const AppError = require('../core/AppError');
 const mongoose = require('mongoose');
 
@@ -131,6 +132,13 @@ async function updateQuestion(id, payload) {
 async function deleteQuestion(id) {
   await getQuestionByIdForAdmin(id);
   await questionRepository.deleteQuestionById(id);
+  // Cascades UserAnsweredQuestion so a deleted question can never keep
+  // counting toward a user's "answered"/coverage totals (docs/AUDIT.md
+  // item 7 / Phase 3 addendum). AnswerEvent is left alone — it's an
+  // immutable attempt log, not a current-state record, and topic
+  // accuracy/coverage are computed against the live Question collection
+  // anyway, so a deleted question's events simply stop contributing.
+  await userAnsweredQuestionRepository.deleteAllForQuestion(id);
 }
 
 async function checkAnswer(questionId, { selectedIndex, reveal = false } = {}) {

@@ -3,11 +3,12 @@ const { QUIZ_MODES } = require('../config/quizConfig');
 
 // One document per answer attempt (including timed-out/skipped attempts with
 // selectedIndex: null). Groundwork for future adaptive-difficulty features;
-// existing aggregate counters (User.stats, User.topicStats) are unaffected
-// and keep being updated alongside this. Guest quiz-session attempts are not
-// recorded — see docs/AUDIT.md Phase 1 addendum for why. Daily Challenge
-// attempts ARE recorded (mode: 'daily'), but have no QuizSession to point
-// to, hence `sessionId` is nullable.
+// also the source of truth topicMasteryService derives topic accuracy from
+// (see docs/AUDIT.md Phase 3 addendum) alongside User.stats, which is
+// updated separately. Guest quiz-session attempts are not recorded — see
+// docs/AUDIT.md Phase 1 addendum for why. Daily Challenge attempts ARE
+// recorded (mode: 'daily'), but have no QuizSession to point to, hence
+// `sessionId` is nullable.
 const answerEventSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   sessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'QuizSession', default: null },

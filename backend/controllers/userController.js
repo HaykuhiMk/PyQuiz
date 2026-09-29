@@ -22,7 +22,7 @@ async function getProgress(req, res, next) {
 
 async function getLeaderboard(req, res, next) {
   try {
-    const leaderboard = await userService.getGlobalLeaderboard(req.query.limit);
+    const leaderboard = await userService.getGlobalLeaderboard(req.query.limit, req.user?.userId);
     return res.json(successResponse(leaderboard));
   } catch (error) {
     return next(error);

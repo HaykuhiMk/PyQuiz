@@ -463,7 +463,7 @@ describe('Achievements, topicStats and bestStreak through the session endpoints'
     expect(rawUser.achievements.map((a) => a.key)).toContain('first_correct');
   });
 
-  it('updates topicStats attempted/correct counts', async () => {
+  it('updates topic mastery attempted/correct counts (derived from AnswerEvent)', async () => {
     const q = await createQuestion({ topics: ['Basic Arithmetic', 'Integers'] });
     const { cookieHeader, csrfToken } = await registerAndLogin('topicstats@example.com');
     const start = await startSession(cookieHeader, csrfToken, { mode: 'classic', topics: [] });
@@ -474,8 +474,8 @@ describe('Achievements, topicStats and bestStreak through the session endpoints'
       .set('X-CSRF-Token', csrfToken)
       .send({ questionId: q._id.toString(), selectedIndex: 1 });
 
-    const rawUser = await User.findOne({ email: 'topicstats@example.com' }).lean();
-    const byTopic = Object.fromEntries(rawUser.topicStats.map((t) => [t.topic, t]));
+    const mastery = await request(app).get('/api/v1/users/topic-mastery').set('Cookie', cookieHeader);
+    const byTopic = Object.fromEntries(mastery.body.data.mastery.map((t) => [t.topic, t]));
     expect(byTopic['Basic Arithmetic']).toMatchObject({ attempted: 1, correct: 1 });
     expect(byTopic['Integers']).toMatchObject({ attempted: 1, correct: 1 });
   });

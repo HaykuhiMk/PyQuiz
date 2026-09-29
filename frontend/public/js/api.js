@@ -88,10 +88,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ selectedIndex, reveal }),
     }),
-  startQuizSession: ({ mode, topics = [], difficulty = '' } = {}) =>
+  startQuizSession: ({ mode, topics = [], difficulty = '', practiceMode = false } = {}) =>
     request('/api/v1/quiz/sessions', {
       method: 'POST',
-      body: JSON.stringify({ mode, topics, ...(difficulty ? { difficulty } : {}) }),
+      body: JSON.stringify({ mode, topics, practiceMode, ...(difficulty ? { difficulty } : {}) }),
     }),
   getNextQuizQuestion: (sessionId) =>
     request(`/api/v1/quiz/sessions/${sessionId}/next`, { method: 'POST' }),
