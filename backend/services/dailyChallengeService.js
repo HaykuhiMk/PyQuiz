@@ -71,7 +71,12 @@ function getNextResetAt(now = new Date()) {
 function buildDaySeed(dateKey) {
   const secret = process.env.DAILY_CHALLENGE_SEED_SECRET;
   if (!secret) {
-    throw new AppError('Daily challenge is not configured.', 500);
+    // Never falls back to a default seed/secret — a predictable seed would
+    // let anyone precompute a day's question order. A clear, temporary
+    // unavailability (503) instead of a generic 500, since this is a
+    // configuration gap, not an application error; app.js also logs a
+    // startup warning so it's visible before anyone hits this endpoint.
+    throw new AppError('Daily Challenge is temporarily unavailable.', 503);
   }
   return crypto.createHmac('sha256', secret).update(dateKey).digest();
 }

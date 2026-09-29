@@ -505,3 +505,75 @@ unchanged after new questions are added; a question deleted after freezing is dr
 erroring; a full evidence trail (AnswerEvent, `UserAnsweredQuestion.everCorrect`, `topicStats`,
 streak extension/reset) from a Daily Challenge submission; Study mode requiring auth and excluding
 today's Daily Challenge set.
+
+---
+
+## Pre-Phase-3 fixes (implemented, separate commit)
+
+Three small items requested before starting Phase 3.
+
+**1. `trust proxy` (closes item 15's second half) + rate-limit keying.**
+`backend/config/trustProxy.js` configures Express's `trust proxy` setting from a new `TRUST_PROXY`
+env var (documented in `backend/env.example`): a hop count (`"1"` for one reverse proxy, the
+common case), `"true"` to trust the whole chain, or unset/`"false"` for Express's default (trust
+nothing). Called from `app.js` before any middleware that reads `req.ip`. Tested directly
+(`backend/tests/trustProxy.test.js`) against a minimal standalone Express app asserting `req.ip`
+resolves from `X-Forwarded-For` only when `TRUST_PROXY` is set.
+
+`POST /api/v1/quiz/sessions`'s rate limiter (`backend/routes/v1/quizRoutes.js`) now keys by
+`user:<userId>` for authenticated requests and `ip:<address>` for guests (via express-rate-limit's
+`ipKeyGenerator` helper, needed for correct IPv6 handling), with `optionalAuthenticate` moved
+before the limiter so `req.user` is populated when the key is computed. The two are capped
+separately: **60/15min per authenticated user** (unchanged — each account gets its own budget
+regardless of who it shares a network with) and **300/15min per guest IP** (raised from the
+previous flat 60, since a shared IP is the *normal* case for a guest specifically — a classroom or
+office behind one NAT/proxy address — not an edge case worth penalizing).
+
+**Does the general 300/15min limiter (`generalLimiter`, `app.js`) have the same shared-IP
+problem? Yes — and it's broader.** It uses express-rate-limit's plain default IP-based keying with
+no exceptions, and it's mounted on the whole `/api` prefix, so it covers virtually every request
+the frontend makes (every question fetch, every answer submit, every page's several API calls) —
+not just session creation. A classroom or office behind one NAT IP shares this single 300-request
+budget across *all* of that traffic combined, which is a much easier ceiling to hit than the
+narrower, now-`user`-keyed session limiter above. This is a real instance of the same problem,
+**left unchanged in this commit** — it's a broad, load-bearing limiter used by every endpoint, so
+widening its blast radius (e.g. also splitting it by authenticated user vs. guest IP) deserves its
+own explicit decision rather than a drive-by change alongside this one. Flagging it here for that
+decision.
+
+**2. `DAILY_CHALLENGE_SEED_SECRET` missing — exact behavior, now implemented:**
+   - It never falls back to a default or predictable secret anywhere in the code — confirmed by
+     inspection; there is no fallback value to remove.
+   - **At startup**, `app.js` logs a clear `logger.warn(...)` if the variable is unset. This is
+     non-fatal (unlike the `MONGODB_URI`/`JWT_SECRET` checks, which `process.exit(1)`): the app
+     still boots and every other feature works normally.
+   - **While frozen sets already exist**, Daily Challenge keeps working with no interruption —
+     `getDailyQuestions` only calls `buildDaySeed` (the function that needs the secret) when no
+     `DailyChallengeSet` row exists yet for that date.
+   - **The moment a new day's set actually needs to be generated** (no row for that date) without
+     the secret present, `buildDaySeed` throws `AppError('Daily Challenge is temporarily
+     unavailable.', 503)`, which both `GET /api/v1/challenges/daily` and
+     `POST /api/v1/challenges/daily/submit` surface as a 503 response — not a 500, and not a
+     silent fallback. Tested in `backend/tests/dailyChallenge.test.js` (the 503 itself, and that a
+     set already frozen before the secret went missing keeps serving fine).
+
+**3. UTC → Asia/Yerevan transition on `User.dailyChallenge.date` — written note (no code
+change).** `dailyChallenge.date` is a plain string produced by whatever `getTodayKey()` returned
+at completion time; Phase 2 changed that function from a UTC date to a Yerevan date. Because
+Yerevan is UTC+4, the two schemes produce the *same* date string for 20 of every 24 UTC hours
+(00:00–19:59 UTC) and differ only for the remaining 4 (20:00–23:59 UTC, where the Yerevan date is
+already one day ahead). Consequence: if a user completed the Daily Challenge during that 4-hour
+UTC window on the day this deployed, their stored `date` is one calendar day *behind* what the new
+scheme now computes as "today" — so the "already completed today" check
+(`user.dailyChallenge.date === dateKey`) reads as false, and that one user could complete the
+(new) "today's" challenge again, once, earning a second 20-points-per-correct bonus. It cannot
+happen more than once per affected user: their `dailyChallenge.date` gets overwritten with a
+new-scheme value on that second completion, and every user unaffected by the 4-hour window is
+never affected at all. A reverse case (wrongly *blocking* a legitimate completion) is not
+possible: the transition only ever moves a stored date **backward** relative to the new scheme,
+which can only make the equality check *false* where it was previously *true* — never the other
+way around. No corrective migration is proposed: the old scheme's stored dates don't record a
+time-of-day, so there's no way to reconstruct which UTC hour a past completion actually happened
+in, and even a perfect fix would only prevent a handful of one-time 20-point bonuses — not worth
+the complexity of migration/compatibility code for a scheme that's now permanently changed and
+self-heals within one day for every affected account.

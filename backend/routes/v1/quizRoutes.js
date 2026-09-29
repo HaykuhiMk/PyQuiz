@@ -1,5 +1,5 @@
 const express = require('express');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const quizController = require('../../controllers/quizController');
 const optionalAuthenticate = require('../../middleware/optionalAuth');
 const { verifyCsrfIfAuthenticated } = require('../../middleware/csrf');
@@ -14,11 +14,20 @@ const router = express.Router();
 // calls during normal play. This limits how many sessions (guest or
 // authenticated) one client can start, independent of how many questions
 // they answer within them.
+//
+// Keyed by user ID for authenticated requests (each account gets its own
+// budget, however many other people share its network) and by IP for
+// guests — but a shared IP is a real, common case for guests specifically
+// (a classroom or office behind one NAT/proxy IP), so the guest cap is set
+// much higher than any one legitimate user should need, rather than by
+// account like the authenticated cap. optionalAuthenticate runs before this
+// middleware so req.user is already populated when the key is computed.
 const createSessionLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 60,
+  max: (req) => (req.user?.userId ? 60 : 300),
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => (req.user?.userId ? `user:${req.user.userId}` : `ip:${ipKeyGenerator(req.ip)}`),
   message: { error: 'Too many quiz sessions started. Please try again later.' },
 });
 
@@ -27,8 +36,8 @@ const createSessionLimiter = rateLimit({
 // verifyCsrfIfAuthenticated still protects logged-in sessions.
 router.post(
   '/sessions',
-  createSessionLimiter,
   optionalAuthenticate,
+  createSessionLimiter,
   verifyCsrfIfAuthenticated,
   validate(createSessionSchema),
   quizController.createSession

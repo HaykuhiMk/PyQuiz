@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const pinoHttp = require('pino-http');
 const logger = require('./config/logger');
+const { configureTrustProxy } = require('./config/trustProxy');
 const { setupSwagger } = require('./docs/swagger');
 const { setupMetrics } = require('./observability/metrics');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
@@ -22,6 +23,11 @@ const contactV1Routes = require('./routes/v1/contactRoutes');
 const quizV1Routes = require('./routes/v1/quizRoutes');
 
 const app = express();
+
+// Must be set before any middleware/route relies on req.ip (the rate
+// limiters below do) — see backend/config/trustProxy.js and docs/AUDIT.md
+// item 15.
+configureTrustProxy(app);
 
 const allowedOrigins = [
   'http://localhost:3000',
@@ -94,6 +100,18 @@ if (!process.env.MONGO_URI && process.env.SKIP_DB_CONNECT !== 'true') {
 if (!process.env.JWT_SECRET && process.env.SKIP_DB_CONNECT !== 'true') {
   console.error('❌ Missing JWT_SECRET in .env file');
   process.exit(1);
+}
+
+// Not a hard failure like the checks above: only the Daily Challenge
+// feature needs this secret (see docs/AUDIT.md Phase 2 addendum for why),
+// and it must never silently fall back to a predictable default. The
+// Daily Challenge endpoints themselves return a 503 while it is missing
+// and a new day's question set needs to be generated.
+if (!process.env.DAILY_CHALLENGE_SEED_SECRET) {
+  logger.warn(
+    "⚠️  DAILY_CHALLENGE_SEED_SECRET is not set — the Daily Challenge will be unavailable " +
+      "once a new day's question set needs to be generated. See backend/env.example."
+  );
 }
 
 if (process.env.SKIP_DB_CONNECT !== 'true') {

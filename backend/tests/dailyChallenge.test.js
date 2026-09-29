@@ -261,3 +261,40 @@ describe('Daily Challenge answers count as real evidence', () => {
     expect(rawUser.stats.totalPoints).toBe(20);
   });
 });
+
+describe('Daily Challenge without DAILY_CHALLENGE_SEED_SECRET configured', () => {
+  it('returns 503 instead of crashing or falling back to a default seed', async () => {
+    await seedQuestions();
+    const { cookieHeader } = await registerAndLogin('nosecret@example.com');
+
+    const original = process.env.DAILY_CHALLENGE_SEED_SECRET;
+    delete process.env.DAILY_CHALLENGE_SEED_SECRET;
+    try {
+      // No DailyChallengeSet exists yet for today (fresh DB from afterEach),
+      // so this actually has to generate one and hits the missing secret.
+      const res = await request(app).get('/api/v1/challenges/daily').set('Cookie', cookieHeader);
+      expect(res.statusCode).toBe(503);
+      expect(await DailyChallengeSet.countDocuments({})).toBe(0);
+    } finally {
+      process.env.DAILY_CHALLENGE_SEED_SECRET = original;
+    }
+  });
+
+  it("still serves a day whose set was already frozen before the secret went missing", async () => {
+    await seedQuestions();
+    const { cookieHeader } = await registerAndLogin('framebeforeoutage@example.com');
+
+    // Freeze today's set while the secret is present.
+    const first = await request(app).get('/api/v1/challenges/daily').set('Cookie', cookieHeader);
+    expect(first.statusCode).toBe(200);
+
+    const original = process.env.DAILY_CHALLENGE_SEED_SECRET;
+    delete process.env.DAILY_CHALLENGE_SEED_SECRET;
+    try {
+      const second = await request(app).get('/api/v1/challenges/daily').set('Cookie', cookieHeader);
+      expect(second.statusCode).toBe(200);
+    } finally {
+      process.env.DAILY_CHALLENGE_SEED_SECRET = original;
+    }
+  });
+});
