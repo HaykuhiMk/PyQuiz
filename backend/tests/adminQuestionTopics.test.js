@@ -11,6 +11,7 @@ const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const app = require('../app');
 const db = require('./testUtils/db');
+const { adminSessionHeaders } = require('./testUtils/authHelpers');
 const User = require('../models/user');
 const Question = require('../models/questionModel');
 
@@ -37,7 +38,7 @@ afterAll(async () => {
   await db.closeDatabase();
 });
 
-async function adminToken() {
+async function adminLogin() {
   const hashed = await bcrypt.hash(VALID_PASSWORD, 10);
   await User.create({
     username: 'topicsadmin',
@@ -49,7 +50,7 @@ async function adminToken() {
   const res = await request(app)
     .post('/api/v1/admin/login')
     .send({ username: 'topicsadmin', password: VALID_PASSWORD });
-  return res.body.data.token;
+  return adminSessionHeaders(res);
 }
 
 function createQuestionDirectly(overrides = {}) {
@@ -58,10 +59,10 @@ function createQuestionDirectly(overrides = {}) {
 
 describe('POST /api/v1/questions/add — canonical topic validation', () => {
   it('rejects a primaryTopic outside the canonical taxonomy', async () => {
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
     const res = await request(app)
       .post('/api/v1/questions/add')
-      .set('Authorization', `Bearer ${token}`)
+      .set(adminHeaders)
       .send({ ...validQuestionPayload, primaryTopic: 'Not A Real Topic' });
 
     expect(res.statusCode).toBe(400);
@@ -69,10 +70,10 @@ describe('POST /api/v1/questions/add — canonical topic validation', () => {
   });
 
   it('rejects a topic that is both primary and secondary', async () => {
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
     const res = await request(app)
       .post('/api/v1/questions/add')
-      .set('Authorization', `Bearer ${token}`)
+      .set(adminHeaders)
       .send({ ...validQuestionPayload, primaryTopic: 'Lists', secondaryTopics: ['Lists'] });
 
     expect(res.statusCode).toBe(400);
@@ -80,10 +81,10 @@ describe('POST /api/v1/questions/add — canonical topic validation', () => {
   });
 
   it('accepts a question with only a primary topic and no secondary topics', async () => {
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
     const res = await request(app)
       .post('/api/v1/questions/add')
-      .set('Authorization', `Bearer ${token}`)
+      .set(adminHeaders)
       .send({ ...validQuestionPayload, secondaryTopics: undefined });
 
     expect(res.statusCode).toBe(201);
@@ -93,11 +94,11 @@ describe('POST /api/v1/questions/add — canonical topic validation', () => {
 describe('PATCH /api/v1/admin/questions/:id — canonical topic validation', () => {
   it('rejects changing secondaryTopics to include the (unchanged) primaryTopic', async () => {
     const q = await createQuestionDirectly(); // primaryTopic: 'Functions & Built-ins'
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
 
     const res = await request(app)
       .patch(`/api/v1/admin/questions/${q._id}`)
-      .set('Authorization', `Bearer ${token}`)
+      .set(adminHeaders)
       .send({ secondaryTopics: ['Functions & Built-ins'] });
 
     expect(res.statusCode).toBe(400);

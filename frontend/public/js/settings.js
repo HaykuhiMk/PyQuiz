@@ -4,7 +4,7 @@ import { icon, mountIcons } from './icons.js';
 import { setTheme, getActiveTheme } from './theme.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!requireAuth()) return;
+  if (!(await requireAuth())) return;
 
   mountIcons(document.querySelector('main'));
   bindSettings();
@@ -138,9 +138,12 @@ function bindSettings() {
 
     try {
       await api.changePassword({ currentPassword, newPassword });
-      event.target.reset();
-      setStatus('password-status', 'Password updated.');
-      showToast('Password changed successfully', 'success');
+      // Changing the password invalidates every session, including this
+      // browser's own current one (docs/AUDIT.md Phase 4) — log out and
+      // send the user to log back in with the new password, rather than
+      // leaving them on a page whose session cookie no longer works.
+      await api.logout().catch((error) => console.error('Logout request failed:', error));
+      window.location.href = '/login.html?passwordChanged=1';
     } catch (error) {
       setStatus('password-status', error.message, true);
     }
@@ -157,7 +160,6 @@ function bindSettings() {
     try {
       await api.deleteAccount({ password });
       await api.logout().catch((error) => console.error('Logout request failed:', error));
-      localStorage.removeItem('adminToken');
       document.cookie = 'guestMode=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       window.location.href = '/login.html';
     } catch (error) {

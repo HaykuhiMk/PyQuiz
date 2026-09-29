@@ -7,6 +7,10 @@ const helperText = document.getElementById("helper-text");
 
 const submitBtn = form.querySelector('button[type="submit"]');
 
+if (new URLSearchParams(window.location.search).get('passwordChanged') === '1') {
+    helperText.textContent = 'Password changed. Please log in again.';
+}
+
 function showError(message) {
     helperText.textContent = message;
     helperText.classList.add("error");
@@ -58,4 +62,9 @@ function togglePasswordVisibility() {
     toggleButton.setAttribute('aria-pressed', String(reveal));
 }
 
-window.togglePasswordVisibility = togglePasswordVisibility;
+// Bound here rather than via inline onclick attributes, which the
+// frontend's Content-Security-Policy blocks (docs/AUDIT.md Phase 4).
+document.getElementById('toggle-password').addEventListener('click', togglePasswordVisibility);
+document.getElementById('forgot-password-btn').addEventListener('click', () => {
+    window.location.href = './forgot_password.html';
+});

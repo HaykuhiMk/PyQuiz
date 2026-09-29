@@ -1,4 +1,6 @@
-document.addEventListener("DOMContentLoaded", () => {
+import { getSession } from "./api.js";
+
+document.addEventListener("DOMContentLoaded", async () => {
     function getCookie(name) {
         const cookies = document.cookie.split("; ");
         for (const cookie of cookies) {
@@ -10,9 +12,11 @@ document.addEventListener("DOMContentLoaded", () => {
         return null;
     }
 
-    const hasSession = Boolean(getCookie("csrfToken"));
+    // Confirmed server-side rather than from cookie presence, so an expired
+    // or revoked session doesn't bounce the visitor to a dashboard that
+    // then fails to load (docs/AUDIT.md Phase 4).
     const isGuest = getCookie("guestMode") === "true";
-    if (hasSession && !isGuest) {
+    if (!isGuest && (await getSession())) {
         window.location.href = "account.html";
         return;
     }

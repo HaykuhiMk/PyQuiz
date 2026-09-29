@@ -25,4 +25,15 @@ async function registerAndLogin(email, { username = 'tester', password = DEFAULT
   };
 }
 
-module.exports = { DEFAULT_PASSWORD, extractCookies, registerAndLogin };
+// Admin sessions ride their own httpOnly cookie plus an HMAC-bound CSRF
+// token (docs/AUDIT.md Phase 4, item 11). Returns a headers object ready to
+// pass to supertest's .set(...) from an /api/v1/admin/login response.
+function adminSessionHeaders(loginRes) {
+  const cookies = extractCookies(loginRes);
+  return {
+    Cookie: `adminToken=${cookies.adminToken}; adminCsrfToken=${cookies.adminCsrfToken}`,
+    'X-CSRF-Token': cookies.adminCsrfToken,
+  };
+}
+
+module.exports = { DEFAULT_PASSWORD, extractCookies, registerAndLogin, adminSessionHeaders };

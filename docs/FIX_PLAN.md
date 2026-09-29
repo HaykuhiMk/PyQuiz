@@ -22,8 +22,9 @@ Commit history for this task, oldest first:
 - `39aa508` — Phase 3: canonical topic taxonomy migration and admin form restriction
 - `732d281` — Phase 3 follow-up: production migration safety, dashboard mastery cap removed
 
-**Next up: Phase 4 (Security)**, verbatim instructions below. Nothing in Phase 4, 5, or 6 has been
-started.
+**Phase 4 (Security) is complete** — see "Phase 4 addendum" in `docs/AUDIT.md`. Suite is now
+**156 tests across 18 suites**, lint and typecheck clean. **Next up: Phase 5 (Testing and tooling)**,
+verbatim instructions below. Nothing in Phase 5 or 6 has been started.
 
 ## Every decision made so far (index — see docs/AUDIT.md for full reasoning and evidence)
 
@@ -50,6 +51,19 @@ started.
 - Daily Challenge answers **do** count toward `UserAnsweredQuestion`/`topicStats`/streaks, same as
   quiz sessions (decision made and implemented consistently) — but the flat 20-point daily bonus is
   awarded separately from, and in addition to, the ordinary first-correct-ever points rule.
+
+**Phase 4 — security (decisions made in advance by the owner):**
+- Admin auth: separate httpOnly cookie (`adminToken` / `__Host-adminToken`) with its own HMAC-bound
+  CSRF token; Bearer header no longer accepted; all `localStorage` admin-token use removed.
+  Breaking: admin login no longer returns `data.token`.
+- CSRF: `__Host-` prefix on session and CSRF cookies in production only (unprefixed, non-Secure
+  over plain http in development); CSRF token = HMAC(JWT_SECRET, session JWT). Login and `/me`
+  also return `csrfToken` in the body because the API is on a different host from the frontend.
+- New `GET /api/v1/auth/me`; frontend login state comes from it, not from cookie presence.
+- Contact auto-reply dropped entirely (message still saved, admin still notified).
+- `/metrics`: bearer token (`METRICS_TOKEN`) in production, 404 if unset. `/api-docs`: off in
+  production unless `ENABLE_API_DOCS=true`.
+- Frontend CSP with no `'unsafe-inline'` scripts: inline scripts/handlers moved to external files.
 
 **Pre-Phase-3 / Phase 3:**
 - `TRUST_PROXY` is a required env var read at startup (hop count, or `"true"` — logs a warning if

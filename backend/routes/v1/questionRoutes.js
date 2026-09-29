@@ -3,6 +3,7 @@ const questionController = require('../../controllers/questionController');
 const validate = require('../../middleware/validate');
 const cacheMiddleware = require('../../middleware/cache');
 const verifyAdmin = require('../../middleware/verifyAdmin');
+const { verifyAdminCsrf } = require('../../middleware/csrf');
 const authenticateToken = require('../../middleware/authenticateToken');
 const {
   addQuestionSchema,
@@ -26,7 +27,7 @@ router.get(
 );
 router.get('/random', validate(randomQuestionFilterSchema, 'query'), questionController.getRandomQuestion);
 router.get('/', validate(questionFilterSchema, 'query'), questionController.getAllQuestions);
-router.post('/add', verifyAdmin, validate(addQuestionSchema), questionController.addQuestion);
+router.post('/add', verifyAdmin, verifyAdminCsrf, validate(addQuestionSchema), questionController.addQuestion);
 router.post('/:id/check', validate(checkAnswerSchema), questionController.checkAnswer);
 
 module.exports = router;

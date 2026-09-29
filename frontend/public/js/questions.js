@@ -1,4 +1,17 @@
-import { api, getAchievementMeta, isLoggedIn } from "./api.js";
+import { api, getAchievementMeta, getSession } from "./api.js";
+
+// Result-screen buttons are rendered as HTML strings; their actions are
+// handled here by delegation instead of inline onclick attributes, which
+// the frontend's Content-Security-Policy blocks (docs/AUDIT.md Phase 4).
+document.addEventListener("click", (event) => {
+    const target = event.target.closest('[data-action="reload"], [data-href]');
+    if (!target) return;
+    if (target.dataset.action === "reload") {
+        window.location.reload();
+    } else {
+        window.location.href = target.dataset.href;
+    }
+});
 import { celebrateQuizComplete, initRipples, countUp } from "./ui.js";
 import { mountIcons } from "./icons.js";
 
@@ -175,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     startQuizBtn.onclick = async () => {
-        if (!isGuest && !isLoggedIn()) {
+        if (!isGuest && !(await getSession())) {
             window.location.href = '/login.html';
             return;
         }
@@ -243,10 +256,10 @@ document.addEventListener("DOMContentLoaded", () => {
         // says so) alongside the option to widen the filters instead.
         const primaryAction = data.canPracticeAgain
             ? '<button type="button" id="practice-again-btn" class="primary-btn">Practice again (no points)</button>'
-            : '<button type="button" onclick="window.location.reload()" class="primary-btn">Choose New Topics</button>';
+            : '<button type="button" data-action="reload" class="primary-btn">Choose New Topics</button>';
         const secondaryAction = data.canPracticeAgain
-            ? '<button type="button" onclick="window.location.reload()" class="secondary-btn">Widen filters</button>'
-            : '<button type="button" onclick="window.location.href=\'/account.html\'" class="secondary-btn">View Progress</button>';
+            ? '<button type="button" data-action="reload" class="secondary-btn">Widen filters</button>'
+            : '<button type="button" data-href="/account.html" class="secondary-btn">View Progress</button>';
         const headline = data.canPracticeAgain
             ? "You've mastered every question for"
             : "You've completed all available questions for";
@@ -567,9 +580,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div class="pq-ribbon" id="results-ribbon"></div>
                     </div>
                     <div class="pq-row action-row">
-                        <button type="button" onclick="window.location.reload()" class="primary-btn">Play Again</button>
-                        ${isGuest ? "" : `<button type="button" onclick="window.location.href='/account.html'" class="secondary-btn">Dashboard</button>`}
-                        <button type="button" onclick="window.location.href='/leaderboard.html'" class="secondary-btn">Leaderboard</button>
+                        <button type="button" data-action="reload" class="primary-btn">Play Again</button>
+                        ${isGuest ? "" : `<button type="button" data-href="/account.html" class="secondary-btn">Dashboard</button>`}
+                        <button type="button" data-href="/leaderboard.html" class="secondary-btn">Leaderboard</button>
                     </div>
                 </div>
             </div>`;

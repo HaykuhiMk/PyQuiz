@@ -1,34 +1,53 @@
+const crypto = require('crypto');
 const AppError = require('../core/AppError');
+const { authCookieName, computeCsrfToken } = require('../utils/authCookies');
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-// Double-submit-cookie CSRF check. The csrfToken cookie is readable by our
-// own frontend JS (unlike the httpOnly auth cookie), so only a same-origin
-// script can read it and echo it back as a header. A cross-site request
-// forged against a cookie-authenticated route can't produce a matching
-// header value, since it has no way to read the cookie itself.
-function verifyCsrf(req, res, next) {
-  if (SAFE_METHODS.has(req.method)) {
-    return next();
-  }
+// HMAC-bound CSRF check (docs/AUDIT.md Phase 4, item 12). The expected token
+// is recomputed from the request's own httpOnly session cookie rather than
+// compared against another cookie value — so a sibling subdomain of
+// picsartacademy.am that can plant cookies of its own (which defeats a
+// plain double-submit check) still can't produce a valid header without
+// knowing this session's actual JWT. Combined with the __Host- cookie prefix
+// in production (utils/authCookies.js), which stops a sibling subdomain from
+// overwriting the session cookie itself.
+function tokenMatches(authToken, headerToken) {
+  if (!authToken || typeof headerToken !== 'string' || !headerToken) return false;
 
-  const cookieToken = req.cookies?.csrfToken;
-  const headerToken = req.headers['x-csrf-token'];
-
-  if (!cookieToken || !headerToken || cookieToken !== headerToken) {
-    return next(new AppError('Invalid or missing CSRF token', 403));
-  }
-
-  return next();
+  const expected = Buffer.from(computeCsrfToken(authToken), 'hex');
+  const actual = Buffer.from(headerToken, 'hex');
+  return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 }
 
+function createCsrfCheck(scope) {
+  return function verifyScopedCsrf(req, res, next) {
+    if (SAFE_METHODS.has(req.method)) {
+      return next();
+    }
+
+    const authToken = req.cookies?.[authCookieName(scope)];
+    if (!tokenMatches(authToken, req.headers['x-csrf-token'])) {
+      return next(new AppError('Invalid or missing CSRF token', 403));
+    }
+
+    return next();
+  };
+}
+
+const verifyCsrf = createCsrfCheck('user');
+
+// Admin routes use the admin session cookie (a separate scope, see
+// utils/authCookies.js), so their CSRF token is bound to that cookie instead.
+const verifyAdminCsrf = createCsrfCheck('admin');
+
 // For routes that must also allow guests (no auth cookie at all, so no CSRF
-// cookie to check against): only enforce the double-submit check when the
-// request actually carries the httpOnly auth cookie, i.e. came from a
-// logged-in browser session. Guests skip the check entirely rather than
-// being unconditionally rejected.
+// cookie to check against): only enforce the check when the request
+// actually carries the httpOnly auth cookie, i.e. came from a logged-in
+// browser session. Guests skip the check entirely rather than being
+// unconditionally rejected.
 function verifyCsrfIfAuthenticated(req, res, next) {
-  if (!req.cookies?.token) {
+  if (!req.cookies?.[authCookieName()]) {
     return next();
   }
   return verifyCsrf(req, res, next);
@@ -36,3 +55,4 @@ function verifyCsrfIfAuthenticated(req, res, next) {
 
 module.exports = verifyCsrf;
 module.exports.verifyCsrfIfAuthenticated = verifyCsrfIfAuthenticated;
+module.exports.verifyAdminCsrf = verifyAdminCsrf;

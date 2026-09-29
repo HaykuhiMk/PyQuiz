@@ -83,7 +83,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    window.togglePasswordVisibility = function (fieldId) {
+    function togglePasswordVisibility(fieldId) {
         const passwordInput = document.getElementById(fieldId);
         const toggleButton = document.getElementById(`toggle-${fieldId}`);
         const reveal = passwordInput.type === 'password';
@@ -91,5 +91,11 @@ document.addEventListener("DOMContentLoaded", function () {
         passwordInput.type = reveal ? 'text' : 'password';
         toggleButton.textContent = reveal ? 'Hide' : 'Show';
         toggleButton.setAttribute('aria-pressed', String(reveal));
-    };
+    }
+
+    // Bound here rather than via inline onclick attributes, which the
+    // frontend's Content-Security-Policy blocks (docs/AUDIT.md Phase 4).
+    for (const fieldId of ['password', 'repeat-password']) {
+        document.getElementById(`toggle-${fieldId}`).addEventListener('click', () => togglePasswordVisibility(fieldId));
+    }
 });

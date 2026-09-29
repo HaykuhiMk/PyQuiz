@@ -44,7 +44,27 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
 }));
 
-app.use(helmet());
+// Explicit CSP rather than helmet's bare default (docs/AUDIT.md Phase 4,
+// "Review the Helmet configuration"). This backend serves almost no HTML —
+// JSON everywhere except Swagger UI at /api-docs (off in production unless
+// ENABLE_API_DOCS=true, see docs/swagger.js). Swagger UI loads all of its
+// scripts as external files, so scripts are 'self' only; its page does ship
+// inline <style> blocks, hence 'unsafe-inline' for styles alone. The actual
+// frontend is a separate Express app (frontend/app.js) with its own CSP.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:'],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+      },
+    },
+  })
+);
 app.use(cookieParser());
 app.use(express.json());
 app.use(

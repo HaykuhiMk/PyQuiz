@@ -149,7 +149,7 @@ async function loadCards() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!requireAuth()) return;
+  if (!(await requireAuth())) return;
   mountIcons(document.querySelector('main'));
 
   try {

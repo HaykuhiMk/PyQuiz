@@ -5,7 +5,7 @@ const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const app = require('../app');
 const db = require('./testUtils/db');
-const { registerAndLogin } = require('./testUtils/authHelpers');
+const { registerAndLogin, adminSessionHeaders } = require('./testUtils/authHelpers');
 const User = require('../models/user');
 const Question = require('../models/questionModel');
 const AnswerEvent = require('../models/answerEvent');
@@ -24,7 +24,7 @@ afterAll(async () => {
   await db.closeDatabase();
 });
 
-async function adminToken() {
+async function adminLogin() {
   const hashed = await bcrypt.hash(VALID_PASSWORD, 10);
   await User.create({
     username: 'masteryadmin',
@@ -35,7 +35,7 @@ async function adminToken() {
   const res = await request(app)
     .post('/api/v1/admin/login')
     .send({ username: 'masteryadmin', password: VALID_PASSWORD });
-  return res.body.data.token;
+  return adminSessionHeaders(res);
 }
 
 function createQuestion(overrides = {}) {
@@ -164,11 +164,11 @@ describe('Topic mastery ignores AnswerEvent rows for deleted questions (Phase 3 
     expect(doomedBefore).toMatchObject({ total: 4, answered: 3, attempted: 3, correct: 3, level: 'intermediate' });
 
     // Delete one of the answered questions as an admin.
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
     const deletedId = answeredQuestionIds[0];
     const del = await request(app)
       .delete(`/api/v1/admin/questions/${deletedId}`)
-      .set('Authorization', `Bearer ${token}`);
+      .set(adminHeaders);
     expect(del.statusCode).toBe(200);
 
     // Its AnswerEvent is kept as history...

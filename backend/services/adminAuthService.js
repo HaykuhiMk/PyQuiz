@@ -14,11 +14,16 @@ async function loginAdmin({ username, password }) {
     throw new AppError('Invalid credentials', 401);
   }
 
-  const token = jwt.sign({ id: admin._id, role: 'admin' }, process.env.JWT_SECRET, {
-    expiresIn: '1h',
-  });
+  const token = jwt.sign(
+    { id: admin._id, username: admin.username, role: 'admin', tokenVersion: admin.tokenVersion || 0 },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
 
-  return { token };
+  return {
+    token,
+    admin: { id: admin._id, username: admin.username },
+  };
 }
 
 module.exports = { loginAdmin };

@@ -16,8 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const data = await api.adminLogin({ username, password });
-            localStorage.setItem("adminToken", data.token);
+            await api.adminLogin({ username, password });
             window.location.href = "admin_dashboard.html";
         } catch (error) {
             console.error("Login error:", error);

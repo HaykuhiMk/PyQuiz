@@ -78,5 +78,7 @@ function toggleConfirmPasswordVisibility() {
     toggleVisibility('confirmPassword', 'toggle-confirm-password');
 }
 
-window.togglePasswordVisibility = togglePasswordVisibility;
-window.toggleConfirmPasswordVisibility = toggleConfirmPasswordVisibility;
+// Bound here rather than via inline onclick attributes, which the
+// frontend's Content-Security-Policy blocks (docs/AUDIT.md Phase 4).
+document.getElementById('toggle-password').addEventListener('click', togglePasswordVisibility);
+document.getElementById('toggle-confirm-password').addEventListener('click', toggleConfirmPasswordVisibility);

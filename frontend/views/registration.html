@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script>(function(){try{var t=localStorage.getItem('pyquiz-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+    <script src="/js/theme-init.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Registration - PyQuiz</title>
@@ -35,7 +35,7 @@
             <label for="password">Password</label>
             <div class="pq-password">
               <input class="pq-input" type="password" id="password" name="password" autocomplete="new-password" required aria-describedby="password-help" />
-              <button type="button" id="toggle-password" class="pq-password__toggle pq-iconbtn" aria-pressed="false" aria-controls="password" onclick="togglePasswordVisibility('password')">Show</button>
+              <button type="button" id="toggle-password" class="pq-password__toggle pq-iconbtn" aria-pressed="false" aria-controls="password">Show</button>
             </div>
             <span class="pq-help" id="password-help">At least 8 characters, with an uppercase letter, a lowercase letter, a number and one of @ $ ! % * ? &amp; _</span>
           </div>
@@ -44,7 +44,7 @@
             <label for="repeat-password">Repeat password</label>
             <div class="pq-password">
               <input class="pq-input" type="password" id="repeat-password" name="repeat-password" autocomplete="new-password" required />
-              <button type="button" id="toggle-repeat-password" class="pq-password__toggle pq-iconbtn" aria-pressed="false" aria-controls="repeat-password" onclick="togglePasswordVisibility('repeat-password')">Show</button>
+              <button type="button" id="toggle-repeat-password" class="pq-password__toggle pq-iconbtn" aria-pressed="false" aria-controls="repeat-password">Show</button>
             </div>
           </div>
 

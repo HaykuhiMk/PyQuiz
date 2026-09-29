@@ -2,7 +2,7 @@ import { api, getAchievementMeta, requireAuth } from './api.js';
 import { icon, mountIcons } from './icons.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!requireAuth()) return;
+  if (!(await requireAuth())) return;
 
   mountIcons(document.querySelector('.account-container'));
   document.getElementById('logout').addEventListener('click', handleLogout);
@@ -192,7 +192,6 @@ async function handleLogout() {
   } catch (error) {
     console.error('Logout request failed:', error);
   }
-  localStorage.removeItem('adminToken');
   document.cookie = 'guestMode=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   window.location.href = '/login.html';
 }

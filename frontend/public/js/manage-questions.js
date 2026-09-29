@@ -5,8 +5,10 @@ function populateTopicOptions(select) {
     select.innerHTML += CANONICAL_TOPICS.map((topic) => `<option value="${topic}">${topic}</option>`).join("");
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    if (!localStorage.getItem("adminToken")) {
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        await api.getAdminMe();
+    } catch {
         window.location.href = "admin_login.html";
         return;
     }
@@ -203,9 +205,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const logoutBtn = document.getElementById("logout-btn");
     if (logoutBtn) {
-        logoutBtn.addEventListener("click", () => {
+        logoutBtn.addEventListener("click", async () => {
             if (!confirm("Are you sure you want to log out?")) return;
-            localStorage.removeItem("adminToken");
+            await api.adminLogout().catch(() => {});
             window.location.href = "admin_login.html";
         });
     }

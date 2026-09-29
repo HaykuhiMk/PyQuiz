@@ -16,6 +16,11 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     role: { type: String, default: "user" },
     banned: { type: Boolean, default: false },
+    // Embedded in every issued JWT (docs/AUDIT.md Phase 4) and compared on
+    // every authenticated request; bumping this immediately invalidates
+    // every token issued before the bump, regardless of its own expiry.
+    // Incremented on ban, password change, and password reset.
+    tokenVersion: { type: Number, default: 0 },
     stats: {
         currentStreak: { type: Number, default: 0 },
         bestStreak: { type: Number, default: 0 },

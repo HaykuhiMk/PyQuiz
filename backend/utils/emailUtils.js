@@ -36,30 +36,14 @@ const sendContactEmail = async (name, email, message) => {
         `
     };
 
-    // Send auto-reply to the user
-    const autoReplyOptions = {
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: 'Thank you for contacting PyQuiz',
-        html: `
-            <h2>Thank you for contacting PyQuiz!</h2>
-            <p>Dear ${safeName},</p>
-            <p>We have received your message and will get back to you as soon as possible.</p>
-            <p>Here's a copy of your message:</p>
-            <p><em>${safeMessage}</em></p>
-            <br>
-            <p>Best regards,</p>
-            <p>The PyQuiz Team</p>
-        `
-    };
-
+    // No auto-reply to the submitter (docs/AUDIT.md Phase 4, item 13,
+    // dropped entirely per decision): it would send attacker-controlled
+    // content to an attacker-controlled address, making this endpoint a
+    // free-text email relay. The message is still saved
+    // (contactService.submitContact); the mail below is the only email now
+    // sent, and it only ever goes to the admin.
     try {
-        // Send email to admin
         await transporter.sendMail(mailOptions);
-        
-        // Send auto-reply to user
-        await transporter.sendMail(autoReplyOptions);
-        
         return true;
     } catch (error) {
         console.error('Error sending email:', error);

@@ -5,7 +5,7 @@ const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const app = require('../app');
 const db = require('./testUtils/db');
-const { registerAndLogin } = require('./testUtils/authHelpers');
+const { registerAndLogin, adminSessionHeaders } = require('./testUtils/authHelpers');
 const User = require('../models/user');
 const Question = require('../models/questionModel');
 
@@ -32,7 +32,7 @@ afterAll(async () => {
   await db.closeDatabase();
 });
 
-async function adminToken() {
+async function adminLogin() {
   const hashed = await bcrypt.hash(VALID_PASSWORD, 10);
   await User.create({
     username: 'admintester',
@@ -44,7 +44,7 @@ async function adminToken() {
   const res = await request(app)
     .post('/api/v1/admin/login')
     .send({ username: 'admintester', password: VALID_PASSWORD });
-  return res.body.data.token;
+  return adminSessionHeaders(res);
 }
 
 describe('POST /api/v1/admin/login', () => {
@@ -92,23 +92,23 @@ describe('POST /api/v1/admin/login', () => {
   });
 
   it('returns a working admin token for correct credentials', async () => {
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
 
     const res = await request(app)
       .post('/api/v1/questions/add')
-      .set('Authorization', `Bearer ${token}`)
+      .set(adminHeaders)
       .send(validQuestionPayload);
 
     expect(res.statusCode).toBe(201);
   });
 });
 
-async function regularUserAuthHeader() {
-  // verifyAdmin only reads the Authorization header (it never accepts the
-  // auth cookie), so a regular user's session token is re-sent as a Bearer
-  // header here purely to exercise that code path.
+async function regularUserInAdminCookie() {
+  // verifyAdmin only reads the admin session cookie, so a regular user's
+  // session JWT is placed in that cookie slot here purely to exercise its
+  // role check (rather than its missing-cookie check).
   const { tokenCookieValue } = await registerAndLogin('regular@example.com', { username: 'regular' });
-  return `Bearer ${tokenCookieValue}`;
+  return `adminToken=${tokenCookieValue}`;
 }
 
 describe('POST /api/v1/questions/add (admin only)', () => {
@@ -120,10 +120,10 @@ describe('POST /api/v1/questions/add (admin only)', () => {
   });
 
   it('rejects a regular, non-admin user', async () => {
-    const authHeader = await regularUserAuthHeader();
+    const cookie = await regularUserInAdminCookie();
     const res = await request(app)
       .post('/api/v1/questions/add')
-      .set('Authorization', authHeader)
+      .set('Cookie', cookie)
       .send(validQuestionPayload);
 
     expect(res.statusCode).toBe(403);
@@ -131,10 +131,10 @@ describe('POST /api/v1/questions/add (admin only)', () => {
   });
 
   it('allows a valid admin token', async () => {
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
     const res = await request(app)
       .post('/api/v1/questions/add')
-      .set('Authorization', `Bearer ${token}`)
+      .set(adminHeaders)
       .send(validQuestionPayload);
 
     expect(res.statusCode).toBe(201);
@@ -142,10 +142,10 @@ describe('POST /api/v1/questions/add (admin only)', () => {
   });
 
   it('rejects an answer that is not one of the provided options', async () => {
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
     const res = await request(app)
       .post('/api/v1/questions/add')
-      .set('Authorization', `Bearer ${token}`)
+      .set(adminHeaders)
       .send({ ...validQuestionPayload, answer: 'not-an-option' });
 
     expect(res.statusCode).toBe(400);
@@ -171,9 +171,9 @@ describe('Admin question management (list/get/update/delete)', () => {
 
     it('returns full question detail, including the answer, for an admin', async () => {
       await createQuestionDirectly();
-      const token = await adminToken();
+      const adminHeaders = await adminLogin();
 
-      const res = await request(app).get('/api/v1/admin/questions').set('Authorization', `Bearer ${token}`);
+      const res = await request(app).get('/api/v1/admin/questions').set(adminHeaders);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.data).toHaveLength(1);
@@ -190,20 +190,20 @@ describe('Admin question management (list/get/update/delete)', () => {
     });
 
     it('returns 404 for a question that does not exist', async () => {
-      const token = await adminToken();
+      const adminHeaders = await adminLogin();
       const res = await request(app)
         .get('/api/v1/admin/questions/507f1f77bcf86cd799439011')
-        .set('Authorization', `Bearer ${token}`);
+        .set(adminHeaders);
       expect(res.statusCode).toBe(404);
     });
 
     it('returns the full question for a valid id', async () => {
       const q = await createQuestionDirectly();
-      const token = await adminToken();
+      const adminHeaders = await adminLogin();
 
       const res = await request(app)
         .get(`/api/v1/admin/questions/${q._id}`)
-        .set('Authorization', `Bearer ${token}`);
+        .set(adminHeaders);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.data.answer).toBe(validQuestionPayload.answer);
@@ -221,11 +221,11 @@ describe('Admin question management (list/get/update/delete)', () => {
 
     it('updates a single field and persists it', async () => {
       const q = await createQuestionDirectly();
-      const token = await adminToken();
+      const adminHeaders = await adminLogin();
 
       const res = await request(app)
         .patch(`/api/v1/admin/questions/${q._id}`)
-        .set('Authorization', `Bearer ${token}`)
+        .set(adminHeaders)
         .send({ explanation: 'Updated explanation' });
 
       expect(res.statusCode).toBe(200);
@@ -237,11 +237,11 @@ describe('Admin question management (list/get/update/delete)', () => {
 
     it('rejects an empty update body', async () => {
       const q = await createQuestionDirectly();
-      const token = await adminToken();
+      const adminHeaders = await adminLogin();
 
       const res = await request(app)
         .patch(`/api/v1/admin/questions/${q._id}`)
-        .set('Authorization', `Bearer ${token}`)
+        .set(adminHeaders)
         .send({});
 
       expect(res.statusCode).toBe(400);
@@ -249,11 +249,11 @@ describe('Admin question management (list/get/update/delete)', () => {
 
     it('rejects changing the answer to something outside the current options', async () => {
       const q = await createQuestionDirectly();
-      const token = await adminToken();
+      const adminHeaders = await adminLogin();
 
       const res = await request(app)
         .patch(`/api/v1/admin/questions/${q._id}`)
-        .set('Authorization', `Bearer ${token}`)
+        .set(adminHeaders)
         .send({ answer: 'not-an-option' });
 
       expect(res.statusCode).toBe(400);
@@ -263,11 +263,11 @@ describe('Admin question management (list/get/update/delete)', () => {
 
     it('allows changing options and answer together consistently', async () => {
       const q = await createQuestionDirectly();
-      const token = await adminToken();
+      const adminHeaders = await adminLogin();
 
       const res = await request(app)
         .patch(`/api/v1/admin/questions/${q._id}`)
-        .set('Authorization', `Bearer ${token}`)
+        .set(adminHeaders)
         .send({ options: ['x', 'y'], answer: 'y' });
 
       expect(res.statusCode).toBe(200);
@@ -287,51 +287,23 @@ describe('Admin question management (list/get/update/delete)', () => {
     });
 
     it('returns 404 for a question that does not exist', async () => {
-      const token = await adminToken();
+      const adminHeaders = await adminLogin();
       const res = await request(app)
         .delete('/api/v1/admin/questions/507f1f77bcf86cd799439011')
-        .set('Authorization', `Bearer ${token}`);
+        .set(adminHeaders);
       expect(res.statusCode).toBe(404);
     });
 
     it('deletes the question for a valid admin request', async () => {
       const q = await createQuestionDirectly();
-      const token = await adminToken();
+      const adminHeaders = await adminLogin();
 
       const res = await request(app)
         .delete(`/api/v1/admin/questions/${q._id}`)
-        .set('Authorization', `Bearer ${token}`);
+        .set(adminHeaders);
 
       expect(res.statusCode).toBe(200);
       expect(await Question.findById(q._id)).toBeNull();
     });
-  });
-});
-
-describe('verifyAdmin: header-only, regardless of cookies present (regression)', () => {
-  it('ignores a present regular-user session cookie with no Authorization header', async () => {
-    const { cookieHeader } = await registerAndLogin('admincookie@example.com', { username: 'admincookie' });
-
-    const res = await request(app)
-      .post('/api/v1/questions/add')
-      .set('Cookie', cookieHeader)
-      .send(validQuestionPayload);
-
-    expect(res.statusCode).toBe(403);
-    expect(await Question.countDocuments()).toBe(0);
-  });
-
-  it('a valid admin Authorization header still works even when a regular-user cookie is also present', async () => {
-    const { cookieHeader } = await registerAndLogin('adminandcookie@example.com', { username: 'adminandcookie' });
-    const token = await adminToken();
-
-    const res = await request(app)
-      .post('/api/v1/questions/add')
-      .set('Cookie', cookieHeader)
-      .set('Authorization', `Bearer ${token}`)
-      .send(validQuestionPayload);
-
-    expect(res.statusCode).toBe(201);
-    expect(await Question.countDocuments()).toBe(1);
   });
 });

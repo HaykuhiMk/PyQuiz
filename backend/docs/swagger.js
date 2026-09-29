@@ -27,7 +27,14 @@ const spec = swaggerJsdoc({
   apis: [],
 });
 
+// Disabled in production unless explicitly re-enabled (docs/AUDIT.md Phase
+// 4, item 15) — Swagger UI documents every endpoint's shape and is useful
+// during development, but isn't something to leave publicly reachable by
+// default once deployed.
 function setupSwagger(app) {
+  if (process.env.NODE_ENV === 'production' && process.env.ENABLE_API_DOCS !== 'true') {
+    return;
+  }
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(spec));
 }
 

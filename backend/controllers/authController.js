@@ -1,6 +1,11 @@
 const { successResponse } = require('../core/apiResponse');
 const authService = require('../services/authService');
-const { setAuthCookies, clearAuthCookies } = require('../utils/authCookies');
+const {
+  setAuthCookies,
+  clearAuthCookies,
+  authCookieName,
+  computeCsrfToken,
+} = require('../utils/authCookies');
 
 async function register(req, res, next) {
   try {
@@ -17,12 +22,16 @@ async function login(req, res, next) {
   try {
     const { token, user } = await authService.loginUser(req.body);
 
-    setAuthCookies(res, token);
+    // The CSRF token is also returned in the body: the csrfToken cookie is
+    // host-only (and __Host- prefixed in production), so a frontend served
+    // from a different host than this API can't read it from document.cookie.
+    const csrfToken = setAuthCookies(res, token);
 
     return res.json(
       successResponse({
         message: 'Login successful',
         user,
+        csrfToken,
       })
     );
   } catch (error) {
@@ -33,6 +42,16 @@ async function login(req, res, next) {
 async function logout(req, res) {
   clearAuthCookies(res);
   return res.json(successResponse({ message: 'Logged out successfully.' }));
+}
+
+async function me(req, res, next) {
+  try {
+    const user = await authService.getSessionUser(req.user.userId || req.user.id);
+    const csrfToken = computeCsrfToken(req.cookies?.[authCookieName()] || '');
+    return res.json(successResponse({ user, csrfToken }));
+  } catch (error) {
+    return next(error);
+  }
 }
 
 async function forgotPassword(req, res, next) {
@@ -57,6 +76,7 @@ module.exports = {
   register,
   login,
   logout,
+  me,
   forgotPassword,
   resetPassword,
 };

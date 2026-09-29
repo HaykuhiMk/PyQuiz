@@ -985,3 +985,128 @@ never saw the last 2 topics alphabetically. The `.slice(0, 8)` is removed; the l
 every topic the mastery API returns — attempted topics only once the user has attempted something,
 the full set before that. Verified live: a fresh user with zero attempts now sees all 10 topics on
 their dashboard, including Strings and Tuples, which were previously cut off.
+
+---
+
+## Phase 4 addendum — security (implemented)
+
+Decisions for this phase were made in advance by the project owner (listed per item below); nothing
+here was a DECISION left open. Suite: 128 → 156 tests, 15 → 18 suites, all passing; `npm run lint`
+and `npm run typecheck` clean.
+
+**Item 10 — session invalidation.** `User.tokenVersion` (default 0) is embedded in every user and
+admin JWT and compared on every authenticated request (`authenticateToken`, `optionalAuth`,
+`verifyAdmin`, via `findValidSessionAccount`), which also rejects banned accounts. It is incremented
+on ban (`userRepository.setBanned`, ban only — unbanning has nothing to invalidate), password change
+(`userService.changePassword`) and password reset (`authService.resetPassword`). A token with no
+`tokenVersion` claim (issued before this change) is treated as version 0, so deploying doesn't log
+everyone out. Banned users were already rejected at login; a test now covers it alongside the three
+invalidation cases (`tests/sessionSecurity.test.js`). A changed password now logs out the
+current browser too; `settings.js` logs out and sends the user to `login.html?passwordChanged=1`.
+The session lookup now only treats a malformed id (`CastError`) as "not logged in"; any other
+failure goes to the error handler. Previously a blanket `catch` had hidden a missing repository
+export, and every authenticated request failed silently.
+
+**Item 11 — admin token storage. Decision: a separate httpOnly cookie with the same CSRF
+scheme.** Before this change the admin JWT was returned in the login body, kept in
+`localStorage.adminToken` and sent as a Bearer header. The trade-off:
+- **localStorage + Bearer.** CSRF can't happen, because the browser never attaches the token
+  automatically. But any XSS on any page of the frontend origin can read the token and take it
+  away, giving an attacker a usable admin session for up to its full 1h lifetime from anywhere.
+- **httpOnly cookie.** Script can't read the token at all, so XSS can at most act as the admin
+  while the admin's page is open, and can't steal the session. The cost is CSRF exposure, because
+  the cookie is sent automatically. That is mitigated by `SameSite=Lax` plus the HMAC-bound
+  `X-CSRF-Token` check (item 12) on every state-changing admin route.
+
+Now: `POST /api/v1/admin/login` sets `adminToken` (`__Host-adminToken` in production), httpOnly,
+plus a readable `adminCsrfToken`, and returns no token in the body. `verifyAdmin` accepts
+**only** that cookie: no Authorization header, and never the regular-user `token` cookie. It also
+re-checks `role === 'admin'` in the database, so a demoted admin loses access immediately. Every
+state-changing admin route (`PATCH /admin/users/:id/ban`, `PATCH`/`DELETE /admin/questions/:id`,
+`POST /questions/add`) runs `verifyAdminCsrf`. New endpoints: `POST /api/v1/admin/logout` and
+`GET /api/v1/admin/me`. Admin and user sessions are fully separate, so logging out of one leaves
+the other alone. Every `localStorage` use of the admin token is gone from the frontend. Admin
+pages now call `api.getAdminMe()` to decide whether to redirect, and `admin.html`'s inline
+redirect script is now `/js/admin_entry.js`. **Breaking API change:** admin login no longer
+returns `data.token`; the frontend was updated in the same change.
+
+**Item 12 — CSRF and login-state detection.**
+- *`__Host-` cookie prefix.* In production (`NODE_ENV=production`) all four cookies are
+  `__Host-token`, `__Host-csrfToken`, `__Host-adminToken` and `__Host-adminCsrfToken`, with
+  `Secure; Path=/` and no `Domain`. The browser then refuses any cookie of that name set by a
+  sibling subdomain of picsartacademy.am, and the server reads only the prefixed names. A planted
+  unprefixed `token` cookie is ignored in production (tested).
+- *HMAC binding.* The CSRF token is `HMAC-SHA256(JWT_SECRET, "csrf:" + <session JWT>)`, not an
+  independent random value. The server recomputes it from the httpOnly session cookie and compares
+  it with `crypto.timingSafeEqual`. A planted matching cookie/header pair (the attack that defeats
+  plain double-submit) and another session's token are both rejected (tested).
+- *Local development over plain http.* Browsers refuse to store `__Host-` or `Secure` cookies over
+  http, so outside production the cookies use the unprefixed names without `Secure`. `npm start`
+  runs with `NODE_ENV=development`, so this needs no configuration, and `backend/env.example`
+  documents it. Production must be served over HTTPS; over http the browser would silently drop
+  the cookies and login would fail.
+- *Cross-host frontend.* The frontend is configured to call `https://api-pyquiz.picsartacademy.am`,
+  a different host from the page. A host-only (and so `__Host-`) CSRF cookie set by the API can
+  never be read from the page's `document.cookie`, and this was already true for the old
+  unprefixed cookie. So login and `GET /me` now also return `csrfToken` in the response body.
+  `api.js` keeps it in memory for the page, fetches it from `/me` when the cookie isn't readable,
+  and never persists it to web storage. A browser check with the CSRF cookie removed confirmed
+  that mutations still succeed.
+- *Login-state detection.* New `GET /api/v1/auth/me` endpoint. `requireAuth()`, the header, the
+  sidebar, `index.js` and the quiz start button all now ask the server, through a per-page
+  memoized `getSession()`, instead of checking whether a readable cookie exists. A 401 from any
+  non-login, non-`/me` endpoint clears client-side session state and redirects to the matching
+  login page. The CSRF cookie's `expires` already matched the 1h JWT (unchanged).
+
+**Item 13 — contact auto-reply. Decision: dropped entirely.** `sendContactEmail` now sends one
+email, to the admin address only. The message is still saved and the admin is still notified.
+Since no email goes to a submitter-supplied address, the global daily cap is moot. Tested with
+nodemailer mocked: one `sendMail` call, addressed to `EMAIL_USER`.
+
+**Item 14 — reset tokens.** Only `sha256(resetKey)` is stored (`ResetPassword.resetKeyHash`). The
+plaintext key exists only in the emailed link. On reset the stored hash is compared with
+`crypto.timingSafeEqual` after the lookup. A test reads the raw collection and asserts the key
+itself appears nowhere in it. Reset links issued before deployment stop working, since they have
+no hash stored; they expire after 1h anyway.
+
+**Item 15 — `/metrics`, `/api-docs`, `trust proxy`.**
+- In production, `GET /metrics` requires `Authorization: Bearer $METRICS_TOKEN`, compared in
+  constant time. With no token configured it returns 404 (fails closed). It stays open outside
+  production.
+- `/api-docs` is not mounted in production unless `ENABLE_API_DOCS=true`.
+- `trust proxy` was already configured from `TRUST_PROXY` and documented in the Pre-Phase-3 fixes;
+  no change was needed.
+- All three variables are documented in `backend/env.example`, and all cases are tested
+  (`tests/productionExposure.test.js`).
+
+**Helmet / Content-Security-Policy.**
+- *Backend.* Explicit CSP with `script-src 'self'`: Swagger UI loads its scripts as external
+  files. `style-src` allows `'unsafe-inline'` for Swagger's inline `<style>`, and
+  `frame-ancestors 'none'` is set.
+- *Frontend.* `frontend/app.js` now uses Helmet (`helmet` added to `frontend/package.json`) with a
+  CSP compatible with every page:
+  - `script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com` (Prism.js on Study,
+    Font Awesome on admin contacts), `script-src-attr 'none'`, and **no `'unsafe-inline'` for
+    scripts**.
+  - `connect-src` is exactly the local and production API origins that `/js/config.js` hands out.
+  - Google Fonts are allowed in `style-src` and `font-src`, and `data:` images for avatars.
+  - `upgrade-insecure-requests` and HSTS are applied only in production.
+- *Inline code moved out for the CSP.*
+  - The inline theme bootstrap duplicated in every page's `<head>` is now `/js/theme-init.js`
+    (still loaded synchronously, so there's no theme flash).
+  - `admin.html`'s inline redirect is now `/js/admin_entry.js`.
+  - Inline `onclick=` attributes were replaced by `addEventListener` bindings (password toggles on
+    login, registration and reset-password; the forgot-password button) and by a delegated handler
+    in `questions.js` for the result-screen buttons.
+  - The runtime API config was already an external `/js/config.js` route.
+- `style-src` keeps `'unsafe-inline'`, a deliberate and documented exception. Pages and rendered
+  templates use `style=""` attributes, and Font Awesome's script injects a `<style>` element.
+  Style injection is a far smaller risk than script injection.
+- Verified in headless Chrome against a throwaway local backend, frontend and database: user
+  login, logged-in header and sidebar, user and admin mutations, admin login and logout, a ban
+  invalidating the live session, the stale-session redirect, and every page loaded with **zero CSP
+  violations or JS exceptions**.
+
+**Noticed, not changed (out of Phase 4 scope):** `frontend/public/js/about.js` fetches
+`/api/v1/questions/study?limit=1` without credentials, presumably to show a count. That endpoint
+has required auth since Phase 2, so the request always gets a 401.

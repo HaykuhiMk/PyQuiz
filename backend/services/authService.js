@@ -47,7 +47,7 @@ async function loginUser({ email, password }) {
   }
 
   const token = jwt.sign(
-    { userId: user._id, email: user.email },
+    { userId: user._id, email: user.email, tokenVersion: user.tokenVersion || 0 },
     process.env.JWT_SECRET,
     { expiresIn: '1h' }
   );
@@ -62,6 +62,21 @@ async function loginUser({ email, password }) {
   };
 }
 
+// Backs GET /api/v1/auth/me (docs/AUDIT.md Phase 4, item 12): lets the
+// frontend confirm a session is actually still valid server-side instead of
+// inferring it from a cookie that outlives a revoked or expired JWT.
+async function getSessionUser(userId) {
+  const user = await userRepository.findById(userId);
+  if (!user) {
+    throw new AppError('User not found.', 404);
+  }
+  return { id: user._id, email: user.email, username: user.username };
+}
+
+function hashResetKey(resetKey) {
+  return crypto.createHash('sha256').update(resetKey).digest('hex');
+}
+
 async function requestPasswordReset(email) {
   const user = await userRepository.findByEmail(email);
   if (!user) {
@@ -70,8 +85,10 @@ async function requestPasswordReset(email) {
     return { message: GENERIC_RESET_MESSAGE };
   }
 
+  // Only the hash is stored (docs/AUDIT.md Phase 4, item 14) — the plaintext
+  // key exists only in this email and in the reset request that redeems it.
   const resetKey = crypto.randomBytes(20).toString('hex');
-  await resetPasswordRepository.upsertResetKey(email, resetKey);
+  await resetPasswordRepository.upsertResetKeyHash(email, hashResetKey(resetKey));
 
   const clientUri = process.env.CLIENT_URI || 'http://localhost:3000';
   const resetUrl = `${clientUri}/reset_password.html?resetKey=${resetKey}`;
@@ -81,8 +98,19 @@ async function requestPasswordReset(email) {
 }
 
 async function resetPassword(resetKey, newPassword) {
-  const resetEntry = await resetPasswordRepository.findByResetKey(resetKey);
+  const resetKeyHash = hashResetKey(resetKey);
+  const resetEntry = await resetPasswordRepository.findByResetKeyHash(resetKeyHash);
   if (!resetEntry) {
+    throw new AppError('Invalid or expired reset key.', 400);
+  }
+
+  // The lookup above is already an exact match on the hash; this recompares
+  // it with a constant-time comparison rather than trusting the query's own
+  // equality check, per the explicit requirement that this be compared with
+  // crypto.timingSafeEqual (docs/AUDIT.md Phase 4, item 14).
+  const stored = Buffer.from(resetEntry.resetKeyHash, 'hex');
+  const provided = Buffer.from(resetKeyHash, 'hex');
+  if (stored.length !== provided.length || !crypto.timingSafeEqual(stored, provided)) {
     throw new AppError('Invalid or expired reset key.', 400);
   }
 
@@ -92,8 +120,12 @@ async function resetPassword(resetKey, newPassword) {
   }
 
   user.password = await bcrypt.hash(newPassword, 10);
+  // Invalidates any session issued before the reset (docs/AUDIT.md Phase 4,
+  // item 10) — most relevant here since a password reset often means the
+  // old password (and any session logged in with it) may be compromised.
+  user.tokenVersion = (user.tokenVersion || 0) + 1;
   await userRepository.saveUser(user);
-  await resetPasswordRepository.deleteByResetKey(resetKey);
+  await resetPasswordRepository.deleteByResetKeyHash(resetKeyHash);
 
   return { message: 'Password successfully reset.' };
 }
@@ -101,6 +133,7 @@ async function resetPassword(resetKey, newPassword) {
 module.exports = {
   registerUser,
   loginUser,
+  getSessionUser,
   requestPasswordReset,
   resetPassword,
 };

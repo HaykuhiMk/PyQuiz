@@ -273,6 +273,11 @@ async function changePassword(userId, { currentPassword, newPassword }) {
   }
 
   user.password = await bcrypt.hash(newPassword, 10);
+  // Invalidates every session issued before this change (docs/AUDIT.md
+  // Phase 4, item 10) — the caller's own current token stops working too,
+  // by design; the frontend logs out and redirects to login right after a
+  // successful password change.
+  user.tokenVersion = (user.tokenVersion || 0) + 1;
   await userRepository.saveUser(user);
   return { message: 'Password changed successfully.' };
 }

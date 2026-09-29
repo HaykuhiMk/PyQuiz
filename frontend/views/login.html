@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script>(function(){try{var t=localStorage.getItem('pyquiz-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+    <script src="/js/theme-init.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - PyQuiz</title>
@@ -29,13 +29,13 @@
           <div class="pq-field">
             <div class="pq-auth__labelrow">
               <label for="password">Password</label>
-              <button type="button" id="forgot-password-btn" class="link-btn" onclick="window.location.href='./forgot_password.html'">
+              <button type="button" id="forgot-password-btn" class="link-btn">
                 Forgot password?
               </button>
             </div>
             <div class="pq-password">
               <input class="pq-input" type="password" id="password" name="password" autocomplete="current-password" required />
-              <button type="button" id="toggle-password" class="pq-password__toggle pq-iconbtn" aria-pressed="false" aria-controls="password" onclick="togglePasswordVisibility()">Show</button>
+              <button type="button" id="toggle-password" class="pq-password__toggle pq-iconbtn" aria-pressed="false" aria-controls="password">Show</button>
             </div>
           </div>
 

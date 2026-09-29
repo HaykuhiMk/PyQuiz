@@ -1,3 +1,5 @@
+import { getSession } from "./api.js";
+
 function getCookie(name) {
     const value = document.cookie.split("; ")
         .find(row => row.startsWith(name + "="))
@@ -12,13 +14,13 @@ function getCookie(name) {
     }
 }
 
-function isUserLoggedIn() {
-    // The auth token itself lives only in an httpOnly cookie (invisible to
-    // JS); the readable csrfToken cookie is set alongside it on login and
-    // cleared on logout, so its presence doubles as a "logged in" signal.
-    const hasSession = Boolean(getCookie("csrfToken"));
-    const isGuest = getCookie("guestMode") === "true";
-    return hasSession && !isGuest;
+// The auth token lives only in an httpOnly cookie (invisible to JS), and
+// a readable cookie can outlive an expired or revoked session, so this asks
+// the server (GET /api/v1/auth/me, shared per page by getSession) instead
+// of inferring login state from cookie presence (docs/AUDIT.md Phase 4).
+async function isUserLoggedIn() {
+    if (getCookie("guestMode") === "true") return false;
+    return Boolean(await getSession());
 }
 
 function markCurrentLink() {
@@ -33,13 +35,13 @@ function markCurrentLink() {
     });
 }
 
-function initializeHeaderLogic() {
+async function initializeHeaderLogic() {
     const logoLink = document.querySelector(".logo a");
     if (logoLink && !logoLink.dataset.redirectBound) {
         logoLink.dataset.redirectBound = "true";
-        logoLink.addEventListener("click", function(event) {
+        logoLink.addEventListener("click", async function(event) {
             event.preventDefault();
-            if (isUserLoggedIn()) {
+            if (await isUserLoggedIn()) {
                 window.location.href = "/account.html";
             } else {
                 window.location.href = "/index.html";
@@ -47,7 +49,9 @@ function initializeHeaderLogic() {
         });
     }
 
-    const loggedIn = isUserLoggedIn();
+    markCurrentLink();
+
+    const loggedIn = await isUserLoggedIn();
     const authActions = document.getElementById("topbar-auth-actions");
     if (authActions) {
         authActions.hidden = loggedIn;
@@ -56,8 +60,6 @@ function initializeHeaderLogic() {
     if (appActions) {
         appActions.hidden = !loggedIn;
     }
-
-    markCurrentLink();
 }
 
 // Initialize when the script loads

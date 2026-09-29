@@ -1,20 +1,39 @@
-const { verifyJwt } = require('./authenticateToken');
+const { verifyJwt, findValidSessionAccount } = require('./authenticateToken');
+const { authCookieName } = require('../utils/authCookies');
 
-module.exports = function (req, res, next) {
-    // Header-only, deliberately: admin auth never rides a cookie, so it
-    // can't be picked up by a forged cross-site request the way a
-    // cookie-authenticated route could (see middleware/csrf.js).
-    const token = req.header("Authorization")?.split(" ")[1];
+// Admin auth rides its own httpOnly cookie, separate from the regular-user
+// session cookie (docs/AUDIT.md Phase 4, item 11 — moved off a localStorage
+// Bearer token, which any script running on the page could read). Only that
+// cookie is accepted: no Authorization header, and never the regular-user
+// cookie. Because a cookie is sent automatically, every state-changing admin
+// route also runs verifyAdminCsrf (middleware/csrf.js).
+module.exports = async function (req, res, next) {
+    const token = req.cookies?.[authCookieName('admin')];
 
     if (!token) return res.status(403).json({ error: "Access denied. No token provided." });
 
+    let decoded;
     try {
-        const decoded = verifyJwt(token);
-        if (decoded.role !== "admin") return res.status(403).json({ error: "Unauthorized." });
-
-        req.admin = decoded;
-        next();
+        decoded = verifyJwt(token);
     } catch (err) {
-        res.status(401).json({ error: "Invalid token." });
+        return res.status(401).json({ error: "Invalid token." });
     }
+
+    if (decoded.role !== "admin") return res.status(403).json({ error: "Unauthorized." });
+
+    let account;
+    try {
+        account = await findValidSessionAccount(decoded);
+    } catch (error) {
+        return next(error);
+    }
+
+    // The JWT's role claim is only what was true at login; the account is
+    // re-checked too, so a demoted admin loses access immediately.
+    if (!account || account.role !== "admin") {
+        return res.status(401).json({ error: "Invalid token." });
+    }
+
+    req.admin = decoded;
+    next();
 };

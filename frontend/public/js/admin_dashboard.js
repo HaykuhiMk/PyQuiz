@@ -5,8 +5,10 @@ function populateTopicOptions(select) {
     select.innerHTML = CANONICAL_TOPICS.map((topic) => `<option value="${topic}">${topic}</option>`).join("");
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    if (!localStorage.getItem("adminToken")) {
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        await api.getAdminMe();
+    } catch {
         window.location.href = "admin_login.html";
         return;
     }
@@ -61,10 +63,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const logoutBtn = document.getElementById("logout-btn");
     if (logoutBtn) {
-        logoutBtn.addEventListener("click", () => {
+        logoutBtn.addEventListener("click", async () => {
             const confirmLogout = confirm("Are you sure you want to log out?");
             if (!confirmLogout) return;
-            localStorage.removeItem("adminToken");
+            await api.adminLogout().catch(() => {});
             window.location.href = "admin_login.html";
         });
     } else {

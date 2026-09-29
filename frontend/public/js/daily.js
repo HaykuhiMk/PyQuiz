@@ -296,8 +296,8 @@ async function loadChallenge() {
   }
 }
 
-function init() {
-  if (!requireAuth()) return;
+async function init() {
+  if (!(await requireAuth())) return;
   loadChallenge();
 }
 

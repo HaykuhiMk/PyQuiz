@@ -4,6 +4,7 @@ const adminQuestionController = require('../../controllers/adminQuestionControll
 const adminUserController = require('../../controllers/adminUserController');
 const adminContactController = require('../../controllers/adminContactController');
 const verifyAdmin = require('../../middleware/verifyAdmin');
+const { verifyAdminCsrf } = require('../../middleware/csrf');
 const validate = require('../../middleware/validate');
 const {
   adminLoginSchema,
@@ -15,11 +16,14 @@ const { questionFilterSchema, updateQuestionSchema } = require('../../validators
 const router = express.Router();
 
 router.post('/login', validate(adminLoginSchema), adminAuthController.login);
+router.post('/logout', adminAuthController.logout);
+router.get('/me', verifyAdmin, adminAuthController.me);
 
 router.get('/users', verifyAdmin, validate(paginationQuerySchema, 'query'), adminUserController.list);
 router.patch(
   '/users/:id/ban',
   verifyAdmin,
+  verifyAdminCsrf,
   validate(setBannedSchema),
   adminUserController.setBanned
 );
@@ -41,9 +45,10 @@ router.get('/questions/:id', verifyAdmin, adminQuestionController.getOne);
 router.patch(
   '/questions/:id',
   verifyAdmin,
+  verifyAdminCsrf,
   validate(updateQuestionSchema),
   adminQuestionController.update
 );
-router.delete('/questions/:id', verifyAdmin, adminQuestionController.remove);
+router.delete('/questions/:id', verifyAdmin, verifyAdminCsrf, adminQuestionController.remove);
 
 module.exports = router;

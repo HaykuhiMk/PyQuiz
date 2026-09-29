@@ -18,6 +18,13 @@ async function findByIdWithAvatar(userId) {
   return User.findById(userId);
 }
 
+// Minimal projection for the per-request tokenVersion check in
+// authenticateToken/verifyAdmin (docs/AUDIT.md Phase 4) — runs on every
+// authenticated request, so it reads only what that check needs.
+async function findAuthFields(userId) {
+  return User.findById(userId).select('tokenVersion banned role').lean();
+}
+
 async function findByUsernameLower(usernameLower) {
   return User.findOne({ usernameLower }).select('-avatar');
 }
@@ -81,8 +88,13 @@ async function countUsers() {
   return User.countDocuments({});
 }
 
+// Banning also bumps tokenVersion so any session the user already holds
+// stops working immediately, rather than waiting out its own expiry
+// (docs/AUDIT.md Phase 4) — unbanning does not, since there is nothing to
+// invalidate in that direction.
 async function setBanned(userId, banned) {
-  return User.findByIdAndUpdate(userId, { banned }, { new: true }).select(
+  const update = banned ? { banned, $inc: { tokenVersion: 1 } } : { banned };
+  return User.findByIdAndUpdate(userId, update, { new: true }).select(
     'username email role banned'
   );
 }
@@ -91,6 +103,7 @@ module.exports = {
   findByEmail,
   findById,
   findByIdWithAvatar,
+  findAuthFields,
   findByUsernameLower,
   findAdminByUsername,
   createUser,
