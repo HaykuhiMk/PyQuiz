@@ -3,3 +3,6 @@
 
 # OS metadata
 .DS_Store
+
+# Scratch files for one-off scripts/verification during a task — never committed
+/tmp/
