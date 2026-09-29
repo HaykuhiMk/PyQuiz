@@ -92,7 +92,7 @@ function renderTopicMastery(mastery) {
   }
 
   const attempted = mastery.filter((topic) => topic.answered > 0);
-  const rows = (attempted.length ? attempted : mastery).slice(0, 8);
+  const rows = attempted.length ? attempted : mastery;
 
   list.innerHTML = rows
     .map(

@@ -908,14 +908,12 @@ against the migrated dev database and dev frontend: quiz topic selection (10 top
 admin add-question form (primary/secondary selects), the manage-questions list/filter/edit views
 (primary and secondary topic columns, pre-populated edit form), Study mode's card topic labels,
 Daily Challenge's question topic label, and the dashboard's topic-mastery list (confirmed
-"Indexing & Slicing" shows "Not enough questions yet" and Numbers & Arithmetic is absent). One
-pre-existing, unrelated UI limit was observed and is not part of this round's requested changes:
-`account.js`'s dashboard mastery list caps itself at 8 topics (`mastery.slice(0, 8)`) when no topic
-has been attempted yet, which — now that there are 10 real topics instead of the old free-text
-count — means a brand-new user's dashboard won't show the last 2 alphabetically until they've
-attempted at least one question in a topic. The underlying API (`GET
-/api/v1/users/topic-mastery`) returns all 10 correctly; this is a display cap worth revisiting
-separately if desired, not fixed here.
+"Indexing & Slicing" shows "Not enough questions yet" and Numbers & Arithmetic is absent). This
+smoke test also surfaced a pre-existing, unrelated UI limit — `account.js`'s dashboard mastery list
+capped itself at 8 topics (`mastery.slice(0, 8)`) when no topic had been attempted yet, which, now
+that there are 10 real topics instead of the old free-text count, meant a brand-new user's
+dashboard wouldn't show the last 2 alphabetically until they'd attempted at least one question in a
+topic — fixed in the follow-up round below (the underlying API already returned all 10 correctly).
 
 ### Content gaps
 
@@ -933,3 +931,57 @@ Numbers & Arithmetic has no questions where arithmetic itself is the deciding co
 proposal above for why); Tuples and Indexing & Slicing each have only the one or two questions
 where the concept genuinely was the primary lesson once every question was re-read in full. Adding
 new questions to close this gap is future work, not part of this round.
+
+---
+
+## Phase 3 follow-up — production migration safety and a dashboard fix (implemented, separate commit)
+
+**`migrateQuestionTopics.js` now refuses to run against a partially-mappable database.** The
+original script matched by `code` and simply skipped documents it couldn't match, still applying
+the migration to everything else. Production is not guaranteed to be limited to the 47 seed
+questions the mapping table covers — questions added through the admin panel afterwards, or any
+question saved without a code snippet (`code` empty/undefined, which can never match a seed entry
+by design), would be silently left without a `primaryTopic`, which the schema requires. The script
+now:
+
+- Lists every unmatched question in **both** the dry run and `--apply`, by `_id` and a truncated
+  prompt, so each can be found and fixed in the admin panel.
+- **Refuses to write anything** when any question is unmatched — `--apply` exits with a non-zero
+  status and makes zero database calls in that case, rather than migrating a subset and leaving the
+  rest schema-invalid.
+
+Verified directly: a throwaway admin-panel-style question (no matching seed entry) was inserted
+into the local dev database, confirmed to appear in the dry-run listing with its `_id` and prompt,
+confirmed that `--apply` refused (exit code 1, zero documents changed) with it present, then
+removed — the real 47 questions were otherwise unaffected throughout.
+
+### Deployment checklist (production migration)
+
+This taxonomy migration has only ever been run against the local development database. Before it
+is ever run against production:
+
+1. **Back up production** (a full database snapshot/export) — this migration performs an `$unset`
+   that is not trivially reversible without one.
+2. **Run the dry run** (`node backend/scripts/migrateQuestionTopics.js`, no `--apply`) against
+   production and read its output in full.
+3. **Resolve every unmatched question** it lists — assign each a `primaryTopic` (and optional
+   `secondaryTopics`) by hand via the admin edit form — until a fresh dry run reports zero
+   unmatched.
+4. **Apply the migration** (`--apply`) only once step 3 shows zero unmatched; it will refuse to run
+   otherwise.
+5. **Deploy the new backend and frontend together**, not separately — the old frontend sends/reads
+   `topics`, which the new schema no longer has, and the new frontend's admin forms and topic
+   displays expect `primaryTopic`/`secondaryTopics` to already exist on every document. Include
+   cache-busting (a query-string version or filename hash) on every changed frontend JS file
+   (`admin_dashboard.js`, `manage-questions.js`, `questions.js`, `study.js`, `daily.js`,
+   `account.js`, and the new `topicTaxonomy.js`) so returning users don't run stale cached JS
+   against the new API shape.
+
+**Dashboard mastery list no longer caps itself at 8 topics.** `account.js`'s `renderTopicMastery`
+previously did `(attempted.length ? attempted : mastery).slice(0, 8)` — a leftover limit from when
+the topic set was larger and unrelated to this migration, but now that there are exactly 10 real
+canonical topics it meant a brand-new user (nothing yet attempted, so the `mastery` branch is used)
+never saw the last 2 topics alphabetically. The `.slice(0, 8)` is removed; the list now always shows
+every topic the mastery API returns — attempted topics only once the user has attempted something,
+the full set before that. Verified live: a fresh user with zero attempts now sees all 10 topics on
+their dashboard, including Strings and Tuples, which were previously cut off.

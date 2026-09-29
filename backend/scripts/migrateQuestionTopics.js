@@ -11,12 +11,22 @@
 // the same shared prompt text). A document whose `code` doesn't match any
 // seed entry is left untouched and reported, never guessed at.
 //
+// A production database can contain questions the seed mapping has never
+// seen at all — added through the admin panel after the original 47, or
+// without a code snippet (so `code` is empty/undefined and can never match
+// a seed entry by design). The dry run lists every such question by _id and
+// prompt so they can be triaged (assign a primaryTopic by hand, e.g. via the
+// admin edit form, before migrating) — and --apply refuses to run at all
+// while any are unmatched, rather than silently migrating a subset and
+// leaving the rest without a primaryTopic (which the schema requires).
+//
 // Usage:
 //   node backend/scripts/migrateQuestionTopics.js            # report only, no writes
 //   node backend/scripts/migrateQuestionTopics.js --apply    # applies the migration
+//                                                             # (refuses if any question is unmatched)
 //
-// Never run --apply against production — restricted to the local
-// development database for this task.
+// Deployment checklist: see "Phase 3 addendum — production migration
+// safety" in docs/AUDIT.md before ever running --apply against production.
 
 require('dotenv').config();
 const mongoose = require('mongoose');
@@ -41,7 +51,7 @@ async function main() {
   await mongoose.connect(process.env.MONGODB_URI);
 
   try {
-    const questions = await Question.find({}).select('_id code').lean();
+    const questions = await Question.find({}).select('_id code question').lean();
 
     let matched = 0;
     const unmatched = [];
@@ -50,7 +60,7 @@ async function main() {
     for (const doc of questions) {
       const assignment = byCode.get(doc.code || '');
       if (!assignment) {
-        unmatched.push(doc._id);
+        unmatched.push(doc);
         continue;
       }
       matched += 1;
@@ -60,11 +70,28 @@ async function main() {
     console.log(`${questions.length} question(s) in the database.`);
     console.log(`${matched} matched a seed entry by exact code.`);
     if (unmatched.length) {
-      console.log(`${unmatched.length} unmatched (left untouched): ${unmatched.join(', ')}`);
+      console.log(`${unmatched.length} unmatched — cannot be migrated automatically:`);
+      for (const doc of unmatched) {
+        const prompt = (doc.question || '(no question text)').replace(/\s+/g, ' ').slice(0, 120);
+        console.log(`  - ${doc._id}  ${prompt}`);
+      }
+      console.log(
+        'Each of these needs a primaryTopic assigned by hand (e.g. via the admin edit form) ' +
+          'before this migration can be applied — see the deployment checklist in docs/AUDIT.md.'
+      );
     }
 
     if (!apply) {
       console.log('[dry-run] No changes were made. Re-run with --apply to migrate.');
+      return;
+    }
+
+    if (unmatched.length) {
+      console.error(
+        `Refusing to apply: ${unmatched.length} question(s) are unmatched (listed above). ` +
+          'Resolve them first — --apply only runs when every question in the database can be migrated.'
+      );
+      process.exitCode = 1;
       return;
     }
 
