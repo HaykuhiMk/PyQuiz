@@ -24,7 +24,8 @@ async function insertQuestions() {
       options: q.options,
       answer: q.answer,
       difficulty: q.difficulty || 'medium',
-      topics: q.topics || [],
+      primaryTopic: q.primaryTopic,
+      secondaryTopics: q.secondaryTopics || [],
       explanation: q.explanation || 'No explanation provided.',
     }));
 

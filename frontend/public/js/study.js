@@ -47,7 +47,7 @@ function renderExplanation(answer, explanation) {
 }
 
 function renderCard(question) {
-  const topicsLabel = (question.topics || []).join(', ');
+  const topicsLabel = [question.primaryTopic, ...(question.secondaryTopics || [])].filter(Boolean).join(', ');
   const hasAnswer = question.answer !== undefined && question.answer !== null;
   const correctIndex = hasAnswer ? (question.options || []).indexOf(question.answer) : -1;
   return `

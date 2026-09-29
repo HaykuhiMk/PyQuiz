@@ -29,7 +29,8 @@ function createQuestion(overrides = {}) {
     options: ['3', '4', '5', '6'],
     answer: '4',
     difficulty: 'easy',
-    topics: ['Basic Arithmetic'],
+    primaryTopic: 'Numbers & Arithmetic',
+    secondaryTopics: [],
     explanation: '2 + 2 = 4',
     ...overrides,
   });
@@ -463,8 +464,8 @@ describe('Achievements, topicStats and bestStreak through the session endpoints'
     expect(rawUser.achievements.map((a) => a.key)).toContain('first_correct');
   });
 
-  it('updates topic mastery attempted/correct counts (derived from AnswerEvent)', async () => {
-    const q = await createQuestion({ topics: ['Basic Arithmetic', 'Integers'] });
+  it('updates the primary topic only (not secondary topics) — mastery uses primaryTopic alone', async () => {
+    const q = await createQuestion({ primaryTopic: 'Numbers & Arithmetic', secondaryTopics: ['Data Types & Conversion'] });
     const { cookieHeader, csrfToken } = await registerAndLogin('topicstats@example.com');
     const start = await startSession(cookieHeader, csrfToken, { mode: 'classic', topics: [] });
 
@@ -476,8 +477,10 @@ describe('Achievements, topicStats and bestStreak through the session endpoints'
 
     const mastery = await request(app).get('/api/v1/users/topic-mastery').set('Cookie', cookieHeader);
     const byTopic = Object.fromEntries(mastery.body.data.mastery.map((t) => [t.topic, t]));
-    expect(byTopic['Basic Arithmetic']).toMatchObject({ attempted: 1, correct: 1 });
-    expect(byTopic['Integers']).toMatchObject({ attempted: 1, correct: 1 });
+    expect(byTopic['Numbers & Arithmetic']).toMatchObject({ attempted: 1, correct: 1 });
+    // The secondary topic exists only for quiz/study filtering — it must
+    // not accrue any mastery attempts of its own from this question.
+    expect(byTopic['Data Types & Conversion']?.attempted || 0).toBe(0);
   });
 
   it('grows bestStreak across consecutive first-attempt correct answers in a session', async () => {

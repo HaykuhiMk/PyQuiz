@@ -1,11 +1,12 @@
 const { z } = require('zod');
 const { QUIZ_MODES } = require('../config/quizConfig');
+const { CANONICAL_TOPICS } = require('../config/topicTaxonomy');
 
 const difficultyEnum = z.enum(['easy', 'medium', 'hard']);
 
 const createSessionSchema = z.object({
   mode: z.enum(QUIZ_MODES),
-  topics: z.array(z.string().min(1)).max(150).optional().default([]),
+  topics: z.array(z.enum(CANONICAL_TOPICS)).max(150).optional().default([]),
   difficulty: difficultyEnum.optional(),
   practiceMode: z.boolean().optional().default(false),
 });

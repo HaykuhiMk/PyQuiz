@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const topicSelectionContainer = document.getElementById("topic-selection");
     const topicsList = document.getElementById("topics-list");
     const topicSearch = document.getElementById("topic-search");
-    const categoryButtons = document.querySelectorAll(".category-btn");
     const selectedCountSpan = document.getElementById("selected-count");
     const startQuizBtn = document.getElementById("start-quiz-btn");
     const selectAllBtn = document.getElementById("select-all-btn");
@@ -45,14 +44,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const emptySession = () => ({ correct: 0, wrong: 0, points: 0, streak: 0, bestStreak: 0, answered: 0, history: [] });
     let session = emptySession();
     const isGuest = getCookie("guestMode") === "true";
-
-    const categoryMapping = {
-        'basics': ['Data Types', 'Basic Arithmetic', 'Strings', 'Integers', 'Integer', 'Bool', 'String', 'Comparison Operators', 'Type Conversion', 'Assignment', 'Variable Assignment', 'Case Sensitivity', 'print', 'stdout', 'Files', 'None'],
-        'data-structures': ['Lists', 'Tuples', 'Dictionaries', 'Sets', 'Nested Lists', 'Data Structures', 'List Methods', 'Set Methods', 'Dictionary Methods', 'dict_keys', 'Keys', 'Slicing', 'List Slicing', 'Indexing', 'List Manipulation', 'List Modification', 'List Multiplication', 'List References', 'List Unpacking', 'Extended Unpacking', 'Tuple Unpacking', 'String Unpacking', 'Multiple Assignment', 'Duplicate Removal', 'Mutability', 'Mutable', 'Immutable', 'Aliasing', 'len'],
-        'functions': ['map', 'zip', 'enumerate', 'chr', 'ord', 'maketrans', 'translate', 'strip', 'removeprefix', 'removesuffix', 'swapcase'],
-        'ooad': ['Identity Operators', 'Type Checking', 'Boolean Logic', 'Identity', 'Equality', 'Hashing', 'Reference Counting', 'Memory Management'],
-        'advanced': ['Sorting', 'Sorting with key function', 'String Translation', 'string formatting', 'string manipulation', 'string slicing', 'boolean indexing', 'Exponentiation Operator', 'Modulo Operator', 'Range', 'Range Function', 'Step Values', 'Loops', 'For Loop', 'while loop', 'Break Statement', 'Continue Statement', 'Control Statements', 'Conditional Statements', 'Iteration', 'String Concatenation', 'String Indexing', 'String Iteration']
-    };
 
     document.querySelectorAll(".mode-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -109,23 +100,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     topicSearch.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        filterTopics(searchTerm, getCurrentCategory());
+        filterTopics(e.target.value.toLowerCase());
     });
 
-    categoryButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            categoryButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            filterTopics(topicSearch.value.toLowerCase(), btn.dataset.category);
-        });
-    });
-
-    function getCurrentCategory() {
-        return document.querySelector('.category-btn.active').dataset.category;
-    }
-
-    function filterTopics(searchTerm, category) {
+    // Only 11 canonical topics exist now (down from the old 92 fine-grained
+    // tags), so a plain text filter is enough on its own — the old
+    // category-quick-filter buttons and their tag-grouping table were
+    // removed along with the taxonomy migration (docs/AUDIT.md Phase 3).
+    function filterTopics(searchTerm) {
         const topicElements = document.querySelectorAll('.topic-item');
         let delay = 0;
         let visibleCount = 0;
@@ -134,10 +116,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const label = topicElement.querySelector('.topic-label');
             const topicText = label.textContent.toLowerCase();
             const matchesSearch = topicText.includes(searchTerm);
-            const matchesCategory = category === 'all' || 
-                categoryMapping[category]?.some(cat => topicText.includes(cat.toLowerCase()));
 
-            if (matchesSearch && matchesCategory) {
+            if (matchesSearch) {
                 topicElement.style.display = 'block';
                 topicElement.style.animation = 'none';
                 topicElement.offsetHeight;
@@ -322,7 +302,8 @@ document.addEventListener("DOMContentLoaded", () => {
     function displayQuestion(question) {
         questionContainer.innerText = question.question;
         difficultyContainer.querySelector("span").textContent = question.difficulty || "Unknown";
-        topicsContainer.querySelector("span").textContent = question.topics?.join(", ") || "None";
+        topicsContainer.querySelector("span").textContent =
+            [question.primaryTopic, ...(question.secondaryTopics || [])].filter(Boolean).join(", ") || "None";
 
         if (question.code) {
             questionCode.textContent = question.code.trim();

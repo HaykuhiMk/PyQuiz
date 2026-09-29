@@ -580,11 +580,13 @@ self-heals within one day for every affected account.
 
 ---
 
-## Phase 3 — taxonomy proposal, revised (awaiting approval — nothing below this migrated yet)
+## Phase 3 — taxonomy proposal, revised (approved and migrated — see "Phase 3 addendum — taxonomy
+migration executed" below for the applied result)
 
-Closes AUDIT.md item 16's remediation. **No `Question.topics` data has been changed, no seed data
-updated, and no admin-form restriction added.** This section replaces the earlier tag-based
-proposal, which was not approved. Per the revision request:
+Closes AUDIT.md item 16's remediation. This section is the proposal as originally written and
+presented for approval; the migration it describes has since been approved and run — see the
+addendum below for what was actually applied, the counts as migrated, and one bug found along the
+way. Per the revision request:
 
 - **Variables & Assignment merged into Mutability & Identity**, renamed **Names, Mutability &
   Identity** — 11 canonical topics now, not 12.
@@ -687,8 +689,9 @@ happens to touch, and is worth your review before approval:
 | 46 | `zip()`/`map()` over two different-length strings | Functions & Built-ins | Strings | Tests `zip()` stopping at the shorter sequence and `map()` applying a function per character. |
 | 47 | A big-step slice feeding `enumerate()`'s start value | Indexing & Slicing | Functions & Built-ins | A large slice step reduces the slice to one character, which then sets enumerate's start. |
 
-**Waiting for your approval of this revised table before writing any migration script, updating
-seed data, or touching the admin question form**, per the ground rule.
+This table was approved without changes (largest topic, Names/Mutability/Identity at 12/47 ≈
+25.5%, did not exceed the ~third-of-47 flag threshold, so no split was proposed or made) — see the
+addendum below for the executed migration.
 
 ---
 
@@ -835,3 +838,98 @@ today against the current tag set too).
 with thin attempt history and clearing once attempts reach the threshold; "unavailable" state for
 a topic below the minimum question count; AnswerEvent history surviving question deletion while
 being excluded from live mastery numbers.
+
+---
+
+## Phase 3 addendum — taxonomy migration executed (implemented, separate commit)
+
+The revised taxonomy above was approved as written — no topic exceeded the flagged split
+threshold, so nothing was merged or restructured beyond the proposal. This addendum records what
+was actually done.
+
+**Schema.** `Question.topics: [String]` (free-text) is replaced by `Question.primaryTopic: String`
+(required, `enum: CANONICAL_TOPICS`) and `Question.secondaryTopics: [String]` (optional, same
+enum, default `[]`). `backend/config/topicTaxonomy.js` is now the single source of truth for the
+11-item canonical list, imported by the model, both validators, and the frontend (`topicTaxonomy.js`
+mirrors it for the admin forms, which need the full list including zero-question topics — unlike
+`GET /api/v1/questions/topics`, which returns only topics with at least one primary question).
+
+**Filtering vs. mastery (requirement 4).** Quiz and Study topic filters match a question via
+`primaryTopic` **OR** any of its `secondaryTopics` (`questionService.buildQuestionQuery` builds an
+`$or` over both fields). Mastery and weak-topic detection use `primaryTopic` **only**
+(`topicMasteryService` never reads `secondaryTopics`). Both rules are tested:
+`quizSessions.test.js`'s "updates the primary topic only (not secondary topics)" test proves the
+mastery half; `adminQuestionTopics.test.js`'s topic-filter test proves a question is returned when
+the filter topic matches only its `secondaryTopics`, not its `primaryTopic`.
+
+**Hidden/thin topics (requirements 2–3).** `findDistinctTopics()` now does
+`Question.distinct('primaryTopic')`, so a topic with zero primary questions (today, only Numbers &
+Arithmetic) is automatically absent from the quiz/study topic-filter list and from the dashboard
+mastery list — no special-case filtering was needed for either; both derive from the same query,
+and a topic reappears in both automatically the moment it has ≥1 primary question. A topic with 1
+to `MIN_QUESTIONS_FOR_MASTERY - 1` (today: Tuples at 1, Indexing & Slicing at 2) shows
+`level: 'unavailable'` ("Not enough questions yet") — this already existed from the prior Phase 3
+follow-up round and required no new code for the taxonomy revision, only the real counts to trigger
+it.
+
+**Migration script and a real bug found while running it.** `backend/scripts/migrateQuestionTopics.js`
+reads the (already-updated) `backend/database/questions.json` as its source of truth and matches
+each of the 47 live `Question` documents by its `code` field (verified unique across all 47, unlike
+`question`, which is almost always shared boilerplate text) — this avoids any risk of a retyped
+topic string being transcribed incorrectly. Run `--dry-run` first (47/47 matched, 0 unmatched), then
+`--apply` against the confirmed-local dev database (`mongodb://127.0.0.1:27017/pyquiz`).
+
+The first `--apply` run reported success but a follow-up direct query showed every document still
+had its old `topics` field alongside the new `primaryTopic` — **`Model.updateOne()` (the
+Mongoose-wrapped method) silently drops a `$unset` for a field no longer defined in the current
+schema** (Mongoose's strict-update sanitization treats an unset of an unknown path as a no-op
+rather than an error). Since `topics` had already been removed from `questionModel.js` by the time
+the migration ran, every `$unset: { topics: '' }` was silently discarded. Fixed by switching that
+one operation to `Question.collection.updateOne(...)` — the native MongoDB driver, which bypasses
+Mongoose's schema-aware layer entirely. Re-ran `--apply`; verified directly: 0 documents retain
+`topics`, 0 documents missing `primaryTopic`, and per-topic counts match the approved table exactly
+(Lists 3, Names/Mutability/Identity 12, Strings 4, Data Types & Conversion 5, Loops & Control Flow
+6, Sets 4, Dictionaries 6, Functions & Built-ins 4, Indexing & Slicing 2, Tuples 1, Numbers &
+Arithmetic 0). `backend/database/questions.json` (the seed file) was updated with the same mapping
+so a fresh seed matches the migrated database. This is now a comment directly in the migration
+script as a warning for any future schema-narrowing migration in this codebase.
+
+**Admin form restriction.** The admin add/edit question forms now use a required "Primary Topic"
+`<select>` and an optional multi-select "Secondary Topics" (both populated from
+`topicTaxonomy.js`'s full canonical list), replacing the old free-text comma-separated "Topics"
+input. `questionValidators.js` rejects a `primaryTopic` outside the canonical list, rejects a
+`primaryTopic`/`secondaryTopics` overlap on create, and (in `questionService.updateQuestion`, after
+merging a PATCH payload with the stored document) rejects a PATCH that would create that overlap
+against the *existing* primary or secondary topics — tested in `adminQuestionTopics.test.js`.
+
+**Manual verification.** In addition to the automated tests, this migration was smoke-tested live
+against the migrated dev database and dev frontend: quiz topic selection (10 topics shown, Numbers
+& Arithmetic correctly absent), a quiz question's combined primary+secondary topic display, the
+admin add-question form (primary/secondary selects), the manage-questions list/filter/edit views
+(primary and secondary topic columns, pre-populated edit form), Study mode's card topic labels,
+Daily Challenge's question topic label, and the dashboard's topic-mastery list (confirmed
+"Indexing & Slicing" shows "Not enough questions yet" and Numbers & Arithmetic is absent). One
+pre-existing, unrelated UI limit was observed and is not part of this round's requested changes:
+`account.js`'s dashboard mastery list caps itself at 8 topics (`mastery.slice(0, 8)`) when no topic
+has been attempted yet, which — now that there are 10 real topics instead of the old free-text
+count — means a brand-new user's dashboard won't show the last 2 alphabetically until they've
+attempted at least one question in a topic. The underlying API (`GET
+/api/v1/users/topic-mastery`) returns all 10 correctly; this is a display cap worth revisiting
+separately if desired, not fixed here.
+
+### Content gaps
+
+Three canonical topics are below the healthy threshold for their own quiz/study filter to be
+useful and are flagged here as a concrete backlog, each with a target of **at least 3 primary
+questions**:
+
+| Topic | Current primary questions | Target |
+|---|---|---|
+| Numbers & Arithmetic | 0 | ≥ 3 |
+| Tuples | 1 | ≥ 3 |
+| Indexing & Slicing | 2 | ≥ 3 |
+
+Numbers & Arithmetic has no questions where arithmetic itself is the deciding concept (see the
+proposal above for why); Tuples and Indexing & Slicing each have only the one or two questions
+where the concept genuinely was the primary lesson once every question was re-read in full. Adding
+new questions to close this gap is future work, not part of this round.

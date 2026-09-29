@@ -11,15 +11,20 @@ function sanitizeQuestion(question) {
     code: question.code || '',
     options: question.options,
     difficulty: question.difficulty,
-    topics: question.topics,
+    primaryTopic: question.primaryTopic,
+    secondaryTopics: question.secondaryTopics || [],
   };
 }
 
+// A topic filter matches a question via its primaryTopic OR any of its
+// secondaryTopics (docs/AUDIT.md Phase 3 taxonomy revision) — mastery and
+// weak-topic detection are the only things that use primaryTopic alone
+// (topicMasteryService).
 function buildQuestionQuery({ topics = [], difficulty, excludeIds = [] }) {
   const query = {};
 
   if (topics.length) {
-    query.topics = { $in: topics };
+    query.$or = [{ primaryTopic: { $in: topics } }, { secondaryTopics: { $in: topics } }];
   }
 
   if (difficulty) {
@@ -118,11 +123,16 @@ async function updateQuestion(id, payload) {
   const merged = {
     options: existing.options,
     answer: existing.answer,
+    primaryTopic: existing.primaryTopic,
+    secondaryTopics: existing.secondaryTopics || [],
     ...payload,
   };
 
   if (!merged.options.includes(merged.answer)) {
     throw new AppError('Answer must be one of the provided options', 400);
+  }
+  if (merged.secondaryTopics.includes(merged.primaryTopic)) {
+    throw new AppError('A topic cannot be both the primary topic and a secondary topic', 400);
   }
 
   const updated = await questionRepository.updateQuestionById(id, payload);

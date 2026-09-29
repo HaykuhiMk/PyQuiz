@@ -31,6 +31,12 @@ const {
 // did (docs/AUDIT.md items 6/7, and the topicStats push bug found in the
 // Phase 1 follow-ups) — see docs/AUDIT.md's Phase 3 addendum.
 //
+// Every question has exactly one primaryTopic (docs/AUDIT.md Phase 3
+// taxonomy revision) — that's the only field used here. A topic with zero
+// questions as anyone's primaryTopic (e.g. Numbers & Arithmetic today)
+// never appears in the returned `mastery` array at all, which is exactly
+// "hidden from the dashboard" — no separate filtering needed.
+//
 // `level` is one of: 'unavailable' (fewer than MIN_QUESTIONS_FOR_MASTERY
 // questions exist in the topic at all — not a property of this user),
 // 'new' (no coverage yet), 'measuring' (some coverage, but fewer than
@@ -44,36 +50,36 @@ async function getTopicMastery(userId) {
   }
 
   const [allQuestions, answeredIds, answerEvents] = await Promise.all([
-    Question.find().select('topics').lean(),
+    Question.find().select('primaryTopic').lean(),
     userAnsweredQuestionRepository.findAnsweredIds(userId),
     AnswerEvent.find({ userId }).select('questionId correct').lean(),
   ]);
 
   const answeredSet = new Set(answeredIds.map(String));
 
+  // Primary topic only (docs/AUDIT.md Phase 3 taxonomy revision,
+  // requirement 4) — a question contributes to exactly one topic's mastery,
+  // never its secondaryTopics (those exist only for quiz/study filtering).
   const topicTotals = new Map();
   const topicAnswered = new Map();
-  const questionTopicsById = new Map();
+  const primaryTopicById = new Map();
   for (const question of allQuestions) {
-    const topics = question.topics || [];
-    questionTopicsById.set(String(question._id), topics);
-    for (const topic of topics) {
-      topicTotals.set(topic, (topicTotals.get(topic) || 0) + 1);
-      if (answeredSet.has(String(question._id))) {
-        topicAnswered.set(topic, (topicAnswered.get(topic) || 0) + 1);
-      }
+    const topic = question.primaryTopic;
+    primaryTopicById.set(String(question._id), topic);
+    topicTotals.set(topic, (topicTotals.get(topic) || 0) + 1);
+    if (answeredSet.has(String(question._id))) {
+      topicAnswered.set(topic, (topicAnswered.get(topic) || 0) + 1);
     }
   }
 
   const topicAttempted = new Map();
   const topicCorrect = new Map();
   for (const event of answerEvents) {
-    const topics = questionTopicsById.get(String(event.questionId)) || [];
-    for (const topic of topics) {
-      topicAttempted.set(topic, (topicAttempted.get(topic) || 0) + 1);
-      if (event.correct) {
-        topicCorrect.set(topic, (topicCorrect.get(topic) || 0) + 1);
-      }
+    const topic = primaryTopicById.get(String(event.questionId));
+    if (!topic) continue; // the question no longer exists — see the comment above
+    topicAttempted.set(topic, (topicAttempted.get(topic) || 0) + 1);
+    if (event.correct) {
+      topicCorrect.set(topic, (topicCorrect.get(topic) || 0) + 1);
     }
   }
 

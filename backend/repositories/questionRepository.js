@@ -1,7 +1,11 @@
 const Question = require('../models/questionModel');
 
+// Only topics with at least one question as their PRIMARY topic are
+// selectable in the quiz/study filters (docs/AUDIT.md Phase 3 taxonomy
+// revision, requirement 2) — a topic with zero primary questions is simply
+// absent from this list, and reappears automatically once one exists.
 async function findDistinctTopics() {
-  return Question.distinct('topics');
+  return Question.distinct('primaryTopic');
 }
 
 async function countQuestions(query) {

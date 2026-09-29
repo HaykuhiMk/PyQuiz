@@ -123,7 +123,10 @@ function renderQuestion() {
       <div class="pq-question__in">
         <div class="pq-question__meta">
           ${question.difficulty ? `<span class="badge">${escapeHTML(capitalize(question.difficulty))}</span>` : ''}
-          ${question.topics?.length ? `<span>${escapeHTML(question.topics.join(', '))}</span>` : ''}
+          ${(() => {
+            const topics = [question.primaryTopic, ...(question.secondaryTopics || [])].filter(Boolean);
+            return topics.length ? `<span>${escapeHTML(topics.join(', '))}</span>` : '';
+          })()}
         </div>
         <h2 class="pq-title" id="daily-question-title" tabindex="-1">${escapeHTML(question.question)}</h2>
         ${

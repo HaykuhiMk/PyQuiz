@@ -1,4 +1,9 @@
 import { api } from "./api.js";
+import { CANONICAL_TOPICS } from "./topicTaxonomy.js";
+
+function populateTopicOptions(select) {
+    select.innerHTML += CANONICAL_TOPICS.map((topic) => `<option value="${topic}">${topic}</option>`).join("");
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     if (!localStorage.getItem("adminToken")) {
@@ -22,6 +27,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const editForm = document.getElementById("edit-question-form");
     const editStatus = document.getElementById("edit-status");
     const cancelEditBtn = document.getElementById("cancel-edit-btn");
+    const editPrimaryTopicSelect = document.getElementById("edit-primary-topic");
+    const editSecondaryTopicsSelect = document.getElementById("edit-secondary-topics");
+
+    populateTopicOptions(filterTopic);
+    populateTopicOptions(editPrimaryTopicSelect);
+    populateTopicOptions(editSecondaryTopicsSelect);
 
     function escapeHTML(str = "") {
         return String(str).replace(/[&<>"']/g, (match) => ({
@@ -34,9 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function loadQuestions() {
-        tableBody.innerHTML = `<tr><td colspan="4">Loading...</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
         try {
-            const topics = filterTopic.value.trim() ? [filterTopic.value.trim()] : [];
+            const topics = filterTopic.value ? [filterTopic.value] : [];
             const difficulty = filterDifficulty.value;
             const questions = await api.getAdminQuestions({
                 topics,
@@ -49,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
             pageLabel.textContent = `Page ${currentPage}`;
 
             if (!questions.length) {
-                tableBody.innerHTML = `<tr><td colspan="4">No questions found.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="5">No questions found.</td></tr>`;
                 return;
             }
 
@@ -59,7 +70,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 <tr>
                     <td>${escapeHTML(q.question)}</td>
                     <td>${escapeHTML(q.difficulty)}</td>
-                    <td>${escapeHTML((q.topics || []).join(", "))}</td>
+                    <td>${escapeHTML(q.primaryTopic || "")}</td>
+                    <td>${escapeHTML((q.secondaryTopics || []).join(", "))}</td>
                     <td>
                         <button type="button" class="secondary-btn edit-btn" data-id="${q._id}">
                             <i class="fas fa-pen"></i> Edit
@@ -81,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         } catch (error) {
             console.error("Error loading questions:", error);
-            tableBody.innerHTML = `<tr><td colspan="4">Error: ${escapeHTML(error.message)}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="5">Error: ${escapeHTML(error.message)}</td></tr>`;
         }
     }
 
@@ -94,7 +106,11 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("edit-options").value = (question.options || []).join("\n");
             document.getElementById("edit-answer").value = question.answer;
             document.getElementById("edit-difficulty").value = question.difficulty;
-            document.getElementById("edit-topics").value = (question.topics || []).join(", ");
+            editPrimaryTopicSelect.value = question.primaryTopic || "";
+            const secondary = new Set(question.secondaryTopics || []);
+            Array.from(editSecondaryTopicsSelect.options).forEach((option) => {
+                option.selected = secondary.has(option.value);
+            });
             document.getElementById("edit-explanation").value = question.explanation;
             editStatus.textContent = "";
             editSection.hidden = false;
@@ -135,17 +151,19 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        const primaryTopic = editPrimaryTopicSelect.value;
+        const secondaryTopics = Array.from(editSecondaryTopicsSelect.selectedOptions)
+            .map((option) => option.value)
+            .filter((topic) => topic !== primaryTopic);
+
         const payload = {
             question: document.getElementById("edit-question-text").value.trim(),
             code: document.getElementById("edit-code").value.trim(),
             options,
             answer,
             difficulty: document.getElementById("edit-difficulty").value,
-            topics: document
-                .getElementById("edit-topics")
-                .value.split(",")
-                .map((topic) => topic.trim())
-                .filter(Boolean),
+            primaryTopic,
+            secondaryTopics,
             explanation: document.getElementById("edit-explanation").value.trim(),
         };
 

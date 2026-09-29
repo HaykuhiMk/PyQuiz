@@ -1,6 +1,8 @@
 const { z } = require('zod');
+const { CANONICAL_TOPICS } = require('../config/topicTaxonomy');
 
 const difficultyEnum = z.enum(['easy', 'medium', 'hard']);
+const topicEnum = z.enum(CANONICAL_TOPICS);
 
 function csvToArray(value) {
   if (Array.isArray(value)) {
@@ -23,12 +25,17 @@ const addQuestionSchema = z
     options: z.array(z.string().min(1)).min(2),
     answer: z.string().min(1),
     difficulty: difficultyEnum,
-    topics: z.array(z.string().min(1)).min(1),
+    primaryTopic: topicEnum,
+    secondaryTopics: z.array(topicEnum).optional().default([]),
     explanation: z.string().min(1),
   })
   .refine((data) => data.options.includes(data.answer), {
     message: 'Answer must be one of the provided options',
     path: ['answer'],
+  })
+  .refine((data) => !data.secondaryTopics.includes(data.primaryTopic), {
+    message: 'A topic cannot be both the primary topic and a secondary topic',
+    path: ['secondaryTopics'],
   });
 
 const updateQuestionSchema = z
@@ -38,23 +45,29 @@ const updateQuestionSchema = z
     options: z.array(z.string().min(1)).min(2).optional(),
     answer: z.string().min(1).optional(),
     difficulty: difficultyEnum.optional(),
-    topics: z.array(z.string().min(1)).min(1).optional(),
+    primaryTopic: topicEnum.optional(),
+    secondaryTopics: z.array(topicEnum).optional(),
     explanation: z.string().min(1).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field must be provided',
-  });
+  })
+  .refine(
+    (data) =>
+      !data.primaryTopic || !data.secondaryTopics || !data.secondaryTopics.includes(data.primaryTopic),
+    { message: 'A topic cannot be both the primary topic and a secondary topic', path: ['secondaryTopics'] }
+  );
 
 const questionFilterSchema = z.object({
   difficulty: difficultyEnum.optional(),
-  topics: z.preprocess(csvToArray, z.array(z.string().min(1)).max(150)).default([]),
+  topics: z.preprocess(csvToArray, z.array(topicEnum).max(150)).default([]),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
 const randomQuestionFilterSchema = z.object({
   difficulty: difficultyEnum.optional(),
-  topics: z.preprocess(csvToArray, z.array(z.string().min(1)).max(150)).default([]),
+  topics: z.preprocess(csvToArray, z.array(topicEnum).max(150)).default([]),
   excludeIds: z.preprocess(csvToArray, z.array(z.string().regex(/^[a-f\d]{24}$/i)).max(500)).default([]),
 });
 

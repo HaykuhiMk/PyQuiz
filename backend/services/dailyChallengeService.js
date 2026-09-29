@@ -139,7 +139,8 @@ function sanitizeQuestion(question) {
     code: question.code || '',
     options: question.options,
     difficulty: question.difficulty,
-    topics: question.topics,
+    primaryTopic: question.primaryTopic,
+    secondaryTopics: question.secondaryTopics || [],
   };
 }
 

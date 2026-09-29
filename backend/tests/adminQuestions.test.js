@@ -15,7 +15,8 @@ const validQuestionPayload = {
   options: ['2', '3', '4'],
   answer: '3',
   difficulty: 'easy',
-  topics: ['len'],
+  primaryTopic: 'Functions & Built-ins',
+  secondaryTopics: ['Lists'],
   explanation: 'There are three elements in the list.',
 };
 
@@ -150,6 +151,11 @@ describe('POST /api/v1/questions/add (admin only)', () => {
     expect(res.statusCode).toBe(400);
     expect(await Question.countDocuments()).toBe(0);
   });
+
+  // Canonical-topic validation (primaryTopic enum, primary/secondary
+  // collision) is covered separately in adminQuestionTopics.test.js — kept
+  // out of this file so its extra admin-login calls don't push this file's
+  // total past the /api/v1/admin/login rate limiter's 20/15min budget.
 });
 
 describe('Admin question management (list/get/update/delete)', () => {
@@ -267,6 +273,9 @@ describe('Admin question management (list/get/update/delete)', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.data.answer).toBe('y');
     });
+
+    // rejects changing secondaryTopics to collide with primaryTopic: see
+    // adminQuestionTopics.test.js.
   });
 
   describe('DELETE /api/v1/admin/questions/:id', () => {
