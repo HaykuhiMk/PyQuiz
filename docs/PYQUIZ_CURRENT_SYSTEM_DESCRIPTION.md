@@ -1,5 +1,9 @@
 # PyQuiz: An Interactive Platform for Python Knowledge Assessment and Practice
 
+> TODO(author): the thesis title is still being decided. This document's title is the project's
+> working title and has deliberately not been changed; replace or confirm it once the thesis title
+> is final.
+
 **A description of the current implementation, prepared for thesis documentation**
 
 Repository: https://github.com/HaykuhiMk/PyQuiz
@@ -9,247 +13,1146 @@ Live application: https://pyquiz.picsartacademy.am/
 
 ## 1. Project Overview
 
-PyQuiz is a full-stack web application designed to help learners test, practice, and track their knowledge of the Python programming language through interactive, multiple-choice quizzes. The platform combines several complementary modes of engagement — timed and untimed quizzes, a self-paced study mode, a daily shared challenge, and a competitive leaderboard — with a personal dashboard that records a user's progress, accuracy, streaks, and mastery of individual topics over time.
+PyQuiz is a full-stack web application for testing, practising and tracking knowledge of the
+Python programming language through multiple-choice questions. It combines four ways of working
+with one question bank:
+- three quiz modes (Classic, Blitz and Survival);
+- a Study mode that shows answers and explanations;
+- a Daily Challenge that is the same for everyone on a given day;
+- a public leaderboard.
 
-The system is built as a client–server web application: a Node.js/Express backend exposes a versioned REST API backed by a MongoDB database, and a browser-based frontend consumes that API to present quizzes, results, and account information. The application supports both registered users, whose progress and statistics are persisted across sessions, and anonymous guests, who can attempt quizzes immediately without creating an account, at the cost of not having their results saved.
+A personal dashboard records each registered user's points, streaks, accuracy and per-topic mastery.
 
-PyQuiz's intended users are primarily learners of Python — students in a course, self-taught programmers, or candidates preparing for technical interviews — who want a lightweight, focused tool for checking their understanding of language fundamentals (data types, control flow, data structures, string and list operations, object semantics, and related topics) rather than a full programming environment or a graded course platform. A secondary audience is anyone maintaining or extending the platform itself, including through its administrative panel, which allows the question bank and user base to be managed without direct database access.
+The system is a client–server application. A Node.js/Express backend exposes a versioned REST API
+(`/api/v1`) backed by MongoDB, and a separate, framework-free frontend of static HTML pages and
+vanilla JavaScript modules consumes that API. Registered users have their progress persisted.
+Guests can play quizzes immediately without an account, but nothing about a guest's play is
+stored.
+
+The intended users are learners of Python — students on a course, self-taught programmers, or
+candidates preparing for technical interviews — who want a focused tool for checking their
+understanding of language fundamentals. A secondary audience is whoever maintains the platform,
+through its administrative panel for managing questions, users and contact messages.
 
 ## 2. Motivation and Problem Statement
 
-Verifying one's own understanding of a programming language is harder than it sounds. Reading documentation or tutorials produces a feeling of familiarity that does not always correspond to an ability to predict, under time pressure and without hints, what a given piece of code will actually do. Many learners discover gaps in their understanding only when they are least prepared to address them — during an interview, an exam, or a real debugging session — because casual, untimed reading rarely exposes those gaps in advance.
+Reading documentation or tutorials produces a feeling of familiarity that does not always match an
+ability to predict, without hints, what a piece of code will do. Learners often discover such gaps
+only when they matter most — in an interview, an exam or a debugging session — because untimed
+reading rarely exposes them in advance.
 
-Conventional self-assessment approaches have several limitations that a dedicated platform can address. Static quizzes distributed as PDFs or printed worksheets offer no immediate feedback and no way to track improvement over time. General-purpose quiz tools are often not tailored to a specific subject and provide no structured way to see which sub-topics are actually weak versus which are solid. Purely social or leaderboard-driven coding platforms tend to emphasize competition over structured review, offering little support for a learner who first wants to consolidate fundamentals before testing themselves against others.
+Common self-assessment options each cover only part of the need:
+- **Static worksheets** give no immediate feedback and no record of improvement.
+- **General-purpose quiz tools** are not scoped to one subject and do not show which sub-topics
+  are weak.
+- **Competition-driven coding platforms** emphasise ranking over structured review of
+  fundamentals.
 
-PyQuiz is motivated by the idea that a single, focused tool — scoped specifically to Python knowledge, with immediate server-verified feedback, more than one mode of practice (self-paced, timed, and high-stakes), and a persistent, per-topic record of performance — gives a learner a more honest and more actionable picture of where they stand than any of these alternatives on their own. Because scoring and answer verification are always performed on the server rather than trusted from the client, a user's results are meaningful rather than a display convention.
+A comparison with specific existing tools is left to Section 15 (Related Work).
+
+PyQuiz addresses this with a single tool scoped to Python fundamentals that provides several
+things together:
+- immediate feedback on every answer;
+- more than one mode of practice (self-paced, timed, and single-mistake);
+- a per-topic record of performance.
+
+A score is only useful as a picture of what a learner knows if it cannot simply be manufactured by
+the browser. In PyQuiz the server therefore decides which question is being answered, whether the
+answer is correct, how many attempts remain and how many points are awarded. What this does and
+does not guarantee is stated precisely in Section 6.4.
 
 ## 3. Project Goals and Objectives
 
-The overarching goal of PyQuiz is to provide a reliable, secure, and pleasant platform for practicing and assessing Python knowledge through short, well-explained multiple-choice questions, while giving learners visibility into their own progress over time.
+The overall goal is a reliable and secure platform for practising and assessing Python knowledge
+through short, explained multiple-choice questions, with visibility into one's own progress over
+time. The concrete objectives, each implemented in the current codebase, are:
 
-Within the current implementation, this goal has been pursued through the following concrete objectives, each of which corresponds to functionality that is genuinely present in the codebase (and detailed further in Section 4):
+- Account-based access (registration, login, logout, password recovery) alongside a guest mode for
+  unauthenticated practice.
+- Several ways to use the same question bank: self-paced (Classic), timed (Blitz), single-mistake
+  (Survival), review (Study) and a shared Daily Challenge.
+- Server-authoritative assessment:
+  - The server serves each question, checks each answer and awards all points.
+  - The correct answer and explanation are sent to the browser only once the question has been
+    resolved (Section 6.4).
+- A dashboard with points, rank, streaks, overall accuracy, progress through the question bank, and
+  per-topic coverage and accuracy.
+- Simple, rule-based gamification: five achievements, points, streaks and a leaderboard.
+- Administrative tooling for question management, user moderation and contact-message review.
+- Security measures appropriate to storing credentials and personal statistics (Section 12).
+- A responsive, light/dark, keyboard-accessible interface (Section 14).
 
-- Provide account-based access with secure registration, login, logout, and password recovery, alongside a zero-friction guest mode for immediate, unauthenticated practice.
-- Offer more than one way to engage with the question bank — self-paced practice, a countdown-timed mode, and a single-mistake "survival" mode — so that the same content can be used for casual review as well as for pressure-testing recall.
-- Guarantee that scoring cannot be manipulated from the browser by keeping the correct answer, its index, and its explanation on the server until a question is answered correctly or explicitly revealed.
-- Give every registered user a personal dashboard summarizing total points, current and best streaks, overall accuracy, progress through the question bank, and — importantly — a breakdown of performance by topic, so that "how am I doing overall" can be refined into "which specific topics need more attention."
-- Introduce lightweight, transparent gamification (a fixed set of achievements, a points system, and a public leaderboard) to encourage sustained practice without turning the platform into a game disconnected from its educational purpose.
-- Offer a daily, identical-for-everyone challenge that creates a light sense of routine and enables fair, same-day comparison between users.
-- Provide a study mode that shows questions together with their correct answers and explanations up front, separating "assessment" (where the answer is withheld) from "review" (where it is not).
-- Build the necessary administrative tooling — question management, user moderation, and visibility into contact-form submissions — so that the platform's content and user base can be maintained in practice, not only in theory.
-- Apply security practices appropriate to a system that stores user credentials and personal statistics: password hashing, JWT-based authentication, CSRF protection on state-changing requests, input validation on every endpoint that accepts one, and rate limiting on authentication-sensitive routes.
-- Present all of the above through a responsive, theme-aware (light/dark) interface that remains usable on both desktop and mobile screens and follows basic accessibility practices (keyboard operability, visible focus states, semantic landmarks).
+## 4. Requirements
 
-## 4. System Functionality
+The requirements below are stated as the current implementation satisfies them. Each is traced to
+the section describing the feature, and to the automated tests (Section 13) that exercise it.
+Backend test files live in `backend/tests/`, and browser tests in `e2e/tests/`.
 
-This section describes, in turn, each area of functionality that is implemented in the current codebase.
+### 4.1 Functional requirements
 
-### 4.1 User Registration, Authentication, and Guest Access
+| ID | Requirement | Feature | Verified by |
+|---|---|---|---|
+| FR-1 | A visitor can register with a username, email and password satisfying the password rule; usernames are unique case-insensitively. | §5.1 | `auth.test.js`, `passwordPolicy.test.js`, `validation.spec.js` |
+| FR-2 | A registered user can log in and log out; login state is confirmed by the server. | §5.1 | `auth.test.js`, `sessionSecurity.test.js`, `smoke.spec.js` |
+| FR-3 | A user can reset a forgotten password via an emailed, single-use link valid for one hour. | §5.1 | `passwordReset.test.js` |
+| FR-4 | A guest can play Classic, Blitz and Survival quizzes without an account; nothing is persisted for guests. | §5.1, §6 | `quizSessions.test.js`, `smoke.spec.js` |
+| FR-5 | A user can start a quiz in Classic, Blitz or Survival mode, filtered by difficulty and topics. | §6 | `quizSessions.test.js`, `quizSessionsPractice.test.js`, `smoke.spec.js` |
+| FR-6 | The server decides correctness, attempts, timing and points for every quiz answer. | §6.4 | `quizSessions.test.js` |
+| FR-7 | A logged-in user can study questions with answers and explanations, excluding today's Daily Challenge questions. | §5.4 | `progress.test.js` |
+| FR-8 | A logged-in user can complete one Daily Challenge per day (Asia/Yerevan), identical for all users that day. | §5.5 | `dailyChallenge.test.js`, `smoke.spec.js` |
+| FR-9 | A logged-in user sees a dashboard with points, rank, streaks, accuracy and progress. | §5.7 | `progress.test.js`, `quizSessions.test.js` |
+| FR-10 | A logged-in user sees per-topic coverage, accuracy and mastery level, and a list of weak topics. | §5.8 | `topicMastery.test.js` |
+| FR-11 | The system awards achievements, points and streaks according to fixed rules. | §5.9 | `quizSessions.test.js` |
+| FR-12 | Anyone can view the leaderboard; a logged-in viewer's own row is marked by the server. | §5.10 | `leaderboard.test.js` |
+| FR-13 | A user can change username, avatar and password, choose a theme, and delete their account. | §5.11 | `auth.test.js`, `avatarUpload.test.js`, `passwordPolicy.test.js`, `passwordWhitespace.test.js`, `validation.spec.js`, `smoke.spec.js` |
+| FR-14 | An admin can list, view, add, edit and delete questions, restricted to the canonical topic taxonomy. | §5.12 | `adminQuestions.test.js`, `adminQuestionTopics.test.js` |
+| FR-15 | An admin can list users and ban or unban non-admin accounts. | §5.12 | `adminUsers.test.js` |
+| FR-16 | An admin can read contact-form messages. | §5.12 | `adminContacts.test.js` |
+| FR-17 | A visitor can send a contact message, which is stored and emailed to the admin. | §5.13 | `contact.test.js` |
+| FR-18 | The About page shows live question and topic counts without exposing question content. | §5.13 | `publicStats.test.js`, `smoke.spec.js` |
 
-New users register with a username, email address, and password. The backend enforces a minimum-complexity password policy (at least eight characters, including an uppercase letter, a lowercase letter, a digit, and one of a defined set of special characters) and rejects registration if the email address is already in use. Passwords are never stored in plain text; they are hashed with `bcryptjs` before being persisted.
+### 4.2 Non-functional requirements
 
-Login exchanges an email and password for a signed JSON Web Token (JWT), which the server places in an `httpOnly` cookie rather than returning it as plain JSON — this means the token itself is never directly accessible to page JavaScript, which limits the impact of a cross-site scripting vulnerability elsewhere on the site. A second, readable cookie carrying a random CSRF token is set alongside it; its presence or absence in the browser is what the frontend uses to determine, without contacting the server, whether a user is currently signed in.
+| ID | Requirement | Where | Verified by |
+|---|---|---|---|
+| NFR-1 | **Integrity:** quiz scoring cannot be forged from the browser, and no public endpoint returns correct answers or explanations. | §6.4 | `quizSessions.test.js`, `progress.test.js` |
+| NFR-2 | **Session security:** sessions live in httpOnly cookies, are invalidated on ban, password change and password reset, and state changes require an HMAC-bound CSRF token. | §12 | `sessionSecurity.test.js`, `adminSession.test.js`, `cors.test.js` |
+| NFR-3 | **Credential protection:** passwords are hashed, reset tokens are stored only as hashes, and login responses reveal neither whether an account exists nor, through timing, whether it does. | §12 | `passwordReset.test.js`, `loginTiming.test.js`, `adminQuestions.test.js` |
+| NFR-4 | **Input validation:** every endpoint that accepts input validates it with a Zod schema; client-side password and avatar checks are derived from the server's rules. | §12 | `validationRules.test.js`, `validation.spec.js` |
+| NFR-5 | **Abuse resistance:** rate limits on all API traffic and stricter limits on authentication, contact and session-start endpoints. | §12 | `trustProxy.test.js`, `rateLimitBypass.test.js` |
+| NFR-6 | **Operational exposure:** in production, `/metrics` requires a bearer token and `/api-docs` is off unless explicitly enabled. | §12 | `productionExposure.test.js` |
+| NFR-7 | **Browser hardening:** a Content-Security-Policy without inline scripts; no page produces CSP violations. | §12 | `productionExposure.test.js`, all Playwright tests (fixture) |
+| NFR-8 | **Maintainability:** layered backend (routes → controllers → services → repositories → models), and API documentation kept in sync with the real routes. | §8, §11 | `swagger.test.js` |
+| NFR-9 | **Usability and accessibility:** responsive layout, light/dark themes, keyboard operability, and reduced-motion support. | §14 | `smoke.spec.js` (theme); TODO(author): no automated accessibility test exists |
+| NFR-10 | **Performance:** measured on one local machine only (Section 18.1); no production capacity target has been defined. | §18.1 | `backend/scripts/benchmark.js`; TODO(author): define a target if the thesis needs one |
 
-Alongside authenticated access, PyQuiz supports a **guest mode**: clicking "Continue as guest" on the landing page sets a plain, client-side cookie and takes the visitor directly into the quiz flow, with no account required. Guests can take Classic, Blitz, and Survival quizzes and can browse the Study mode and the Leaderboard, but any page that depends on a persisted account — the Dashboard, the Daily Challenge, and Settings — redirects a guest to the login page, since there is no account to attach that data to. The interface makes the guest/authenticated distinction explicit: quiz screens display a visible "Guest Mode — progress isn't saved" notice, and the results screen after a quiz quietly omits the points/XP statistic for guests instead of showing a fabricated or always-zero number.
+## 5. System Functionality
 
-Password recovery is a separate, token-based flow: a user who has forgotten their password requests a reset link by email; the server always responds with the same generic acknowledgement regardless of whether that email actually exists in the system, which prevents the endpoint from being used to enumerate registered accounts. If the email does correspond to a real user, a single-use reset token is generated, stored with a one-hour expiry, and emailed as a link; visiting that link lets the user set a new password, after which the token is deleted.
+### 5.1 Registration, Authentication and Guest Access
 
-### 4.2 Python Quizzes and Available Quiz Modes
+**Registration.** New users register with a username (2–50 characters), an email address and a
+password. The password must satisfy the single password rule shared by registration, reset and
+password change:
+- at least 8 characters;
+- at least one lowercase letter, one uppercase letter and one digit;
+- at least one of `@ $ ! % * ? & _`;
+- other characters, including spaces, are allowed.
 
-The core of the platform is its multiple-choice Python quiz. A user first chooses a mode (Classic, Blitz, or Survival — described in full in Section 5), optionally narrows the question pool by difficulty and by one or more topics, and then answers questions drawn from that filtered pool one at a time. Each question presents its prompt, an optional Python code snippet (rendered with syntax highlighting), and a set of answer options identified by letter. Submitting an answer sends only the selected option's index to the server, which is the only place where the correct answer is known; the response indicates whether the choice was correct and, only in that case (or when the answer is explicitly revealed), also returns the correct option and a short explanation of why it is correct.
+Passwords are never trimmed, so a password works exactly as typed. Registration fails if the email
+is already in use, or if the username matches an existing one ignoring case.
 
-### 4.3 Question Categories and Difficulty Levels
+**Login.** Login and the session model are described in Section 12. The frontend decides whether a
+user is logged in by asking the server (`GET /api/v1/auth/me`). On any expired or revoked session
+it clears its state and returns to the login page.
 
-Every question in the database is tagged with one or more topics (for example, "Lists," "Dictionaries," "Loops," "String Formatting," or "Mutability") and with exactly one difficulty level — easy, medium, or hard. These tags drive the topic and difficulty filters available when starting a quiz or a study session, and they are also the basis for the per-topic mastery statistics described below. The bundled seed dataset currently contains 47 questions spanning 92 distinct topic tags (a question is commonly tagged with several related topics) and a difficulty split of 25 easy, 18 medium, and 4 hard questions; this reflects the size of the dataset shipped with the project rather than a limit built into the platform itself, since new questions can be added at any time through the administrative panel.
+**Guest mode.** "Continue as guest" on the landing page takes the visitor straight into the quiz.
+- **Guests can:** play Classic, Blitz and Survival quizzes, and view the leaderboard.
+- **Guests are redirected to login from:** Study mode, the Daily Challenge, the Dashboard and
+  Settings, all of which require an account.
+- **In the interface:** quiz screens show a "Guest Mode" notice, and the results screen omits
+  points for guests.
 
-### 4.4 Study Mode and Learning Resources
+**Password recovery.** A user requests a reset link by email.
+- The response is identical whether or not the address is registered.
+- For a registered address, a random reset key is emailed as a link and expires after one hour.
+- Using the key sets the new password and deletes the key.
 
-Study mode presents the same underlying question bank, filterable by topic search and difficulty, but as a paginated list of cards that show the question, its code (if any), its options with the correct one already marked, and its explanation — all at once, with no scoring involved. It exists specifically for review rather than assessment: a learner who wants to read through material on a given topic, rather than test their recall of it under quiz conditions, uses Study mode instead of a quiz.
+### 5.2 Quizzes
 
-### 4.5 Daily Challenge
+A user chooses a mode (Section 6), optionally a difficulty, and at least one topic. The server then
+serves questions one at a time from the filtered pool. Each question shows:
+- its prompt;
+- an optional Python code snippet, highlighted with Prism.js;
+- lettered answer options.
 
-The Daily Challenge gives every signed-in user the same five questions on a given calendar day. The set of questions is not chosen at random on each request; it is derived deterministically from the date using a seeded, cryptographic shuffle of the entire question bank, so that every user who opens the Daily Challenge on the same day sees the identical five questions, but the selection still changes from day to day without needing to be curated by hand. A user answers all five questions and submits them together in a single request; the server scores the submission, and a user may only complete a given day's challenge once — a second submission attempt is rejected. Each correct answer in the Daily Challenge is worth a fixed 20 points, deliberately higher than a single question answered in an ordinary quiz, which gives the daily routine a small but real incentive beyond novelty.
+The browser sends only the question id and the index of the chosen option.
 
-### 4.6 Results, Scoring, and Performance Feedback
+### 5.3 Topics and Difficulty Levels
 
-At the end of a quiz session (or immediately, in Survival mode, after the first mistake), the user is shown a results screen summarizing their performance for that session: the number of questions answered, the number correct, the resulting accuracy percentage, the best streak of consecutive correct answers achieved during the session, and — for signed-in users — the running total of points on their account. A compact, color-coded strip ("ribbon") also visually replays the sequence of correct and incorrect answers across the session. Every individual answer, correct or not, also gives immediate feedback in place: the chosen option is marked, and on a correct answer (or after revealing the answer) the correct option and a written explanation are shown before moving on.
+**Topics.** The question bank uses a fixed taxonomy of **11 canonical topics**:
+- Names, Mutability & Identity
+- Loops & Control Flow
+- Dictionaries
+- Data Types & Conversion
+- Strings
+- Functions & Built-ins
+- Sets
+- Lists
+- Indexing & Slicing
+- Tuples
+- Numbers & Arithmetic
 
-### 4.7 User Dashboard and Progress Tracking
+**Tagging.** Every question has exactly one required **primary topic**: the concept a learner must
+understand to answer it. A question may also have optional **secondary topics** for filtering. Quiz
+and Study topic filters match a question by its primary *or* any secondary topic.
 
-Signed-in users have a dashboard that consolidates their standing on the platform: total points, a computed rank label (Beginner, Intermediate, Advanced, or "Python Master," based on point thresholds), current and best answer streaks, overall accuracy, and progress through the question bank expressed as "questions answered out of questions available." The dashboard also surfaces the user's Daily Challenge status for the day and their unlocked achievements, and links directly into starting a new quiz, so that the dashboard functions as the natural home screen of the application for a returning user.
+**Counts.** The bundled dataset contains **47 questions**: 25 easy, 18 medium and 4 hard.
 
-### 4.8 Topic Mastery and Weak-Topic Identification
+| Primary topic | Questions |
+|---|---|
+| Names, Mutability & Identity | 12 |
+| Loops & Control Flow | 6 |
+| Dictionaries | 6 |
+| Data Types & Conversion | 5 |
+| Strings | 4 |
+| Functions & Built-ins | 4 |
+| Sets | 4 |
+| Lists | 3 |
+| Indexing & Slicing | 2 |
+| Tuples | 1 |
+| Numbers & Arithmetic | 0 |
 
-Beyond the account-wide statistics, PyQuiz computes a **per-topic mastery** breakdown for each user. For every topic present in the question bank, the system computes two independent measures from real recorded data: *coverage* (the percentage of that topic's questions the user has ever answered) and *accuracy* (the percentage of the user's attempts on that topic that were correct, drawn from per-topic counters updated after every answer). Each topic is then classified into one of four levels — "new," "beginner," "intermediate," or "master" — using thresholds on coverage and accuracy, and the resulting list is presented on the dashboard, most-covered topics first. Topics where the user has made a meaningful number of attempts (at least two) but whose accuracy remains below 60% are additionally surfaced as a short "needs practice" list of up to five topics, intended to point a learner toward exactly where more review would help. Both the mastery list and the weak-topics list are computed on demand from real recorded data; nothing in this feature is randomized or fabricated, and a brand-new user with no answered questions correctly sees every topic as "not started" rather than misleading placeholder progress.
+**Visibility.** Topics with no primary questions are hidden from filters and from the mastery list.
+With the current data that is Numbers & Arithmetic, so **10 topics are visible**. Admins add
+questions through the admin panel, restricted to the canonical list.
 
-### 4.9 Achievements, Points, Streaks, and Gamification
+### 5.4 Study Mode
 
-The platform recognizes five fixed achievements — answering a first question correctly, reaching a five-answer streak, reaching a ten-answer streak, accumulating 100 total points, and accumulating 500 total points — each evaluated automatically on the server every time a user answers a question, and unlocked (with a timestamp) the moment its condition is first met. Points are awarded only for correct answers, and the amount depends on the quiz mode: 10 points in Classic mode, 15 in Survival mode, and 12 points in Blitz mode plus a small time bonus (up to 10 additional points) that rewards answering with time to spare. A "streak" in this context is the number of consecutive correct answers a user currently has going; it resets to zero on any incorrect answer, and both the current and the best-ever streak are tracked on the account.
+Study mode requires login. It lists questions as paginated cards showing the question, code,
+options with the correct one marked, and the explanation, filtered by topic and difficulty. No
+scoring is involved.
 
-### 4.10 Leaderboard
+Today's Daily Challenge questions are excluded from Study mode until the next daily reset, so the
+day's answers cannot be looked up there. Other questions' answers are visible by design; see
+Section 6.4 for what this means for quiz integrity.
 
-A global leaderboard ranks all users by total accumulated points (with best streak and total correct answers shown alongside), and is publicly viewable — it does not require authentication to load, since seeing where the top performers stand does not depend on being one of them. When viewed by a signed-in user, the leaderboard also highlights that user's own row, so they can immediately see how their score compares to others without hunting for their name in the list.
+### 5.5 Daily Challenge
 
-### 4.11 User Settings and Account Management
+The Daily Challenge gives every logged-in user the same **5 questions** each day.
 
-The Settings page lets a signed-in user update their display name, upload or remove a profile photo (stored as a size-limited base64-encoded image after client-side and server-side size checks), change their password (which requires re-entering the current password and satisfies the same complexity policy enforced at registration), choose their preferred light or dark theme explicitly, and permanently delete their own account and all associated progress after re-entering their password for confirmation. Administrator accounts are explicitly excluded from self-deletion through this page.
+**The day.** A "day" is a calendar day in the **Asia/Yerevan** time zone. The page shows the time
+until the next reset, computed by the server as the next Yerevan midnight.
 
-### 4.12 Administrative Functionality
+**Selecting the set.** On the first request of a day, the server:
+1. computes `HMAC-SHA256(DAILY_CHALLENGE_SEED_SECRET, date)`;
+2. uses the digest to seed the `mulberry32` pseudo-random generator;
+3. shuffles all question ids with a Fisher–Yates shuffle driven by that generator;
+4. takes the first five ids.
 
-A separate administrative area, reachable through its own login page and authenticated independently of the regular user session (see Section 9), allows an administrator to manage the platform's content and user base directly:
+Because the seed depends on a server secret, a day's selection cannot be predicted in advance
+without that secret.
 
-- **Question management** — listing questions with the same topic/difficulty filters used elsewhere, viewing a single question in full (including its answer and explanation), adding new questions, editing existing ones (with the invariant that the designated correct answer must always be one of the listed options, enforced on both creation and update), and deleting questions.
-- **User management** — listing registered users and toggling a ban flag on a specific account, with a safeguard that prevents an administrator account from being banned through this interface.
-- **Contact message review** — a paginated, read-only view of messages submitted through the public contact form, so that inbound inquiries can be reviewed from within the application rather than only through the recipient email inbox.
+**Freezing the set.** The selected ids are stored as that day's `DailyChallengeSet`. Every later
+request that day reads the stored set, so it cannot change during the day even when questions are
+added. A question deleted after freezing is dropped from that day's set rather than causing an
+error. If the secret is not configured when a new day's set is needed, the endpoint returns 503 and
+never falls back to a predictable seed.
 
-### 4.13 Other Relevant Features Discovered During Codebase Analysis
+**Submitting.** A user answers all questions and submits them once. A second submission that day is
+rejected, including two concurrent submissions. Each correct answer is worth a flat **20 points**,
+awarded in addition to (and independent of) the first-attempt rule in Section 6.3. Answers count
+toward streaks, accuracy and mastery exactly like first-attempt quiz answers.
 
-A public **contact form** lets any visitor send a message, which is persisted to the database, emailed to the site's administrator address, and acknowledged with an automatic reply email to the sender. The submission form includes an invisible "honeypot" field: if it is filled in (which only an automated script, not a human, would do), the request is silently accepted without ever touching the database or sending any email, which quietly discards spam without revealing to the sender that it was detected. The endpoint is additionally rate-limited to a small number of submissions per client per time window.
+### 5.6 Results and Feedback
 
-The backend also exposes a small set of **operational endpoints** that are not part of the quiz functionality itself but support running the system reliably: a `/healthz` liveness check, a `/readyz` readiness check that reflects the actual database connection state, a Prometheus-compatible `/metrics` endpoint for monitoring, and a Swagger/OpenAPI UI mounted at `/api-docs` (its base schema is served, though endpoint-level documentation has not yet been written into the route files — see Section 12).
+**After each answer.** The chosen option is marked immediately. Once the question is resolved
+(Section 6.4), the correct option and its explanation are shown.
 
-## 5. Quiz Modes and Assessment Methodology
+**Results screen.** At the end of a quiz, or when a Survival run ends, the results screen shows:
+- the number of questions answered and answered correctly;
+- accuracy;
+- the best streak in the session;
+- for logged-in users, points;
+- a colour-coded "ribbon" replaying the sequence of outcomes.
 
-PyQuiz implements three distinct quiz modes, all drawing from the same question bank and filters but differing in pacing and consequence:
+When a correct answer earns 0 points, the server explains why:
+- `not_first_attempt`: the answer came on attempt 2 or 3;
+- `already_mastered`: the user has answered this question correctly on a first attempt before.
 
-**Classic mode** is untimed and forgiving: a wrong answer does not end the session, and a user may try again on the same question up to three times before a "Show Answer" option appears, which reveals the correct answer and its explanation and counts the question as answered without further guessing. In this mode, questions the user has already answered correctly (or given up on) within their account are excluded from being served again in the same run, so a Classic session moves progressively through unseen questions rather than repeating them.
+### 5.7 Dashboard
 
-**Blitz mode** adds a 45-second countdown per question, measured against a wall-clock deadline (so that switching browser tabs or a slow device cannot be used to extend the time). Submitting a wrong answer in Blitz does not end the round; it pauses the countdown at the exact time remaining and resumes from there in the same question on the next attempt, rather than restarting the clock. If time runs out before a correct answer is given, the question is automatically scored as incorrect and the quiz moves on to the next question. Correct answers in Blitz earn a small bonus on top of the base points for answering quickly.
+The dashboard shows the user's rank, points, streaks, accuracy and progress:
+- **Rank:** Beginner (0–49 points), Intermediate (50–199), Advanced (200–499) or Python Master
+  (500 or more).
+- **Points:** total accumulated points.
+- **Streaks:** current and best streak.
+- **Accuracy:** overall accuracy = questions answered correctly ÷ questions answered. Each
+  question counts once, when it is resolved, and counts as correct if it was answered correctly on
+  any attempt. This differs from topic accuracy (Section 5.8), which counts every attempt.
+- **Progress:** questions answered out of questions available.
 
-**Survival mode** is the strictest: the first incorrect answer ends the run immediately and takes the user directly to the results screen, with no retries and no reveal. This mode is intended to simulate the higher-stakes conditions of an interview or exam question, where a single mistake has a real consequence, rather than the low-stakes repetition of Classic mode.
+It also shows the day's Daily Challenge status, unlocked achievements and the topic mastery list.
 
-Across all three modes, the platform's answer-checking is always performed by the server, never by comparing the selected option against a value already present in the browser: the client sends only the index of the option it selected, and the server independently determines correctness by looking up the question's stored answer and computing which option index matches it. The correct answer's text, its index, and its written explanation are included in the server's response only when the answer given was correct, or when the user has explicitly asked to reveal it (in Classic mode, after exhausting the allowed attempts) — a wrong guess in Survival mode, for instance, never has the correct answer disclosed to the client, since the run ends before a reveal is requested. This design means the quiz's scoring cannot be defeated by inspecting network traffic or modifying client-side JavaScript.
+### 5.8 Topic Mastery and Weak Topics
 
-Results are always computed from the same underlying data regardless of mode — the count of questions answered, the count answered correctly, and the resulting accuracy — with mode-specific framing (a "Survival run ended" versus a "Session complete" message, for instance) applied only to the presentation, not to how the numbers themselves are derived.
+Mastery is computed live on every request from the stored records, never from a counter that could
+drift, and uses **primary topics only**. For each topic the server computes two measures:
 
-## 6. System Architecture
+- **Coverage** = questions in the topic the user has ever answered ÷ questions currently in the
+  topic, as a percentage. It comes from `UserAnsweredQuestion`, joined against the current
+  questions.
+- **Accuracy** = correct attempts ÷ all recorded attempts on the topic's questions, as a
+  percentage. It comes from `AnswerEvent`, which stores one document per attempt, so attempts 2
+  and 3 count too.
 
-PyQuiz follows a conventional client–server architecture composed of two independently deployable Node.js applications — a backend API server and a frontend static-file server — communicating exclusively over HTTP.
+Each topic then gets one level, checked in this order:
 
-The **backend** is organized as a layered Express application:
+| Level | Condition |
+|---|---|
+| `unavailable` ("Not enough questions yet") | the topic has fewer than **3** questions (`MIN_QUESTIONS_FOR_MASTERY`) |
+| `new` | coverage is 0 |
+| `measuring` ("Accuracy being measured") | fewer than **3** recorded attempts (`MIN_ACCURACY_EVENTS`) |
+| `master` | coverage ≥ **80%** and accuracy ≥ **70%** |
+| `intermediate` | coverage ≥ **50%** |
+| `beginner` | otherwise |
 
-- **Routes** (`backend/routes/v1/*`) declare the available HTTP endpoints, group them under a versioned `/api/v1` prefix, and attach the middleware relevant to each one (authentication, CSRF verification, request validation, or admin verification) before delegating to a controller.
-- **Controllers** (`backend/controllers/*`) are thin adapters between an HTTP request/response pair and the underlying business logic; they extract the relevant input, call into a service, and translate the result (or a thrown error) into a standardized JSON response.
-- **Services** (`backend/services/*`) contain the actual business logic — authentication rules, scoring, achievement evaluation, daily-challenge generation, topic-mastery computation, and so on — independent of any HTTP-specific concerns.
-- **Repositories** (`backend/repositories/*`) isolate all direct interaction with Mongoose models behind a small, purpose-specific set of functions (for example, `findByEmail`, `markAnswered`, `findLeaderboard`), so that services do not construct database queries directly.
-- **Models** (`backend/models/*`) define the MongoDB collections and their schemas via Mongoose (described in full in Section 8).
+**Weak topics.** A topic appears in the "needs practice" list when it has at least 3 recorded
+attempts, its accuracy is below **60%**, and it is not `unavailable` or `measuring`. At most **5**
+weak topics are shown, lowest accuracy first. All thresholds are named constants in
+`backend/config/masteryConfig.js`.
 
-Cutting across these layers, a set of Express **middleware** modules handle authentication token verification, the CSRF double-submit check, Zod-based request validation, admin-token verification, and (optionally) response caching. Centralized error handling converts any thrown error into a consistent JSON error shape, logs it with request context via a structured logger, and — critically — never leaks an unexpected internal error's message to the client, returning a generic "Internal server error" for anything that is not a recognized, intentional application error.
+### 5.9 Achievements, Points and Streaks
 
-The **frontend** is deliberately implemented without a client-side framework or a build/bundling step: it is a collection of static HTML pages, each with its own small, page-specific vanilla JavaScript module, served by a minimal Express application whose only job is to serve static files and to dynamically inject a handful of shared HTML partials — a navigation header for public pages, a persistent sidebar for the authenticated application, and a shared footer — into every page at load time via `fetch` and DOM insertion, rather than through server-side templating or a component framework. All communication with the backend happens through a single shared `api.js` module that wraps `fetch`, attaches the CSRF header on state-changing requests, and normalizes error handling for every page.
+**Achievements.** There are five, checked on the server after every scored answer. Each records its
+unlock time the first time its condition holds:
+- `first_correct`: one correct answer;
+- `streak_5`: best streak of 5;
+- `streak_10`: best streak of 10;
+- `points_100`: 100 points;
+- `points_500`: 500 points.
 
-The two applications communicate purely as an HTTP client and an HTTP API: the frontend never talks to MongoDB directly, and the backend has no knowledge of how its JSON responses are rendered. This separation means the same backend could serve a different frontend (or the existing frontend could be replaced) without changes to the other side, and it is what makes it possible for the two to be deployed and scaled independently, as the project's own local-development instructions do (`frontend` and `backend` run as two separate `npm` processes on two separate ports).
+**Points** (the full rules are in Section 6.3):
+- Classic: 10 per question.
+- Survival: 15 per question.
+- Blitz: 12 per question, plus a time bonus of `max(0, 10 − ⌊seconds since the question was served ÷
+  3⌋)`, measured by the server.
+- Daily Challenge: 20 per correct answer.
 
-## 7. Technology Stack
+**Streaks.** The current streak counts consecutive questions answered correctly on the *first*
+attempt, updated when each question is resolved. Any other outcome resets it to 0: a wrong
+Survival answer, a correct answer on attempt 2 or 3, a Blitz timeout, or a revealed answer. The
+best streak is stored separately.
+
+### 5.10 Leaderboard
+
+The leaderboard is public. It ranks users by total points, then best streak, then username, and
+shows 50 rows by default (the API accepts 1–100). For a logged-in viewer, the server marks the viewer's own row
+(`isCurrentUser`). Avatars are never included in the leaderboard response.
+
+### 5.11 Settings and Account Management
+
+A logged-in user can do the following in Settings:
+- change their username;
+- upload or remove a profile photo;
+- change their password (current password required; same rule as registration);
+- choose light or dark theme;
+- delete their account (password required; admin accounts cannot be deleted here).
+
+**Photo size limit.** The photo is stored as a data URL of at most 500,000 characters. After base64
+encoding, that is a JPEG, PNG or WebP file of at most **374,982 bytes (366 KB)**. The picker refuses
+a larger file before any upload, and the server applies the same limit with the same message.
+
+**After a password change,** every existing session is signed out, including the current one, and
+the user logs in again.
+
+### 5.12 Administrative Functionality
+
+The admin area has its own login page and its own session (Section 12). It supports three areas of
+work.
+
+**Question management.**
+- List questions with filters, and view any question in full.
+- Add, edit and delete questions.
+- The primary topic must be from the canonical list, and secondary topics may not repeat it.
+- The correct answer must always be one of the options.
+- Deleting a question also deletes users' answered-question records for it.
+
+**User management.** List users, and ban or unban non-admin accounts. A ban signs the user out
+immediately (Section 12).
+
+**Contact messages.** A paginated, read-only list of submitted messages.
+
+### 5.13 Other Features
+
+**Contact form.** The public contact form stores each message and emails it to the administrator
+address. No reply is sent to the submitter. A hidden "honeypot" field silently discards automated
+submissions.
+
+**About page.** It shows live question and topic counts from `GET /api/v1/questions/stats`, which
+returns only those two numbers.
+
+**Operational endpoints.** The backend exposes:
+- `/healthz` (liveness);
+- `/readyz` (reflects the database connection);
+- `/metrics` (Prometheus format);
+- `/api-docs` (Swagger UI documenting every endpoint).
+
+Exposure in production is covered in Section 12.
+
+## 6. Quiz Modes and Assessment Methodology
+
+### 6.1 Quiz sessions
+
+Every quiz runs as a **quiz session** stored on the server (`QuizSession`).
+
+**Starting a session.** Starting a quiz creates a session recording:
+- the mode and the filters;
+- the questions already served;
+- the current question, with when it was served and how many attempts were used.
+
+The client receives an opaque, random 64-character session token rather than a database id.
+Sessions expire 24 hours after creation.
+
+**Access.** A session belonging to a logged-in user can be driven only by that user; any other,
+unknown or malformed token gets 404. Guests use the same flow with no user attached.
+
+**Serving questions.** The server chooses each next question from the filtered pool, excluding
+questions already served in the session. In Classic it also excludes questions the user has already
+answered correctly on a first attempt (Section 6.2). A client cannot skip an unanswered question for
+free:
+- in Classic, "next" is refused until the current question is resolved;
+- in Blitz, "next" scores the current question as a timeout.
+
+### 6.2 The three modes
+
+**Classic mode** is untimed.
+- **Attempts:** a question allows up to **3 attempts**. After the third wrong attempt, the user can
+  explicitly *reveal* the answer, which scores the question as incorrect.
+- **Exclusion:** questions the user has ever answered correctly on a *first* attempt are not served
+  again. A question answered only wrongly, or only right on attempt 2 or 3, can come back.
+- **Exhausted pool:** when no eligible question is left, the user is offered "Practice again (no
+  points)", a practice session that ignores the exclusion, or "Widen filters".
+
+**Blitz mode** gives each question **45 seconds**.
+- **Deadline:** fixed by the server when the question is served (served time + 45 s, plus 1.5 s of
+  unannounced grace for network latency). It is never extended or paused, including by wrong
+  attempts.
+- **Attempts:** the same 3-attempt cap as Classic applies. Every attempt is checked against the same
+  deadline.
+- **Timeout:** an answer after the deadline is scored as a timeout and resolves the question,
+  regardless of remaining attempts. The on-screen countdown only displays time remaining to the
+  server's deadline.
+
+**Survival mode** allows **one attempt**. The first wrong answer ends the session; further answers
+or "next" requests are rejected.
+
+### 6.3 Scoring
+
+A correct answer earns the mode's points (Section 5.9) **only if it is a first-attempt correct
+answer to a question the user has never before answered correctly on a first attempt**, in any
+mode or session.
+
+A correct answer on attempt 2 or 3, or a repeat correct answer to an already-mastered question,
+earns 0 points but still counts toward:
+- total correct answers;
+- accuracy;
+- mastery.
+
+Guests' answers are scored for the session's display only. Nothing is stored for them, and no
+attempt records are created.
+
+### 6.4 What the server enforces, and what it does not
+
+**Enforced by the server:**
+- the question being answered must be the session's current question;
+- correctness is computed on the server by comparing the submitted option index with the stored
+  answer;
+- the mode, attempt count, Blitz deadline and Survival ending come from the session, not the
+  request;
+- points, streaks, achievements and Daily Challenge bonuses are computed and applied only on the
+  server;
+- the Daily Challenge can be submitted once per day, scored against the day's frozen set.
+
+**When answers reach the browser.** The correct option and explanation are sent only once a
+question is **resolved**:
+- answered correctly;
+- timed out in Blitz;
+- answered wrongly in Survival (which also ends the run);
+- or explicitly revealed after all 3 attempts are used.
+
+A wrong attempt with attempts remaining receives neither. No public endpoint returns answers or
+explanations: the public question listing and random-question endpoints strip them, and the former
+public answer-check endpoint has been removed.
+
+**Not guaranteed.** Server-side scoring prevents a result from being *forged* through the browser.
+It does not prevent a logged-in user from *looking up* an answer before answering:
+- Study mode deliberately shows answers and explanations for every question except today's Daily
+  Challenge questions;
+- nothing stops a user consulting other sources.
+
+Quiz results therefore measure what a user answered, not what they knew unaided.
+
+## 7. Key Design Decisions
+
+Each of the following was a deliberate choice, made during the remediation work recorded in
+`docs/AUDIT.md`.
+
+| Decision | Reason |
+|---|---|
+| **Server-authoritative quiz sessions** (§6.1) | The previous design let the browser report its own mode and outcome, so points and results could be forged. |
+| **Shared 3-attempt cap in Classic and Blitz, with no Blitz pause** (§6.2) | Without a cap, all options could be tried in turn within 45 s; a fixed, server-set deadline cannot be stretched by pausing. |
+| **Points only for a first-attempt correct answer, and only once per question** (§6.3) | Repeating known questions, or guessing on attempts 2–3, used to accumulate points. Points now reflect knowing the answer. |
+| **Primary and secondary topics, with mastery from primary topics only** (§5.3, §5.8) | A question used to count toward every topic its code touched, inflating unrelated topics. One primary concept per question keeps mastery meaningful, while secondary topics still help filtering. |
+| **Asia/Yerevan Daily Challenge day, with frozen daily sets** (§5.5) | The day should match the users' local midnight. Freezing makes the set identical for everyone all day, even when questions change. |
+| **Study mode requires login and excludes today's Daily Challenge** (§5.4) | A public answer view let anyone look up the day's answers before submitting. |
+| **One password rule, served to the frontend** (§5.1, §12) | The browser pages had drifted from the server's rule and rejected valid passwords. Serving the rule from one definition makes drift impossible. |
+
+## 8. System Architecture
+
+PyQuiz is two independently deployable Node.js applications — the backend API and a static
+frontend server — communicating only over HTTP.
+
+**The backend** is a layered Express application:
+- **Routes** (`backend/routes/v1/`) declare endpoints under `/api/v1` and attach per-route
+  middleware (authentication, CSRF, validation, rate limiting).
+- **Controllers** (`backend/controllers/`) translate between HTTP and services.
+- **Services** (`backend/services/`) contain the business rules: sessions, scoring, the Daily
+  Challenge, mastery and accounts.
+- **Repositories** (`backend/repositories/`) contain all database access.
+- **Models** (`backend/models/`) define the MongoDB collections with Mongoose (Section 10).
+
+Rules that must be identical in several places live in `backend/config/`:
+- quiz timing and points (`quizConfig.js`);
+- mastery thresholds (`masteryConfig.js`);
+- the topic taxonomy (`topicTaxonomy.js`);
+- client-facing validation rules (`validationRules.js`).
+
+A centralised error handler returns a consistent JSON error shape (Section 12).
+
+**The frontend** has no framework and no build step:
+- **Pages:** static HTML pages, each with a small vanilla-JavaScript ES module.
+- **Server:** a minimal Express server that serves the files, generates a runtime `/js/config.js`
+  telling the browser which API origin to call, and sets the Content-Security-Policy.
+- **Shared layout:** header, sidebar and footer partials are inserted into pages by JavaScript.
+- **API access:** all calls go through one `api.js` module, which handles credentials, CSRF tokens
+  and session expiry.
+
+```mermaid
+flowchart LR
+  subgraph Browser
+    Pages["Static HTML pages<br/>+ page ES modules"]
+    Api["api.js<br/>(fetch, CSRF, 401 handling)"]
+    Pages --> Api
+  end
+  subgraph Frontend["Frontend server (Express)"]
+    Static["Static files<br/>/js/config.js<br/>Helmet CSP"]
+  end
+  subgraph Backend["Backend API (Express)"]
+    MW["Middleware<br/>auth · CSRF · Zod · rate limits"]
+    Routes["Routes /api/v1"]
+    Ctrl["Controllers"]
+    Svc["Services"]
+    Repo["Repositories"]
+    Models["Mongoose models"]
+    MW --> Routes --> Ctrl --> Svc --> Repo --> Models
+  end
+  DB[(MongoDB)]
+  Redis[("Redis (optional,<br/>response cache)")]
+  Mail["SMTP (Gmail)<br/>via Nodemailer"]
+  Pages -. "loaded from" .-> Static
+  Api -- "HTTPS JSON, cookies" --> MW
+  Models --> DB
+  Svc -. "if REDIS_URL set" .-> Redis
+  Svc --> Mail
+```
+
+### 8.1 Deployment
+
+The frontend is served at `https://pyquiz.picsartacademy.am` and calls the API on a different
+host, `https://api-pyquiz.picsartacademy.am` (the production default in `frontend/app.js`). The
+production deployment checklist is maintained in `docs/AUDIT.md`. It covers HTTPS, all required
+environment variables, database migrations and a post-deploy smoke test.
+
+```mermaid
+flowchart TB
+  User["User's browser"]
+  subgraph FE["pyquiz.picsartacademy.am"]
+    FEApp["Frontend server<br/>(node frontend/app.js)"]
+  end
+  subgraph BE["api-pyquiz.picsartacademy.am"]
+    Proxy["Reverse proxy / TLS termination<br/>TODO(author): confirm product and hop count"]
+    BEApp["Backend API<br/>(npm run prod → dist/server.js)"]
+    Proxy --> BEApp
+  end
+  DB[("MongoDB<br/>TODO(author): hosting (e.g. Atlas?) and region")]
+  SMTP["Gmail SMTP"]
+  User -- "HTTPS: pages, scripts" --> FEApp
+  User -- "HTTPS: /api/v1 (credentialed CORS)" --> Proxy
+  BEApp --> DB
+  BEApp --> SMTP
+```
+
+TODO(author): describe the actual hosting environment (provider, server/container setup, reverse
+proxy, process manager, whether Redis is used in production). None of this is recorded in the
+repository.
+
+### 8.2 Starting a session and answering a question
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant B as Browser (questions.js / api.js)
+  participant A as Backend API
+  participant S as quizSessionService
+  participant D as MongoDB
+  B->>A: POST /api/v1/quiz/sessions {mode, topics, difficulty}<br/>(cookie + X-CSRF-Token if logged in)
+  A->>A: optionalAuthenticate, CSRF (if logged in), session-start rate limit, Zod
+  A->>S: createSession
+  S->>D: find eligible questions (filters, exclusions)
+  S->>D: insert QuizSession {token, mode, currentQuestion: {servedAt, deadlineAt?, attempts: 0}}
+  A-->>B: {sessionId (random token), question without answer/explanation, deadlineAt?}
+  B->>A: POST /api/v1/quiz/sessions/{sessionId}/answer {questionId, selectedIndex}
+  A->>S: submitAnswer
+  S->>D: load session by token, check ownership and current question
+  S->>S: correct? timed out? attempts left? (from session, never from request)
+  alt logged-in user
+    S->>D: insert AnswerEvent (every attempt)
+    opt question resolved
+      S->>D: update UserAnsweredQuestion, User stats, achievements<br/>(points only if first-attempt correct, first time)
+    end
+  end
+  S->>D: update QuizSession (attempts, resolved, status)
+  A-->>B: {isCorrect, resolved, attemptsRemaining, pointsAwarded, ...}<br/>+ correct answer and explanation only if resolved
+```
+
+## 9. Technology Stack
 
 **Backend**
-
-- **Node.js** with **Express 4** as the web framework.
-- **MongoDB**, accessed through **Mongoose** as the object-document mapper, for all persistent data.
-- **JSON Web Tokens** (`jsonwebtoken`) for authentication, combined with **`cookie-parser`** for reading the resulting cookies and **`bcryptjs`** for password hashing.
-- **Zod** for schema-based request validation across virtually every endpoint that accepts a body, query string, or route parameter.
-- **Helmet** for standard HTTP security headers and **`cors`** for cross-origin access control.
-- **`express-rate-limit`** for per-route rate limiting.
-- **Nodemailer**, configured against a Gmail SMTP account, for outbound email (password-reset links and contact-form notifications).
-- **`ioredis`** and **BullMQ** as optional infrastructure for Redis-backed response caching and a background email-job queue, both designed to be inert (no-ops) when no `REDIS_URL` is configured.
-- **Pino** (with `pino-http` and, in development, `pino-pretty`) for structured, redaction-aware logging.
-- **`prom-client`** for exposing Prometheus metrics, and **`swagger-jsdoc`**/**`swagger-ui-express`** for serving an OpenAPI documentation UI.
-- **Jest** and **Supertest** for automated testing, with **`mongodb-memory-server`** providing an isolated, disposable database for the test suite.
-- **Webpack** as the production build tool (via a `build` script that bundles the backend into a `dist/` output run by the `prod` script).
-- **ESLint**, **Prettier**, **Husky**, and **`lint-staged`** for code quality and pre-commit enforcement, and **TypeScript**'s compiler used purely for type-checking (`tsc --noEmit`) rather than as the implementation language.
+- Node.js with Express 4; MongoDB through Mongoose.
+- `jsonwebtoken` (sessions), `cookie-parser`, `bcryptjs` (password hashing, cost factor 10).
+- Zod (request validation), Helmet (security headers and CSP), `cors`, `express-rate-limit`.
+- Nodemailer with a Gmail SMTP account (password-reset and contact emails).
+- `ioredis` for optional response caching, used only when `REDIS_URL` is set. BullMQ is a
+  dependency, but the email queue is not wired up (Section 19).
+- Pino / `pino-http` (structured, redacting logs), `prom-client` (metrics), `swagger-jsdoc` and
+  `swagger-ui-express` (API docs).
+- Webpack bundles the backend into a single `dist/server.js` for production (`npm run build`, then
+  `npm run prod`).
+- ESLint, Prettier, Husky and `lint-staged` for code quality.
+- `npm run typecheck` runs `tsc --noEmit` with `checkJs` disabled. It parses the JavaScript and
+  catches syntax errors, but does **not** type-check the code (Section 19).
+- Testing: Jest, Supertest and `mongodb-memory-server` (falling back to a local test database),
+  autocannon (benchmark).
 
 **Frontend**
+- HTML5, CSS3 and vanilla JavaScript ES modules, with no framework, bundler or build step.
+- A minimal Express server with Helmet.
+- Prism.js from jsDelivr (code highlighting), Font Awesome from cdnjs (admin pages) and Google Fonts.
+- Playwright (`e2e/`) for browser tests.
 
-- Plain **HTML5**, **CSS3**, and vanilla (framework-free) **JavaScript** using native ES modules.
-- A minimal **Express** application whose sole responsibilities are serving static assets and generating a small runtime configuration script that tells the browser which API origin to call.
-- **Prism.js**, loaded from a CDN, for client-side syntax highlighting of the Python code snippets shown in questions.
-- No frontend build step, bundler, or UI framework is used; all interactivity is hand-written DOM manipulation.
+## 10. Database and Data Management
 
-## 8. Database and Data Management
+MongoDB is the only data store. It holds eight collections:
 
-PyQuiz uses MongoDB as its sole data store, with the following Mongoose-defined collections forming the core data model:
+- **`User`**: credentials, `role` (`user`/`admin`) and a `banned` flag.
+  - `usernameLower`, with a unique index, enforces case-insensitive uniqueness.
+  - `tokenVersion` supports session invalidation (Section 12).
+  - An embedded `stats` object holds streaks, points, correct and answered counts, the last answer
+    time, and Blitz/Survival bests.
+  - `achievements`, and the most recent `dailyChallenge` result.
+  - An index on points and best streak serves the leaderboard.
+- **`Question`**: prompt, optional code, options, answer (stored as text and matched against the
+  options), difficulty, `primaryTopic`, `secondaryTopics` and explanation. It has indexes on
+  difficulty and the topic fields.
+- **`QuizSession`**: server-side quiz state (Section 6.1), keyed by a random `token`. A TTL index
+  deletes it 24 hours after creation.
+- **`AnswerEvent`**: one immutable document per answer attempt by a logged-in user: user, session,
+  question, mode (including `daily`), selected index, correctness, attempt number and time taken.
+  It is the source of accuracy (Section 5.8), and it is kept when its question is deleted.
+- **`UserAnsweredQuestion`**: one document per (user, question) pair, unique on the pair, with
+  `everCorrect` set on a first-attempt correct answer. It is the source of coverage, the Classic
+  exclusion and the points rule.
+- **`DailyChallengeSet`**: one document per Yerevan date (unique), holding that day's frozen
+  question ids.
+- **`ResetPassword`**: the email and a **SHA-256 hash** of the reset key. A TTL index deletes it
+  after one hour.
+- **`Contact`**: contact-form submissions.
 
-**`User`** is the central entity. Alongside credentials (username, email, hashed password) and a `role` field distinguishing ordinary users from administrators, each user document embeds a `stats` sub-document (current streak, best streak, total points, total correct answers, total questions answered, per-mode best scores for Blitz and Survival, and the timestamp of the last answer), an `achievements` array (each entry a unique key plus the date it was unlocked), a `dailyChallenge` sub-document (the date, score, total, and completion timestamp of the most recent daily attempt), and a `topicStats` array recording, per topic the user has attempted, how many questions in that topic were answered and how many of those were correct. A compound index on `stats.totalPoints` and `stats.bestStreak` supports efficient leaderboard queries.
+Aggregates such as topic mastery are computed on request from these collections rather than stored,
+so they cannot drift from the underlying records.
 
-**`Question`** stores the quiz content itself: the prompt text, an optional code snippet, the array of answer options, the single correct answer (stored as text and matched against the options array rather than as a separate index, so that reordering options never desynchronizes the stored answer), a difficulty enum, an array of topic tags, and an explanation. Indexes on difficulty and on topics (individually and combined) support the filtered and random-selection queries used throughout the quiz, study, and daily-challenge features.
+```mermaid
+erDiagram
+  USER ||--o{ QUIZ_SESSION : "plays (guests: none)"
+  USER ||--o{ ANSWER_EVENT : "records"
+  USER ||--o{ USER_ANSWERED_QUESTION : "has answered"
+  QUESTION ||--o{ ANSWER_EVENT : "attempted in"
+  QUESTION ||--o{ USER_ANSWERED_QUESTION : "answered as"
+  QUIZ_SESSION ||--o{ ANSWER_EVENT : "contains"
+  QUIZ_SESSION }o--o| QUESTION : "current question"
+  DAILY_CHALLENGE_SET }o--|{ QUESTION : "freezes ids of"
+  USER ||--o{ RESET_PASSWORD : "by email"
+  USER {
+    ObjectId _id
+    string username
+    string usernameLower "unique"
+    string email "unique"
+    string password "bcrypt hash"
+    string role
+    boolean banned
+    number tokenVersion
+    object stats
+    array achievements
+    object dailyChallenge
+    string avatar "data URL, optional"
+  }
+  QUESTION {
+    ObjectId _id
+    string question
+    string code
+    array options
+    string answer
+    string difficulty "easy|medium|hard"
+    string primaryTopic "canonical"
+    array secondaryTopics "canonical"
+    string explanation
+  }
+  QUIZ_SESSION {
+    ObjectId _id
+    string token "unique, random"
+    ObjectId userId "null for guests"
+    string mode
+    boolean practiceMode
+    object filters
+    array servedQuestionIds
+    object currentQuestion "servedAt, deadlineAt, attempts, resolved"
+    string status
+    number score
+    date createdAt "TTL 24h"
+  }
+  ANSWER_EVENT {
+    ObjectId _id
+    ObjectId userId
+    ObjectId sessionId "null for daily"
+    ObjectId questionId
+    string mode "classic|blitz|survival|daily"
+    number selectedIndex
+    boolean correct
+    number attemptNumber
+    number timeTakenMs
+    date createdAt
+  }
+  USER_ANSWERED_QUESTION {
+    ObjectId _id
+    ObjectId userId
+    string questionId
+    boolean everCorrect
+    date answeredAt
+  }
+  DAILY_CHALLENGE_SET {
+    ObjectId _id
+    string date "unique, Asia/Yerevan"
+    array questionIds
+    date createdAt
+  }
+  RESET_PASSWORD {
+    ObjectId _id
+    string email
+    string resetKeyHash "SHA-256"
+    date createdAt "TTL 1h"
+  }
+  CONTACT {
+    ObjectId _id
+    string name
+    string email
+    string message
+    date createdAt
+  }
+```
 
-**`UserAnsweredQuestion`** is a join-style collection recording, for each (user, question) pair, that the question has been answered, with a unique compound index on the pair so that marking the same question answered twice is a harmless no-op rather than a growing, duplicated record. This collection — rather than an ever-growing array on the `User` document — is what lets Classic mode efficiently exclude already-seen questions and lets the platform compute total "answered" versus "unanswered" counts and topic coverage without loading a user's entire answer history into memory each time.
+`ResetPassword` is linked to `User` by email address, not by a stored reference. `Contact` has no
+relation to other collections.
 
-**`ResetPassword`** stores a password-reset token together with the associated email and a creation timestamp; a MongoDB TTL index automatically deletes the document one hour after creation, so an expired reset link fails validation simply because its token no longer exists in the database, with no separate expiry-checking logic required.
+## 11. API Reference
 
-**`Contact`** stores each contact-form submission (name, email, message, and timestamp) for later review through the admin panel.
+The table was generated from the Express router stacks of the route files in
+`backend/routes/v1/` (the purpose column comes from each route's OpenAPI summary). Full request and
+response schemas are served at `/api-docs` outside production, and `backend/tests/swagger.test.js`
+fails if the documentation and the real routes diverge. There are **40 operations on 37 paths**: 37
+under `/api/v1` plus 3 operational endpoints.
 
-Relationships between these entities are expressed through referenced ObjectIds (for example, `UserAnsweredQuestion.userId` references `User`) rather than through embedding every related record inside a single document, which keeps the `User` document itself bounded in size regardless of how many questions a long-time user has answered. Aggregate statistics that would otherwise require scanning large collections on every request — such as topic mastery, which in principle depends on every question and every answered-question record — are computed on demand at request time from the smaller, indexed collections described above rather than being pre-materialized, trading a small amount of per-request computation for always-current, storage-light results.
+**Columns:**
+- **Auth:** *User* = regular-user session cookie; *Admin* = admin session cookie; *Guest or user* =
+  works for guests, and uses the session when present.
+- **CSRF:** whether an `X-CSRF-Token` header bound to that session is required.
+- **Rate limits:** every `/api` request passes the general limiter, which allows 300 requests per 15
+  minutes per logged-in user and 1000 per 15 minutes per guest IP. Additional limits are listed per
+  row.
 
-## 9. Security and Reliability
+| Method | Path | Auth | CSRF | Additional rate limit | Purpose |
+|---|---|---|---|---|---|
+| POST | `/api/v1/auth/register` | Public | No | 20 / 15 min per IP | Register a new user account |
+| POST | `/api/v1/auth/login` | Public | No | 20 / 15 min per IP | Log in as a regular user |
+| POST | `/api/v1/auth/logout` | Public | No | — | Log out (clear the regular-user session cookies) |
+| GET | `/api/v1/auth/me` | User | No | — | Confirm the current session and get a CSRF token |
+| POST | `/api/v1/auth/forgot-password` | Public | No | 20 / 15 min per IP | Request a password-reset email |
+| POST | `/api/v1/auth/reset-password/:resetKey` | Public | No | 20 / 15 min per IP | Set a new password using a reset key from the email link |
+| GET | `/api/v1/users/me` | User | No | — | Get the current user's profile |
+| GET | `/api/v1/users/user-progress` | User | No | — | Get the current user's quiz progress and stats |
+| GET | `/api/v1/users/leaderboard` | Guest or user | No | — | Global leaderboard |
+| GET | `/api/v1/users/topic-mastery` | User | No | — | Get the current user's per-topic mastery |
+| PATCH | `/api/v1/users/settings/profile` | User | Yes | — | Update username and/or avatar |
+| PATCH | `/api/v1/users/settings/password` | User | Yes | — | Change the current user's password |
+| DELETE | `/api/v1/users/me` | User | Yes | — | Delete the current user's account |
+| GET | `/api/v1/questions/topics` | Public | No | — | List topics that have at least one question |
+| GET | `/api/v1/questions/stats` | Public | No | — | Public aggregate question counts (About page) |
+| GET | `/api/v1/questions/study` | User | No | — | Study mode — questions with answers and explanations |
+| GET | `/api/v1/questions/random` | Public | No | — | Get one random question (answer stripped) |
+| GET | `/api/v1/questions` | Public | No | — | List questions (answers and explanations stripped) |
+| POST | `/api/v1/questions/add` | Admin | Yes (admin) | — | Add a question (admin only) |
+| GET | `/api/v1/challenges/daily` | User | No | — | Get today's Daily Challenge (answers stripped) and the user's status |
+| POST | `/api/v1/challenges/daily/submit` | User | Yes | — | Submit answers for today's Daily Challenge (once per day) |
+| POST | `/api/v1/quiz/sessions` | Guest or user | If logged in | 60 / 15 min per user, 300 / 15 min per guest IP | Start a quiz session and get its first question |
+| POST | `/api/v1/quiz/sessions/:sessionId/next` | Guest or user | If logged in | — | Advance to the next question |
+| POST | `/api/v1/quiz/sessions/:sessionId/answer` | Guest or user | If logged in | — | Submit an answer to the current question |
+| POST | `/api/v1/quiz/sessions/:sessionId/reveal` | Guest or user | If logged in | — | Reveal the answer to an exhausted question |
+| POST | `/api/v1/contact` | Public | No | 5 / 15 min per IP | Send a contact-form message |
+| GET | `/api/v1/validation-rules` | Public | No | — | Validation rules the frontend applies client-side |
+| POST | `/api/v1/admin/login` | Public | No | 20 / 15 min per IP | Log in as an admin |
+| POST | `/api/v1/admin/logout` | Public | No | — | Log out (clear the admin session cookies) |
+| GET | `/api/v1/admin/me` | Admin | No | — | Confirm the admin session and get a CSRF token |
+| GET | `/api/v1/admin/users` | Admin | No | — | List users (paginated) |
+| PATCH | `/api/v1/admin/users/:id/ban` | Admin | Yes (admin) | — | Ban or unban a user |
+| GET | `/api/v1/admin/contacts` | Admin | No | — | List contact-form messages (paginated) |
+| GET | `/api/v1/admin/questions` | Admin | No | — | List questions with answers (paginated) |
+| GET | `/api/v1/admin/questions/:id` | Admin | No | — | Get one full question document |
+| PATCH | `/api/v1/admin/questions/:id` | Admin | Yes (admin) | — | Update a question |
+| DELETE | `/api/v1/admin/questions/:id` | Admin | Yes (admin) | — | Delete a question |
+| GET | `/healthz` | Public | No | not under `/api` | Liveness check |
+| GET | `/readyz` | Public | No | not under `/api` | Readiness check (database connection state) |
+| GET | `/metrics` | Bearer token in production | No | not under `/api` | Prometheus metrics |
 
-Because PyQuiz stores real user credentials, personal statistics, and an administrative surface capable of modifying content and banning users, its implementation includes several concrete, verifiable security measures rather than relying on obscurity or a single control.
+## 12. Security and Reliability
 
-**Authentication.** Regular-user sessions are backed by a JWT stored in an `httpOnly` cookie (inaccessible to page JavaScript) with a one-hour expiry, marked `Secure` when the server runs with `NODE_ENV=production` and always sent with `SameSite=Lax`. Passwords are hashed with `bcryptjs` before storage and are never logged (the structured logger explicitly redacts the `Authorization` header, the `Cookie` header, the CSRF header, and any `Set-Cookie` response header). Administrator authentication is deliberately kept separate and simpler in one important respect: it is issued and verified **only** as a Bearer token in the `Authorization` header, never as a cookie, specifically so that an admin session cannot be silently forged by a cross-site request the way a cookie-based session could be — the admin middleware (`verifyAdmin`) does not accept a cookie at all, even though the same JWT-decoding logic is shared with the regular-user path.
+All of PyQuiz's security mechanisms are described in this section; other sections refer here.
 
-**Cross-site request forgery protection.** State-changing requests made by a signed-in regular user (updating progress, changing settings, deleting an account, and so on) are protected by a double-submit-cookie CSRF scheme: on login, the server sets a second, readable cookie containing a random token; the frontend reads that cookie and echoes its value back as an `X-CSRF-Token` header on every non-safe (non-GET) request; the server rejects the request unless the header matches the cookie. Because a cross-origin attacker cannot read cookies set for this site, it cannot reproduce the matching header value, even though the browser would still attach the cookie itself to a forged request.
+**Sessions.**
+- **User sessions:** the JWT is stored in an httpOnly cookie, readable by no script, with a one-hour
+  lifetime and `SameSite=Lax`.
+- **Admin sessions:** use a **separate** httpOnly cookie, so the two sessions are independent. The
+  admin cookie is accepted only by admin routes, which ignore both the user cookie and any
+  `Authorization` header. Admin routes also re-check in the database that the account is still an
+  admin.
+- **Production cookie names:** with `NODE_ENV=production`, all session and CSRF cookies use the
+  `__Host-` prefix (`Secure`, `Path=/`, no `Domain`). A sibling subdomain of picsartacademy.am
+  therefore cannot set or overwrite them.
+- **Local development:** over plain http, the cookies use unprefixed names without `Secure`,
+  because browsers refuse `__Host-` cookies over http.
 
-**Input validation.** Nearly every endpoint that accepts a request body, query string, or route parameter validates it against an explicit Zod schema before any business logic runs — covering registration and login payloads, password-reset requests, quiz-progress updates, profile updates, password changes, account deletion, question creation and editing, question-filter and pagination query parameters, and contact-form submissions. Requests that fail validation are rejected with a 400 status and a description of what was wrong, without reaching the corresponding service or repository code.
+**Session invalidation.** Every JWT carries the account's `tokenVersion`, and every authenticated
+request compares it with the stored value. The version is incremented on a ban, a password change
+and a password reset. All earlier sessions then stop working immediately, and banned accounts are
+also refused at login.
 
-**Rate limiting.** A general rate limiter caps all API traffic at 300 requests per 15 minutes per client. Independently, each authentication-sensitive endpoint — admin login, user login, registration, and both steps of password reset — has its **own** rate limiter instance (rather than one limiter shared across all of them), so that exhausting the limit on one endpoint does not lock a client out of unrelated ones. The contact form has a separate, stricter limit of five submissions per 15 minutes.
+**Login-state detection.** The frontend never infers login state from a cookie's presence. It asks
+`GET /auth/me` (or `/admin/me`), and on any 401 it clears its state and redirects to the login page.
 
-**Other protections.** The contact form includes a honeypot field to silently discard automated spam submissions without revealing that detection occurred. The password-reset-request endpoint returns an identical response whether or not the submitted email corresponds to a real account, preventing it from being used to enumerate registered users. Avatar uploads are validated to be `data:image/` URLs under a fixed size limit both before being sent (in the browser) and again on the server. Administrator accounts are explicitly protected from being banned or deleted through the ordinary user-facing endpoints. `Helmet` applies a standard set of protective HTTP response headers, and CORS is restricted to an explicit allow-list of origins with credentials enabled only for those origins.
+**Cross-site request forgery.**
+- **The rule:** every state-changing request on a logged-in session must carry an `X-CSRF-Token`
+  header.
+- **The token:** it is `HMAC-SHA256(JWT_SECRET, "csrf:" + session JWT)`, recomputed by the server
+  from the httpOnly session cookie and compared in constant time. It is therefore bound to the
+  session: a token planted by another site, or taken from another session, is rejected.
+- **Why it's in the response body:** the API is on a different host from the frontend, so the page
+  cannot read the API's CSRF cookie. The token is therefore also returned in the body of login and
+  `/me` responses, held in memory only, and re-fetched after every page load.
+- **Guest-capable quiz routes:** they check CSRF only when a session cookie is present.
 
-**Error handling and reliability.** All errors funnel through a single centralized handler that distinguishes between intentional, client-facing application errors (which keep their specific message and any structured details) and anything else, which is logged in full internally but reported to the client only as a generic "Internal server error" — so a stack trace, a database error message, or other internal detail is never exposed over the API. The backend also exposes `/healthz` and `/readyz` endpoints (the latter reflecting the real MongoDB connection state) suitable for use by a process manager or orchestrator, structured JSON logging in production, and a `/metrics` endpoint compatible with Prometheus scraping — infrastructure oriented toward operating the service reliably rather than toward the quiz functionality itself.
+**CORS.** The API allows credentialed requests only from an explicit allow-list of origins, and
+never answers with a wildcard. Because login and `/me` return the CSRF token in the body, tests pin
+that no other origin — including sibling subdomains — is ever granted read access.
 
-It should be stated plainly what is *not* currently implemented: there is no email-verification step at registration (an account is usable immediately), no refresh-token mechanism (a session simply expires after one hour, requiring a fresh login), and no two-factor authentication. These are reasonable and common gaps for a project at this stage, discussed further as future opportunities in Section 13, and are noted here so that the security measures described above are not overstated.
+**Credentials.**
+- **Passwords:** hashed with bcrypt (cost 10), never trimmed and never logged. The single password
+  rule is defined once (`backend/config/validationRules.js`) and served to the frontend by
+  `GET /api/v1/validation-rules`, so the browser's checks match the server's exactly.
+- **Reset keys:** stored only as SHA-256 hashes and compared in constant time.
+- **Login responses:** user and admin login return the same generic "Invalid credentials" whether
+  the account does not exist or the password is wrong. Both cases do exactly one bcrypt comparison,
+  so response time does not reveal which it was.
+- **Password-reset requests:** answered identically for registered and unregistered emails.
 
-## 10. User Experience and Interface Design
+**Input validation.** Every endpoint that accepts input validates it with a Zod schema before
+business logic runs. The body parser allows 100 kB per request, except the profile route, which
+allows 1 MB so that an oversized photo gets a readable "Image is too large" error.
 
-PyQuiz's interface is built around a single, hand-authored design system rather than a third-party CSS framework, applied consistently across the quiz, dashboard, results, and navigation. The visual language favors square and sharply cut ("chamfered") corners over generic rounded panels as a recognizable, consistent motif, reserves a distinct warm accent color specifically for success and achievement moments (a correct answer, an unlocked achievement, a completed streak) rather than using it as a general-purpose highlight color, and uses a cooler brand-blue palette for ordinary interactive elements.
+**Rate limiting.**
+- The general limit and the per-endpoint limits are listed in Section 11.
+- Limits key on the logged-in user where there is one, and otherwise on the client IP.
+- `TRUST_PROXY` must be set to the exact number of reverse-proxy hops so the real client IP is
+  used. The value `true` would let clients spoof their IP, and logs a warning at startup.
+- A benchmark-only switch that disables rate limiting is ignored in production.
 
-The interface supports both **light and dark themes**, switchable from a toggle present in both the navigation bar and the Settings page. The chosen theme is persisted in the browser's local storage and re-applied on every subsequent visit; a first-time visitor with no stored preference instead sees whichever theme matches their operating system's `prefers-color-scheme` setting, so the platform respects an explicit choice once one is made but otherwise defers to the visitor's own system.
+**Browser hardening.**
+- Both applications use Helmet.
+- The frontend's Content-Security-Policy allows scripts only from its own origin and the two CDNs
+  it uses, with **no inline scripts or inline event handlers**.
+- Inline styles are still allowed, because pages use `style` attributes and Font Awesome injects a
+  `<style>` element.
 
-Navigation differs deliberately between the public, unauthenticated pages (the landing page, login, registration, and informational pages such as About and Contact) and the authenticated application pages (the Dashboard, Quiz, Daily Challenge, Study, Leaderboard, and Settings). Public pages use a conventional horizontal top navigation bar. Authenticated pages instead use a persistent left-hand sidebar on wider screens, which collapses on narrow (mobile) viewports into a slide-out drawer opened from a compact top strip; the drawer can be dismissed with the Escape key, by tapping its background overlay, or via its own close control, and keeps keyboard focus inside itself while open so that a keyboard user tabbing through the page cannot accidentally tab into content hidden behind the open drawer.
+**Other protections.**
+- The contact form sends no reply to the submitter, so it cannot be used to send email to arbitrary
+  addresses, and it has a honeypot field.
+- Avatars are checked to be `data:image/` URLs within the size limit.
+- Admin accounts cannot be banned or self-deleted through user-facing routes.
+- In production, `/metrics` requires `Authorization: Bearer <METRICS_TOKEN>` and returns 404 if no
+  token is configured. `/api-docs` is disabled unless `ENABLE_API_DOCS=true`.
 
-A number of concrete accessibility practices are present in the markup and stylesheets rather than being only a design aspiration: interactive icon-only controls (the theme toggle, the drawer's open/close buttons) carry explicit `aria-label` attributes describing what they do; the current page is marked in the navigation using `aria-current` rather than color alone; asynchronous status changes (a quiz loading, a form submitting, an error occurring) are announced through `aria-live` regions so that a screen-reader user is informed of them without having to search the page; every interactive element has a visible focus outline (`:focus-visible`) so keyboard navigation remains usable; and animations — including the confetti celebration shown on completing a quiz — are skipped entirely when the browser reports a `prefers-reduced-motion` preference, rather than merely being shortened.
+**Errors, logging and operations.**
+- A central error handler returns intentional application errors with their message. Anything else
+  becomes a generic "Internal server error", so internal details never reach the client.
+- Logs are structured (Pino), with credentials, cookies and CSRF headers redacted. MongoDB
+  connection strings are redacted in startup and error messages.
+- `/healthz` and `/readyz` support process managers and orchestrators.
 
-The layout is responsive throughout: quiz cards, the dashboard's statistic tiles, the leaderboard table, and the navigation itself all adapt their arrangement at defined breakpoints rather than assuming a single fixed viewport width, and the sidebar-to-drawer behavior described above is itself a direct response to narrow screens rather than a separate mobile-only interface.
+## 13. Testing
 
-## 11. Educational Value and Practical Applications
+**Backend.** The backend has **223 automated tests in 28 test suites** (Jest and Supertest against a
+real MongoDB, via `mongodb-memory-server` or a local test database), all passing. Before this
+remediation work began, it had 89 tests in 9 suites.
 
-As implemented, PyQuiz is most directly useful as a tool for **independent, self-directed learning**: a learner working through a Python course or textbook can use Study mode to review a specific topic's questions and explanations at their own pace, then use Classic-mode quizzes on the same topics to test recall without the safety net of seeing the answer immediately, and finally consult their per-topic mastery breakdown on the dashboard to decide, with some objectivity, whether that topic actually needs more attention or was already solid.
+**Frontend.** A Playwright suite in `e2e/` has **12 browser tests**, all passing:
+- **7 smoke tests:** guest quiz, login and logout, a Classic quiz, the Daily Challenge, the theme
+  toggle, the About page, and CSRF recovery after a reload;
+- **5 tests** that the frontend's validation matches the server's.
 
-The platform's timed and high-stakes modes give it a secondary, more specific use as light **interview or exam preparation**: Blitz mode's per-question countdown approximates the time pressure of a timed technical screening, and Survival mode's single-mistake rule approximates the unforgiving nature of a live coding interview question, where there is no "try again" once an answer has been given. Neither mode simulates an actual interview conversation — there is no open-ended coding or spoken-response component in the current system — but as multiple-choice pressure tests of language fundamentals, they serve a genuine preparatory purpose distinct from Classic mode's low-stakes review.
+It runs against its own backend, frontend and a disposable local database, and fails on any
+Content-Security-Policy violation or page error.
 
-The Daily Challenge and Leaderboard together support a lighter, habit-forming use case: because the daily set of questions is identical for every user on a given day, it functions as a small, fair, shared exercise that a group of learners (classmates, or participants in the same course) could compare notes on, and the leaderboard gives continued practice a visible, if informal, sense of progress relative to others.
+**Coverage** (`npm run test:coverage`, measured over all runtime backend code: everything except
+the one-off `scripts/` and `database/` tools):
 
-Finally, because the platform's administrative tooling allows new questions to be added and existing ones edited without touching the database directly, PyQuiz is also usable as a **teaching aid that an instructor could extend**, populating the question bank with material specific to a particular course or curriculum rather than relying solely on its bundled dataset.
+| | Before (commit `d8ad91e`, 89 tests) | Now (223 tests) |
+|---|---|---|
+| Lines | 77.69% | 89.67% |
+| Branches | 50.39% | 74.92% |
+| Statements | 77.19% | 89.38% |
+| Functions | 72.57% | 89.76% |
 
-## 12. Current Limitations
+Both columns use the same coverage configuration, so they measure the same set of files. The
+least-covered code is the unused BullMQ email queue (0%) and the Redis-only caching code, which the
+test suite does not exercise because it runs without Redis.
 
-Several aspects of the current implementation are genuine, acknowledged limitations rather than failures of the system to do what it sets out to do; they mark natural boundaries of the present version rather than defects in it.
+**Other checks.** `npm run lint` (ESLint) is clean. `npm run typecheck` passes, but it performs
+only a syntax check, not type checking (Section 19).
 
-- **Question bank size.** The bundled dataset currently contains 47 questions, with only four tagged as "hard" difficulty. This is sufficient to demonstrate every feature described in this document, but a learner using the platform extensively would exhaust the pool of unseen questions in a given topic or difficulty relatively quickly; the administrative panel exists specifically so that this content can be grown over time, but growing it is a manual, ongoing task rather than something the current system does automatically.
-- **No adaptive difficulty or content selection.** Although the platform already computes detailed per-topic mastery and identifies weak topics (Section 4.8), this information is currently presented to the user for their own manual decision-making; it is not yet used to automatically steer which questions, topics, or difficulty levels a user is shown next. Difficulty and topic selection remain filters that the user sets explicitly before a quiz begins.
-- **No artificial intelligence or machine learning component.** Every scoring, matching, and recommendation mechanism described in this document — answer checking, streaks, points, topic mastery, weak-topic detection, the daily-challenge selection, and the leaderboard — is deterministic logic implemented directly in the backend's service layer. No language model, machine-learning library, or external AI service is invoked anywhere in the current codebase. In particular, there is no implemented "AI Interviewer" or conversational assessment feature; any such capability remains a proposal for future work (Section 13) and should not be understood as already present.
-- **Email delivery is synchronous and single-provider.** Password-reset and contact-form emails are sent directly within the HTTP request that triggers them, using a single Gmail account via Nodemailer, rather than through a dedicated transactional email service or a background job. A BullMQ/Redis-backed email queue module exists in the codebase and is designed to degrade gracefully when Redis is not configured, but it is not currently invoked by either the password-reset or contact-form code paths — it is present as groundwork for future use, not as an active part of the email flow today.
-- **API documentation is scaffolded but not populated.** A Swagger/OpenAPI UI is served at `/api-docs`, but the specification it generates currently contains only base schema information; individual routes are not yet annotated with the JSDoc comments Swagger would need to document their parameters and responses in detail.
-- **No email verification or multi-factor authentication.** An account becomes fully usable immediately upon registration, without confirming ownership of the supplied email address, and there is no optional second authentication factor.
-- **Fixed-length sessions.** Authentication tokens expire after a fixed one hour with no silent renewal mechanism; a user who remains on the site past that point must sign in again the next time an authenticated action is attempted.
-- **Automated testing covers the backend only.** The project's 89 automated tests (across nine Jest test suites, using Supertest against an in-memory MongoDB instance) exercise the backend's authentication, question, admin, contact, daily-challenge, and progress-scoring logic; there is no equivalent automated test suite for the frontend.
-- **Client-side leaderboard-row identification is heuristic.** Because the leaderboard API does not return a stable per-row user identifier, the frontend identifies "which row belongs to the current viewer" by matching username and statistics together and only highlights a row when that match is unambiguous, which means two users who happened to share an identical username and identical statistics at the same moment would not have their row highlighted at all, rather than the wrong one being highlighted.
+**Bugs the tests caught.** Several real defects were found by tests written during this work,
+rather than by inspection:
+- **Lost first-time topic increments.** The first test of per-topic statistics showed that a
+  topic's counters were never incremented the first time a user answered a question in it.
+  `push()` on a Mongoose document array stores a copy, so the code incremented an orphaned object.
+  The bug predated this work and had gone unnoticed because nothing tested those counters.
+- **Mongoose `$unset` behaviour.** Verification after the topic migration showed that every
+  question still had its old `topics` field. Mongoose silently drops a `$unset` for a field that is
+  no longer in the schema, so the migration now uses the native driver for that operation.
+- **The username hook.** The case-insensitive username tests failed because the lowercase copy was
+  computed in a `pre('save')` hook, which runs after Mongoose's required-field validation. It was
+  moved to `pre('validate')`.
+- **The landing-page early-click race.** A Playwright run showed that "Continue as guest" sometimes
+  did nothing: the landing page attached its button handlers only after the login check had
+  answered. The test now delays that check deliberately, so the race is caught every time.
+- **The password-trimming bug.** A test showed that the registration and login pages trimmed
+  spaces from passwords while reset and password change did not. A password set with surrounding
+  spaces could therefore not be used to log in. Passwords are now never trimmed.
 
-## 13. Future Development Opportunities
+## 14. User Experience and Interface Design
 
-The items below are proposals for extending PyQuiz beyond its current implementation. None of them exist in the codebase today; they are included to indicate a credible and, in most cases, incrementally reachable direction for further work, building on functionality — such as the topic-mastery data already being collected — that the current system has already put in place.
+**Visual design.** The interface uses one hand-authored design system rather than a CSS framework.
+Square, chamfered corners are its recurring motif. A warm accent colour is reserved for success
+moments such as a correct answer or an achievement, and brand blue is used for interactive
+elements.
 
-- **AI Interviewer.** A conversational practice mode in which a language model plays the role of a technical interviewer, asking open-ended follow-up questions in response to a user's explanations rather than presenting only fixed multiple-choice options. This is the most substantial proposed extension and would require integrating an external or self-hosted language model, designing a safe and bounded conversation flow, and deciding how (or whether) such a free-form interaction could be scored consistently. It does not exist in the current system in any form.
-- **Adaptive, data-driven assessment.** Using the mastery and weak-topic data that the platform already computes (Section 4.8) to automatically bias which questions, topics, or difficulty levels a user is shown, rather than leaving that decision entirely to manual filters — for example, weighting a user's next Classic-mode session toward topics currently below a mastery threshold.
-- **Expanded and richer question content**, including a substantially larger question bank, support for short free-text or fill-in-the-blank answers in addition to multiple choice, and coverage of additional languages or frameworks beyond core Python.
-- **Account security hardening**, including email verification at registration, optional two-factor authentication, and a refresh-token mechanism that would allow a session to be renewed silently rather than requiring re-authentication every hour.
-- **Completing the operational tooling already scaffolded in the codebase**, specifically wiring the existing BullMQ/Redis queue into actual password-reset and contact-form email delivery, and populating the Swagger/OpenAPI documentation with per-endpoint annotations.
-- **Frontend automated testing**, to bring the same level of regression protection currently enjoyed by the backend to the browser-side code.
-- **Social or collaborative features**, such as private groups or classrooms with their own leaderboards, shareable results, or head-to-head timed matches between two specific users rather than only the global leaderboard.
-- **Progress export**, allowing a user to download or share a summary of their accuracy, streaks, and topic mastery — useful, for instance, as supporting material in a job application or a course portfolio.
+**Themes.** Light and dark themes can be switched from the top bar or Settings. The choice is
+stored in the browser. Without a stored choice, the operating system's `prefers-color-scheme` is
+used, applied by a small external script before the page renders so there is no flash of the wrong
+theme.
 
-## 14. Conclusion
+**Navigation.** Public pages (landing, login, registration, About, Contact) use a top navigation
+bar. Application pages use a left sidebar, which becomes a slide-out drawer on narrow screens.
+- The drawer closes with Escape, by tapping its overlay, or with its close button.
+- It keeps keyboard focus inside while open.
 
-In its current form, PyQuiz is a complete, working full-stack application for practicing and assessing Python knowledge, not a prototype limited to a single demonstrable path. It implements secure account-based authentication alongside a genuinely usable guest mode; three distinct, differently-paced quiz modes with all scoring verified server-side; a daily shared challenge; a self-paced study mode; a personal dashboard with real, per-topic mastery analytics rather than only aggregate statistics; a transparent points, streak, and achievement system; a public leaderboard; user-facing account management; and an administrative panel sufficient to operate the platform's content and user base going forward. These features are supported by concrete, verifiable security practices — hashed passwords, cookie-based sessions protected against cross-site request forgery, comprehensive input validation, layered rate limiting, and centralized error handling that does not leak internal details — and by a consistent, theme-aware, and accessibility-conscious interface built without reliance on a heavyweight frontend framework.
+**Accessibility.**
+- Icon-only controls have `aria-label`s.
+- The current page is marked with `aria-current`.
+- Status changes are announced through `aria-live` regions.
+- Interactive elements have visible `:focus-visible` outlines.
+- Animations, including the end-of-quiz confetti, are skipped under `prefers-reduced-motion`.
 
-Equally important to a fair account of the system is what it does not yet do: it contains no artificial intelligence or adaptive algorithm, its question bank is modest in size, and several pieces of supporting infrastructure (asynchronous email delivery, populated API documentation) exist as groundwork rather than active functionality. Making these limitations explicit, alongside a working system that already delivers real educational value, is itself a demonstration of the project's engineering maturity, and it sets a concrete, well-scoped foundation — particularly the already-collected topic-mastery data and the layered backend architecture — on which the proposed future directions, including a genuinely adaptive assessment engine and an AI-assisted interview mode, could be built without first needing to redesign what already exists.
+TODO(author): no automated accessibility audit (for example axe or Lighthouse) has been run. Add
+one if the thesis makes claims beyond the practices listed here.
+
+**Responsive layout.** Quiz cards, dashboard tiles, the leaderboard and the navigation adapt at
+defined breakpoints.
+
+## 15. Related Work
+
+TODO(author): write this section. Compare PyQuiz with existing tools; the table below lists the
+tools to cover. Fill every cell yourself from the tools' own documentation or from use. They are
+deliberately left empty rather than guessed.
+
+| Feature | Kahoot | Quizlet | W3Schools / Real Python quizzes | LeetCode | HackerRank | PyQuiz |
+|---|---|---|---|---|---|---|
+| Python-specific content | TODO(author) | TODO(author) | TODO(author) | TODO(author) | TODO(author) | Yes (§5.3) |
+| Multiple-choice questions | TODO(author) | TODO(author) | TODO(author) | TODO(author) | TODO(author) | Yes (§5.2) |
+| Timed mode | TODO(author) | TODO(author) | TODO(author) | TODO(author) | TODO(author) | Yes, Blitz (§6.2) |
+| Explanations after answering | TODO(author) | TODO(author) | TODO(author) | TODO(author) | TODO(author) | Yes (§5.6) |
+| Server-verified scoring | TODO(author) | TODO(author) | TODO(author) | TODO(author) | TODO(author) | Yes (§6.4) |
+| Per-topic progress/mastery | TODO(author) | TODO(author) | TODO(author) | TODO(author) | TODO(author) | Yes (§5.8) |
+| Daily shared challenge | TODO(author) | TODO(author) | TODO(author) | TODO(author) | TODO(author) | Yes (§5.5) |
+| Leaderboard | TODO(author) | TODO(author) | TODO(author) | TODO(author) | TODO(author) | Yes (§5.10) |
+| Use without an account | TODO(author) | TODO(author) | TODO(author) | TODO(author) | TODO(author) | Yes, quizzes only (§5.1) |
+| Free to use | TODO(author) | TODO(author) | TODO(author) | TODO(author) | TODO(author) | TODO(author) |
+
+## 16. Pedagogical Background
+
+TODO(author): write this section with properly cited sources. It is intentionally left without
+content, to avoid unverified claims. Suggested subsections:
+
+### 16.1 Retrieval practice and the testing effect
+
+TODO(author): summarise the research on retrieval practice and the testing effect, with citations,
+and relate it to PyQuiz's quiz modes (§6) and Daily Challenge (§5.5).
+
+### 16.2 Gamification in education
+
+TODO(author): summarise the research on gamification (points, streaks, achievements, leaderboards)
+in education, including known drawbacks, with citations, and relate it to §5.9–§5.10.
+
+## 17. Educational Value and Practical Applications
+
+As implemented, PyQuiz supports four kinds of use:
+
+- **Self-directed learning:** review a topic in Study mode, test recall on it in a Classic quiz,
+  then check that topic's coverage and accuracy on the dashboard (Section 5.8).
+- **Interview or exam preparation:** Blitz mode's fixed per-question deadline adds time pressure,
+  and Survival mode's single-mistake rule adds consequence. Both remain multiple-choice tests of
+  fundamentals; neither simulates open-ended coding or conversation.
+- **Habit and shared practice:** the Daily Challenge is identical for everyone on a given day, so a
+  group of learners can compare results fairly. The leaderboard shows standing relative to others.
+- **A teaching aid:** an instructor can extend the question bank through the admin panel within the
+  canonical topic taxonomy.
+
+TODO(author): any claim about learning *outcomes* needs the user study in Section 18.2. None is
+made here.
+
+## 18. Evaluation
+
+### 18.1 Performance
+
+`backend/scripts/benchmark.js` (autocannon) was run once, locally, on 2026-09-30. The results below
+are for that machine and dataset only, and must not be read as production capacity.
+
+**Setup:**
+- **Machine:** Intel Core i7-6700HQ @ 2.60 GHz (8 logical cores), 16 GB RAM, macOS 12.7.6,
+  Node.js v20.11.0.
+- **Database:** MongoDB 7.0.15 on the same machine.
+- **Load:** client, API and database all on one laptop; 10 connections; 10 s per read endpoint and
+  a fixed 2,000 requests for answer submission.
+- **Backend configuration:** development mode, no Redis, rate limits bypassed for the run.
+- **Dataset:** the 47 seeded questions and 2 users, so the leaderboard figure in particular says
+  nothing about behaviour with many users.
+
+| Endpoint | Requests | Avg req/s | p50 ms | p90 ms | p99 ms | max ms | non-2xx |
+|---|---|---|---|---|---|---|---|
+| `GET /questions/random` | 22,323 | 2,233 | 4 | 6 | 9 | 19 | 0 |
+| `POST /quiz/sessions/:id/answer` | 2,000 | 125 | 75 | 102 | 125 | 137 | 0 |
+| `GET /users/leaderboard` | 25,727 | 2,339 | 4 | 5 | 7 | 13 | 0 |
+| `GET /users/me` | 22,752 | 2,276 | 4 | 5 | 7 | 40 | 0 |
+| `GET /users/topic-mastery` | 25,219 | 2,293 | 4 | 5 | 7 | 12 | 0 |
+
+Answer submission is the write path: it updates the session and writes an attempt record,
+answered-question state and user statistics. That is why it is much slower per request than the
+reads.
+
+TODO(author): if the thesis needs production-like numbers, repeat the run on representative
+hardware with a realistic number of users and report it here. No such measurement exists yet.
+
+### 18.2 User study
+
+TODO(author): planned user study. A draft questionnaire (SUS-style usability items plus
+learning-perception questions) is in `docs/evaluation/questionnaire.md`. Describe here:
+- participants and recruitment;
+- procedure and duration;
+- the questionnaire as actually administered;
+- results, with the SUS score computed per the standard method;
+- a discussion, including limitations.
+
+No study has been run yet, and no results exist.
+
+## 19. Current Limitations
+
+- **Small question bank with content gaps.** There are 47 questions, only 4 of them hard. Some
+  topics are too thin for mastery:
+  - Numbers & Arithmetic has 0 primary questions, so it is hidden;
+  - Tuples has 1 and Indexing & Slicing has 2, so both show "Not enough questions yet".
+
+  A heavy user will exhaust the eligible Classic pool quickly.
+- **Answers can be looked up.** Scoring cannot be forged, but a logged-in user can read any
+  question's answer in Study mode, except today's Daily Challenge questions, before answering it in
+  a quiz (Section 6.4).
+- **Accuracy history starts at the server-side sessions change.** Attempt records (`AnswerEvent`)
+  exist only from then on, so an older account's topic accuracy reflects only activity after it.
+- **Account deletion leaves the attempt log.** Deleting an account removes the user and their
+  answered-question records, but not their `AnswerEvent` attempt records. Quiz sessions expire on
+  their own after 24 hours.
+- **No adaptive selection.** Mastery and weak topics are shown to the user but do not yet steer
+  which questions are served.
+- **No artificial intelligence or machine learning component.** Every mechanism in this document —
+  answer checking, scoring, mastery, weak-topic detection, Daily Challenge selection and the
+  leaderboard — is deterministic logic in the backend. No language model or machine-learning
+  library is used anywhere, and there is no "AI interviewer" feature.
+- **Email is synchronous and single-provider.** Password-reset and contact emails are sent from a
+  single Gmail account during the request. A BullMQ/Redis email queue module exists in the code but
+  is **not wired up**; neither email path uses it.
+- **The typecheck step does not type-check.** `npm run typecheck` runs `tsc --noEmit` with
+  `checkJs` disabled, so it only parses the JavaScript for syntax errors. It does not type-check
+  the code. Enabling `checkJs` currently reports 1,564 errors.
+- **Unverified findings from the API annotation pass.** The review that annotated every endpoint
+  reported the following inconsistencies. They were recorded in `docs/AUDIT.md` but have not been
+  independently re-verified or fixed:
+  - `verifyAdmin` answers 403 when there is no cookie but 401 for an invalid token.
+  - Authentication middleware and the per-route rate limiters return `{ error }` rather than the
+    standard response envelope.
+  - User authentication still accepts an `Authorization: Bearer` header, which the CSRF checks do
+    not account for.
+  - Quiz routes run the optional-authentication middleware twice per request.
+  - Contact-form and Daily Challenge submission validation live outside `backend/validators/`.
+  - The leaderboard `limit` parameter has no Zod schema (the service clamps it instead).
+- **No email verification, no two-factor authentication, and fixed one-hour sessions** with no
+  silent renewal.
+- **No automated accessibility testing**, and browser tests cover only the flows in Section 13.
+- **Performance measured only locally** (Section 18.1).
+
+## 20. Future Development
+
+These are proposals; none exists in the codebase today.
+
+- **Adaptive practice.** Use the mastery and weak-topic data (Section 5.8) and the attempt log
+  (`AnswerEvent`) to bias which questions are served.
+- **More content.** A larger question bank that closes the gaps in Section 19, plus more question
+  formats (e.g. fill-in-the-blank).
+- **Asynchronous email.** Wire the existing BullMQ queue into password-reset and contact emails
+  when `REDIS_URL` is set, falling back to synchronous sending otherwise.
+- **Real type checking.** Enable `checkJs` and fix the reported errors, or add JSDoc types
+  gradually.
+- **Consistency fixes** for the unverified findings in Section 19, after re-verifying them.
+- **Account security.** Email verification, optional two-factor authentication, and session
+  renewal.
+- **Privacy.** Delete or anonymise a user's `AnswerEvent` records when the account is deleted.
+- **Accessibility testing** in the Playwright suite, and broader browser-test coverage.
+- **Social features,** such as class groups with their own leaderboards.
+- **Progress export.**
+- **An AI-assisted interview mode**, as a research direction. It would require choosing and
+  integrating a language model and designing a bounded, fairly scorable conversation (see Section
+  19).
+
+## 21. Conclusion
+
+PyQuiz is a working full-stack application for practising and assessing Python fundamentals. It
+provides:
+- three server-authoritative quiz modes;
+- a login-only Study mode;
+- a frozen, seeded Daily Challenge;
+- live per-topic mastery computed from primary topics;
+- rule-based points, streaks and achievements;
+- a leaderboard;
+- account management and an admin panel.
+
+Its security measures are described in Section 12. Its behaviour is covered by 223 backend tests
+(89.67% line and 74.92% branch coverage) and 12 browser tests.
+
+Its main limitations are the small question bank, answers being readable in Study mode, a typecheck
+step that does not type-check, and an email queue that is not yet wired up (Section 19). The
+proposals in Section 20 build on data the system already records, in particular the per-attempt
+`AnswerEvent` log and per-topic mastery.

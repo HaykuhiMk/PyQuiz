@@ -6,8 +6,12 @@ Branch: `fix/review-weaknesses`. Last updated after the password-trimming fix (2
 
 ## Status so far
 
-**Phases 0–5 are complete and committed. Next up: Phase 6 (update the system description),
-verbatim instructions below. Nothing in Phase 6 has been started.** Full detail, evidence and
+**Phases 0–6 are complete and committed.** Phase 6 rewrote
+`docs/PYQUIZ_CURRENT_SYSTEM_DESCRIPTION.md` (21 sections, 4 Mermaid diagrams checked with
+mermaid-cli, a generated endpoint table, TODO(author) placeholders for Related Work, Pedagogical
+Background, the user study and deployment details) and added `docs/evaluation/questionnaire.md`.
+**Remaining:** the Final report (instructions at the end of this document) and the author's
+TODO(author) items in those two files. Full detail, evidence and
 reasoning for every item live in `docs/AUDIT.md` (one addendum per phase). This document only
 indexes it, plus the facts Phase 6 needs (see "Facts for Phase 6" below).
 
