@@ -1,6 +1,6 @@
 # PyQuiz audit and remediation — Final report
 
-Branch `fix/review-weaknesses`: 39 commits from `d8ad91e` (Phase 0 audit) to `3f0ec00`, plus the
+Branch `fix/review-weaknesses`: 41 commits from `d8ad91e` (Phase 0 audit) to `da72857`, plus the
 documentation commit that brings this report up to date. The branch has **not** been merged, and nothing has been deployed. All
 migrations and scripts have been run only against the local development database, never against
 production.
@@ -86,12 +86,23 @@ with the same configuration, covering all runtime backend code except the one-of
 The before/after numbers were measured by this work. `npm run test:coverage` reproduces the
 "after" column.
 
-**One unexplained intermittent failure.** It was observed once, during the verified-findings round:
-a single full-suite run failed one test ("Scoring by attempt … awards no points and does not extend
-the streak for a correct answer after a wrong attempt", `quizSessions.test.js`). It did not
-reproduce in 8 runs of that file or in 4 more full-suite runs. The error output of the failing run
-wasn't captured, so no cause has been established. If it recurs, capture the output before
-re-running.
+**Intermittent test failures: stress-tested.** The full backend suite was run 20 times in a row
+(logs in `tmp/stress/`, gitignored).
+- **Result:** 17 runs passed and 3 failed, each on a different test. The "Scoring by attempt" test
+  that failed once earlier passed all 20 times. Its code path doesn't depend on timestamp
+  ordering, wall-clock time or deadlines, and no leftover state from other tests was found, so its
+  one earlier failure remains unexplained.
+- **Rate-limit tests (fixed, `da72857`):** the "general /api rate limiter" test timed out twice, on
+  Jest's 5 s default. It and the quiz-session limiter test exhaust real limits by sending hundreds
+  or tens of requests: 2.4 s and 1.3 s on an idle machine, 5–12.5 s under CPU load. Under load they
+  failed reproducibly, so they now have an explicit 30 s timeout. It's a test-only change; under
+  the same load they then passed every run.
+- **`passwordPolicy.test.js` timeout (not changed):** it happened during an 11-minute freeze of the
+  whole test process (no log output for 666 s), most likely the machine sleeping. The test
+  normally takes 0.6–1.1 s.
+- **`rejects limit= with 400` (not changed; cause unknown):** the test received a 400 with no JSON
+  body, and the request never appeared in the app's request log, so it didn't reach Express. The
+  test normally takes about 15 ms and didn't fail under load.
 
 ## 3. Breaking API changes and how the frontend was updated
 
@@ -210,7 +221,7 @@ wasn't specified in the instructions.
 | Duplicate user lookups | One memoized session check per request, shared by `optionalAuthenticate` and `authenticateToken` (rather than only deleting the duplicate mounts) | Owner (memoization: implementation) |
 | Daily Challenge submission schema | Moved into `validators/challengeValidators.js` | Owner |
 | Leaderboard `limit` and admin `:id` | Zod-validated, 400 on invalid input | Owner |
-| Quiz `:sessionId` | Left as a uniform 404 for malformed, unknown or foreign tokens (a deliberate Phase 1 design), not changed to 400 | Implementation |
+| Quiz `:sessionId` | Kept as a uniform 404 for malformed, unknown or other users' session tokens (a deliberate Phase 1 design), not changed to 400 | Owner (proposed during implementation, then confirmed) |
 | e2e harness | Seeds one admin account; sets `EMAIL_USER`/`EMAIL_PASS` empty so a run never sends real email | Implementation |
 
 ## 5. Remaining TODO(author) items

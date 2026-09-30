@@ -1490,4 +1490,28 @@ coverage. Playwright passes 16/16, and lint and typecheck are clean.
 
 One full-suite run in this round failed a single `quizSessions.test.js` test ("Scoring by attempt").
 It did not reproduce in 12 further runs (8 of the file, 4 of the full suite). Its output wasn't
-captured, so the cause is unknown.
+captured. See the stress test below.
+
+---
+
+## Stress test of the full suite (20 consecutive runs)
+
+- **Results:** 17 runs passed and 3 failed, each on a different test. The logs are in `tmp/stress/`
+  (gitignored). The "Scoring by attempt" test passed all 20 times.
+- **Code review of that test:** its scoring path doesn't depend on timestamp ordering.
+  "Already correct before" is the `everCorrect` flag, not an ordering of `AnswerEvent`s, and
+  "first attempt" is the session's own attempt counter. There is no wall-clock time or deadline
+  (the test uses Classic and Survival), and no fire-and-forget writes that could leave state for
+  the next test. The dev server uses a different database (`pyquiz`, not `pyquiz_test`). Its one
+  earlier failure is still unexplained.
+- **Rate-limit tests (`da72857`):** they exhaust real limits with 301 and up to 70 requests, which
+  take 2.4 s and 1.3 s on an idle machine. With 8 CPU-bound processes running, the general-limiter
+  test timed out on Jest's 5 s default in 3 of 3 runs, and the session-limiter test in 2 of 3. Both
+  now have an explicit 30 s timeout. Under the same load that gave 0 failures in 3 file runs and 2
+  full-suite runs.
+- **Other failures, not changed:**
+  - The `passwordPolicy.test.js` timeout happened during a 666-second freeze of the whole test
+    process, most likely the machine sleeping.
+  - `rejects limit= with 400` received a 400 without a JSON body for a request that never reached
+    Express (it is missing from the request log). Its cause is unknown, and it did not recur under
+    load.
