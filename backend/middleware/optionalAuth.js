@@ -1,25 +1,15 @@
-const { extractToken, verifyJwt, isSessionStillValid } = require('./authenticateToken');
+const { resolveSession } = require('./authenticateToken');
 
-// Like authenticateToken, but never rejects: routes that allow guests (quiz
-// sessions) use this so a missing, invalid, or since-invalidated token just
-// means "play as a guest" instead of a 401.
+// Like authenticateToken, but never rejects: a missing, invalid or
+// since-invalidated session just means "guest". Mounted once, globally on
+// /api (app.js), before the rate limiters, so req.user is known when their
+// keys are computed; guest-capable routes (quiz sessions, the leaderboard)
+// rely on that and don't mount it again. The session is resolved once per
+// request and shared with authenticateToken (resolveSession).
 async function optionalAuthenticate(req, res, next) {
-  const token = extractToken(req);
-  if (!token) return next();
-
-  let decoded;
   try {
-    decoded = verifyJwt(token);
-  } catch {
-    // Invalid/expired token on a guest-allowed route: proceed as a guest
-    // rather than failing the request.
-    return next();
-  }
-
-  try {
-    if (await isSessionStillValid(decoded)) {
-      req.user = decoded;
-    }
+    const session = await resolveSession(req);
+    if (session.user) req.user = session.user;
   } catch (error) {
     return next(error);
   }

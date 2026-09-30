@@ -44,29 +44,52 @@ async function isSessionStillValid(decoded) {
     return Boolean(await findValidSessionAccount(decoded));
 }
 
+// Resolves the request's regular-user session exactly once and memoizes the
+// result on the request, so however many auth middlewares a request passes
+// through (the global optionalAuthenticate on /api, then a route's
+// authenticateToken), it performs at most one user lookup. Resolves to
+// { user, failure }: `user` is the decoded JWT for a valid session, else
+// null with `failure` one of 'missing' | 'invalid' | 'revoked'.
+// Database errors reject, for the error handler.
+function resolveSession(req) {
+    if (!req.sessionCheck) {
+        req.sessionCheck = (async () => {
+            const token = extractToken(req);
+            if (!token) return { user: null, failure: 'missing' };
+
+            let decoded;
+            try {
+                decoded = verifyJwt(token);
+            } catch {
+                return { user: null, failure: 'invalid' };
+            }
+
+            const valid = await isSessionStillValid(decoded);
+            return valid ? { user: decoded, failure: null } : { user: null, failure: 'revoked' };
+        })();
+    }
+    return req.sessionCheck;
+}
+
+const FAILURE_MESSAGES = {
+    missing: 'Authentication required.',
+    invalid: 'Invalid or expired session.',
+    revoked: 'Session expired, please log in again.',
+};
+
 const authenticate = async (req, res, next) => {
-    const token = extractToken(req);
-
-    if (!token) {
-        return next(new AppError("Authentication required.", 401));
-    }
-
-    let decoded;
+    let session;
     try {
-        decoded = verifyJwt(token);
-    } catch (error) {
-        return next(new AppError("Invalid or expired session.", 401));
-    }
-
-    try {
-        if (!(await isSessionStillValid(decoded))) {
-            return next(new AppError("Session expired, please log in again.", 401));
-        }
+        session = await resolveSession(req);
     } catch (error) {
         return next(error);
     }
 
-    req.user = decoded;
+    if (!session.user) {
+        return next(new AppError(FAILURE_MESSAGES[session.failure], 401));
+    }
+
+    req.user = session.user;
     next();
 };
 
@@ -74,4 +97,5 @@ module.exports = authenticate;
 module.exports.extractToken = extractToken;
 module.exports.verifyJwt = verifyJwt;
 module.exports.isSessionStillValid = isSessionStillValid;
+module.exports.resolveSession = resolveSession;
 module.exports.findValidSessionAccount = findValidSessionAccount;

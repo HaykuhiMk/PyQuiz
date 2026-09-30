@@ -3,7 +3,6 @@ const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { rateLimitsBypassed } = require('../../config/rateLimitBypass');
 const rateLimitHandler = require('../../middleware/rateLimitHandler');
 const quizController = require('../../controllers/quizController');
-const optionalAuthenticate = require('../../middleware/optionalAuth');
 const { verifyCsrfIfAuthenticated } = require('../../middleware/csrf');
 const validate = require('../../middleware/validate');
 const { createSessionSchema, submitAnswerSchema } = require('../../validators/quizValidators');
@@ -22,8 +21,9 @@ const router = express.Router();
 // guests — but a shared IP is a real, common case for guests specifically
 // (a classroom or office behind one NAT/proxy IP), so the guest cap is set
 // much higher than any one legitimate user should need, rather than by
-// account like the authenticated cap. optionalAuthenticate runs before this
-// middleware so req.user is already populated when the key is computed.
+// account like the authenticated cap. The global optionalAuthenticate
+// (mounted on /api in app.js) runs before this limiter, so req.user is
+// already populated when the key is computed.
 const createSessionLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: (req) => (req.user?.userId ? 60 : 300),
@@ -83,7 +83,6 @@ const createSessionLimiter = rateLimit({
  */
 router.post(
   '/sessions',
-  optionalAuthenticate,
   createSessionLimiter,
   verifyCsrfIfAuthenticated,
   validate(createSessionSchema),
@@ -127,7 +126,6 @@ router.post(
  */
 router.post(
   '/sessions/:sessionId/next',
-  optionalAuthenticate,
   verifyCsrfIfAuthenticated,
   quizController.nextQuestion
 );
@@ -187,7 +185,6 @@ router.post(
  */
 router.post(
   '/sessions/:sessionId/answer',
-  optionalAuthenticate,
   verifyCsrfIfAuthenticated,
   validate(submitAnswerSchema),
   quizController.submitAnswer
@@ -229,7 +226,6 @@ router.post(
  */
 router.post(
   '/sessions/:sessionId/reveal',
-  optionalAuthenticate,
   verifyCsrfIfAuthenticated,
   quizController.revealAnswer
 );

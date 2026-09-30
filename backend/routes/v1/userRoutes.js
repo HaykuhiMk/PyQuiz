@@ -1,7 +1,6 @@
 const express = require('express');
 const userController = require('../../controllers/userController');
 const authenticateToken = require('../../middleware/authenticateToken');
-const optionalAuthenticate = require('../../middleware/optionalAuth');
 const verifyCsrf = require('../../middleware/csrf');
 const validate = require('../../middleware/validate');
 const {
@@ -102,7 +101,7 @@ router.get('/user-progress', authenticateToken, userController.getProgress);
  *                           achievements: { type: array, items: { type: string } }
  *       429: { $ref: '#/components/responses/TooManyRequests' }
  */
-router.get('/leaderboard', optionalAuthenticate, userController.getLeaderboard);
+router.get('/leaderboard', userController.getLeaderboard);
 /**
  * @openapi
  * /users/topic-mastery:
