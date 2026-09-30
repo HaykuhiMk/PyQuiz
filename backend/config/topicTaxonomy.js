@@ -25,12 +25,24 @@ const TOPICS = [
   { id: 'numbers', name: 'Numbers & Arithmetic' },
 ];
 
+// Approved topics that are nodes in the concept graph (config/conceptGraph.js)
+// but not yet accepted on questions (not in TOPIC_IDS). They move into TOPICS,
+// with these ids, when the paused production migration adds them
+// (docs/FIX_PLAN.md, "Deployment preparation (paused)", M2).
+const PLANNED_TOPICS = [
+  { id: 'classes', name: 'Classes & Objects' },
+  { id: 'inheritance', name: 'Inheritance & MRO' },
+  { id: 'scope', name: 'Scope & Namespaces' },
+  { id: 'generators', name: 'Generators & Iterators' },
+  { id: 'exceptions', name: 'Exceptions' },
+];
+
 const TOPIC_IDS = TOPICS.map((topic) => topic.id);
 
-const NAME_BY_ID = new Map(TOPICS.map((topic) => [topic.id, topic.name]));
+const NAME_BY_ID = new Map([...TOPICS, ...PLANNED_TOPICS].map((topic) => [topic.id, topic.name]));
 
 function topicName(id) {
   return NAME_BY_ID.get(id) || id;
 }
 
-module.exports = { TOPICS, TOPIC_IDS, topicName };
+module.exports = { TOPICS, PLANNED_TOPICS, TOPIC_IDS, topicName };

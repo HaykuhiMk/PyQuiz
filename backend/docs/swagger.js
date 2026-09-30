@@ -3,6 +3,8 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const { TOPIC_IDS } = require('../config/topicTaxonomy');
 const { QUIZ_MODES } = require('../config/quizConfig');
+const { MISCONCEPTION_IDS } = require('../config/conceptGraph');
+const { DISTRACTOR_FEEDBACK_MAX_LENGTH } = require('../config/validationRules');
 
 // The per-endpoint docs live as `@openapi` JSDoc blocks directly above each
 // route in routes/v1/*.js, which swagger-jsdoc reads from disk at startup.
@@ -179,6 +181,68 @@ const spec = swaggerJsdoc({
             name: { type: 'string', description: 'Display name (may change).' },
           },
         },
+        MisconceptionId: {
+          type: 'string',
+          enum: MISCONCEPTION_IDS,
+          description: 'Stable misconception id, `<topic id>.<wrong belief>` (GET /concept-graph).',
+        },
+        ConceptGraph: {
+          type: 'object',
+          properties: {
+            nodes: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', description: 'Stable topic id.' },
+                  name: { type: 'string', description: 'Display name (may change).' },
+                  description: { type: 'string' },
+                  status: {
+                    type: 'string',
+                    enum: ['active', 'planned'],
+                    description: '`planned`: in the graph, not yet accepted on questions.',
+                  },
+                },
+              },
+            },
+            edges: {
+              type: 'array',
+              items: {
+                type: 'object',
+                description: '`from` must come first (a prerequisite of `to`).',
+                properties: {
+                  from: { type: 'string' },
+                  to: { type: 'string' },
+                  reason: { type: 'string' },
+                },
+              },
+            },
+            misconceptions: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { $ref: '#/components/schemas/MisconceptionId' },
+                  topic: { type: 'string', description: 'The topic whose correct model fixes it.' },
+                  belief: { type: 'string', description: 'The wrong belief.' },
+                  correctModel: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        Distractor: {
+          type: 'object',
+          description:
+            'Tags one WRONG option (matched by its exact text) with a misconception and/or short ' +
+            'feedback. Admin-only: never returned to learners.',
+          required: ['option'],
+          properties: {
+            option: { type: 'string', minLength: 1, description: 'Text of a wrong option.' },
+            misconceptionId: { $ref: '#/components/schemas/MisconceptionId' },
+            feedback: { type: 'string', minLength: 1, maxLength: DISTRACTOR_FEEDBACK_MAX_LENGTH },
+          },
+        },
         QuizMode: { type: 'string', enum: QUIZ_MODES },
         ObjectId: {
           type: 'string',
@@ -214,6 +278,12 @@ const spec = swaggerJsdoc({
               items: { $ref: '#/components/schemas/Topic' },
             },
             explanation: { type: 'string', minLength: 1 },
+            distractors: {
+              type: 'array',
+              default: [],
+              description: 'At most one entry per wrong option; each needs `misconceptionId` or `feedback`.',
+              items: { $ref: '#/components/schemas/Distractor' },
+            },
           },
         },
         QuestionUpdate: {
@@ -238,6 +308,13 @@ const spec = swaggerJsdoc({
               items: { $ref: '#/components/schemas/Topic' },
             },
             explanation: { type: 'string', minLength: 1 },
+            distractors: {
+              type: 'array',
+              description:
+                'Replaces all stored distractors. After merging, each must name a wrong option of the ' +
+                'merged `options`/`answer`, so send it again when options or the answer change.',
+              items: { $ref: '#/components/schemas/Distractor' },
+            },
           },
         },
         Readiness: {

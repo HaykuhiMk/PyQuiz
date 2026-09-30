@@ -1,5 +1,17 @@
 const mongoose = require("mongoose");
 const { TOPIC_IDS } = require("../config/topicTaxonomy");
+const { MISCONCEPTION_IDS } = require("../config/conceptGraph");
+const { DISTRACTOR_FEEDBACK_MAX_LENGTH } = require("../config/validationRules");
+
+// An optional tag on one WRONG option, matched by its exact text (like
+// `answer`): the misconception choosing it reveals, and/or short targeted
+// feedback (docs/CONCEPT_GRAPH.md Stage 2). Admin-only: learner responses
+// never include it, since a tagged option is known to be wrong.
+const distractorSchema = new mongoose.Schema({
+    option: { type: String, required: true },
+    misconceptionId: { type: String, enum: MISCONCEPTION_IDS },
+    feedback: { type: String, maxlength: DISTRACTOR_FEEDBACK_MAX_LENGTH }
+}, { _id: false });
 
 const questionSchema = new mongoose.Schema({
     question: { type: String, required: true },
@@ -14,7 +26,8 @@ const questionSchema = new mongoose.Schema({
     // Optional, used only for filtering/search (a quiz/study topic filter
     // matches a question via primaryTopic OR secondaryTopics).
     secondaryTopics: { type: [{ type: String, enum: TOPIC_IDS }], default: [] },
-    explanation: { type: String, required: true }
+    explanation: { type: String, required: true },
+    distractors: { type: [distractorSchema], default: [] }
 });
 
 questionSchema.index({ difficulty: 1 });

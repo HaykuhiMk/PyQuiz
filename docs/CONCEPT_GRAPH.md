@@ -1,15 +1,15 @@
 # PyQuiz concept graph and misconception taxonomy
 
-**Status: design proposal (Stage 1), not implemented**, apart from the stable topic ids of §5,
-which are decided and implemented as a separate change. This turns the flat topic taxonomy into a curated graph of **concepts** (topic nodes),
+**Status: Stage 1 approved; Stage 2 implemented (§6); Stage 3 (tagging the seed questions) not
+started.** The stable topic ids of §5 are implemented as a separate change. This turns the flat topic taxonomy into a curated graph of **concepts** (topic nodes),
 **prerequisite edges** and **misconceptions**. The future adaptive engine and AI interviewer can
 then reason about *what a learner should learn next* and *which wrong belief a wrong answer
 reveals*.
 
-- Stage 2 stores the graph in one config module.
+- Stage 2 stores the graph in one config module (done, §6).
 - Stage 3 tags the 47 seed questions' wrong options with misconception ids.
-- The ids of the 11 existing topics are **in use** (see §5). The five new topics' ids are
-  proposed; they are added to the taxonomy with the new topics.
+- The ids of the 11 existing topics are **in use** (see §5). The five new topics' ids are in the
+  graph as **planned** topics; questions can use them once they join the taxonomy (§6).
 
 ## 1. Nodes
 
@@ -375,6 +375,47 @@ display names live only in the config, for the UI.
 resuming the production migration. Keep the API backwards-compatible for one release if you want,
 accepting either an id or a display name on input, so that it isn't a hard break. Not changed
 here, pending your decision.
+
+## 6. Stage 2 implementation
+
+- **The graph** lives in `backend/config/conceptGraph.js`: nodes (topic id and description),
+  edges (`from` must come first, with the reason) and the 59 misconceptions (id, topic, wrong
+  belief, correct model), generated from the tables above. The code examples stay in this
+  document. `backend/tests/conceptGraph.test.js` checks that:
+  - the graph is acyclic, and the check itself catches a cycle;
+  - every edge refers to existing topics;
+  - every misconception id is unique, belongs to an existing topic and is named after it;
+  - the counts match this document (16 topics, 14 edges, 59 misconceptions).
+- **Planned topics.** Display names still live only in `backend/config/topicTaxonomy.js`. The five
+  new topics are in its new `PLANNED_TOPICS` list: they are graph nodes, but questions can't use
+  them yet (they are not in `TOPIC_IDS`, and `GET /api/v1/topics` doesn't list them). They move
+  into `TOPICS`, with the same ids, when the paused production migration adds them.
+- **Wrong-option tags.** A question has an optional `distractors` array:
+  `{ option, misconceptionId?, feedback? }`.
+  - `option` is the exact text of a wrong option, matched the same way `answer` is. Options stay
+    plain strings, so no existing API field changed shape.
+  - `misconceptionId` must be one of the 59 ids.
+  - `feedback` is short targeted text, at most 300 characters (`GET /validation-rules` serves the
+    limit).
+  - Each entry needs a misconception or feedback, can't name the correct answer, and names each
+    option at most once. On update, the rules are checked against the merged question, so changing
+    the options or the answer without resending matching distractors is rejected instead of
+    leaving a stale tag.
+  - Both admin forms (add and edit) have one row per wrong option: a misconception list grouped
+    by topic, and a feedback field.
+- **Answer events.** Each `AnswerEvent` has `misconceptionId`: the tag of the option chosen, or
+  `null` for the correct option, an untagged option or no answer. It is recorded in quiz sessions
+  and the Daily Challenge (guests record no events, as before). The id is stored as it was when
+  answered, so retagging a question later doesn't rewrite history.
+- **Not shown to learners.** No learner-facing response includes `distractors`: the question list,
+  random question, Study mode, quiz sessions and the Daily Challenge all build their responses
+  from an explicit field list, and `backend/tests/distractors.test.js` checks each of them. A
+  tagged option is known to be wrong, so showing tags or feedback could reveal the answer.
+  Feedback for learners needs its own rules, as a separate feature.
+- **Public endpoint.** `GET /api/v1/concept-graph` (in Swagger, tag Config) returns the nodes (id,
+  name, description, `active` or `planned`), the edges and the misconceptions (id, topic, belief,
+  correct model). It contains no question content, answers or tags.
+- **All additive.** No existing request or response changed.
 
 ## Open points for review
 

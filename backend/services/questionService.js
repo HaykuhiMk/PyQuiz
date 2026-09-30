@@ -3,6 +3,7 @@ const userAnsweredQuestionRepository = require('../repositories/userAnsweredQues
 const AppError = require('../core/AppError');
 const mongoose = require('mongoose');
 const { topicName } = require('../config/topicTaxonomy');
+const { distractorProblem } = require('../utils/distractors');
 
 function sanitizeQuestion(question) {
   if (!question) return question;
@@ -142,6 +143,7 @@ async function updateQuestion(id, payload) {
     answer: existing.answer,
     primaryTopic: existing.primaryTopic,
     secondaryTopics: existing.secondaryTopics || [],
+    distractors: existing.distractors || [],
     ...payload,
   };
 
@@ -150,6 +152,12 @@ async function updateQuestion(id, payload) {
   }
   if (merged.secondaryTopics.includes(merged.primaryTopic)) {
     throw new AppError('A topic cannot be both the primary topic and a secondary topic', 400);
+  }
+  // Checked against the merged question, so changing options or the answer
+  // without resending matching distractors is rejected, not left stale.
+  const problem = distractorProblem(merged);
+  if (problem) {
+    throw new AppError(problem, 400);
   }
 
   const updated = await questionRepository.updateQuestionById(id, payload);

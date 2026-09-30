@@ -5,6 +5,7 @@ const {
   AVATAR_MAX_DATA_URL_LENGTH,
   AVATAR_MAX_FILE_BYTES,
   AVATAR_TOO_LARGE_MESSAGE,
+  DISTRACTOR_FEEDBACK_MAX_LENGTH,
 } = require('../config/validationRules');
 
 // The rules the frontend applies client-side, served from the same constants
@@ -20,6 +21,9 @@ function getClientValidationRules() {
       maxDataUrlLength: AVATAR_MAX_DATA_URL_LENGTH,
       maxFileBytes: AVATAR_MAX_FILE_BYTES,
       tooLargeMessage: AVATAR_TOO_LARGE_MESSAGE,
+    },
+    distractor: {
+      feedbackMaxLength: DISTRACTOR_FEEDBACK_MAX_LENGTH,
     },
   };
 }

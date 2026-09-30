@@ -4,6 +4,7 @@ const quizSessionRepository = require('../repositories/quizSessionRepository');
 const answerEventRepository = require('../repositories/answerEventRepository');
 const userAnsweredQuestionRepository = require('../repositories/userAnsweredQuestionRepository');
 const questionService = require('../services/questionService');
+const { chosenMisconceptionId } = require('../utils/distractors');
 const userService = require('../services/userService');
 const {
   MAX_ATTEMPTS,
@@ -116,6 +117,7 @@ async function recordAttempt({ session, question, selectedIndex, isCorrect, atte
     questionId: question._id,
     mode: session.mode,
     selectedIndex: selectedIndex === undefined || selectedIndex === null ? null : Number(selectedIndex),
+    misconceptionId: chosenMisconceptionId(question, selectedIndex),
     correct: isCorrect,
     attemptNumber,
     timeTakenMs: Math.max(0, Math.round(timeTakenMs)),

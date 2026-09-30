@@ -28,6 +28,7 @@ const contactV1Routes = require('./routes/v1/contactRoutes');
 const quizV1Routes = require('./routes/v1/quizRoutes');
 const validationRulesV1Routes = require('./routes/v1/validationRulesRoutes');
 const topicV1Routes = require('./routes/v1/topicRoutes');
+const conceptGraphV1Routes = require('./routes/v1/conceptGraphRoutes');
 
 const app = express();
 
@@ -189,6 +190,7 @@ app.use('/api/v1/admin', adminV1Routes);
 app.use('/api/v1/contact', contactV1Routes);
 app.use('/api/v1/validation-rules', validationRulesV1Routes);
 app.use('/api/v1/topics', topicV1Routes);
+app.use('/api/v1/concept-graph', conceptGraphV1Routes);
 app.use('/api/v1/quiz', quizV1Routes);
 
 app.get('/healthz', (req, res) => {

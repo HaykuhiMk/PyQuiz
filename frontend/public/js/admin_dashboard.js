@@ -1,5 +1,6 @@
 import { api } from "./api.js";
 import { getTopicTaxonomy } from "./topics.js";
+import { createDistractorFields } from "./distractorFields.js";
 
 // Option values are stable topic ids; the visible text is the display name.
 function populateTopicOptions(select, topics) {
@@ -26,6 +27,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const taxonomy = await getTopicTaxonomy();
     if (primaryTopicSelect) populateTopicOptions(primaryTopicSelect, taxonomy);
     if (secondaryTopicsSelect) populateTopicOptions(secondaryTopicsSelect, taxonomy);
+    const distractorFields = await createDistractorFields({
+        container: document.getElementById("distractor-fields"),
+        optionsInput: document.getElementById("options"),
+        answerInput: document.getElementById("answer"),
+    });
 
     if (questionForm) {
         questionForm.addEventListener("submit", async (event) => {
@@ -54,12 +60,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                 difficulty,
                 primaryTopic,
                 secondaryTopics,
-                explanation
+                explanation,
+                distractors: distractorFields.getValue()
             };
             try {
                 await api.addQuestion(questionData);
                 document.getElementById("question-success").textContent = "Question added successfully!";
                 questionForm.reset();
+                distractorFields.setValue([]);
             } catch (error) {
                 console.error("Error submitting question:", error);
                 alert("Error: " + (error.message || "Failed to add question"));

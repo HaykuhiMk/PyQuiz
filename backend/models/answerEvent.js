@@ -15,6 +15,10 @@ const answerEventSchema = new mongoose.Schema({
   questionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Question', required: true },
   mode: { type: String, enum: [...QUIZ_MODES, 'daily'], required: true },
   selectedIndex: { type: Number, default: null },
+  // The misconception tagged on the chosen wrong option (Question.distractors,
+  // docs/CONCEPT_GRAPH.md Stage 2), or null. Stored as it was when answered,
+  // so later retagging doesn't rewrite history. Not an enum for that reason.
+  misconceptionId: { type: String, default: null },
   correct: { type: Boolean, required: true },
   attemptNumber: { type: Number, required: true },
   timeTakenMs: { type: Number, required: true },

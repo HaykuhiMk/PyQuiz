@@ -130,6 +130,9 @@ In every case, the frontend was updated in the same commit.
 - `canPracticeAgain` / `practiceMode`, and `isCurrentUser` on leaderboard rows (`442ca04`);
 - `GET /questions/stats` (`1d379b4`);
 - `GET /validation-rules` (`e32468e`).
+- after the audit (branch `feature/concept-graph`, `docs/CONCEPT_GRAPH.md` §6): `GET /concept-graph`;
+  the optional admin-only `distractors` field on questions; `distractor.feedbackMaxLength` in
+  `GET /validation-rules`.
 
 **Deployment-level effects:** a one-time logout of every user and admin (new cookie names), and
 invalidated outstanding reset links. The deployment checklist lists both.

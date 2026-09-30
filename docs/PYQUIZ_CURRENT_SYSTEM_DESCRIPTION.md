@@ -530,6 +530,7 @@ Rules that must be identical in several places live in `backend/config/`:
 - quiz timing and points (`quizConfig.js`);
 - mastery thresholds (`masteryConfig.js`);
 - the topic taxonomy, stable ids and display names (`topicTaxonomy.js`);
+- the concept graph: prerequisite edges and misconceptions (`conceptGraph.js`);
 - client-facing validation rules (`validationRules.js`).
 
 Every error response, including authentication failures and rate limits, goes through one
@@ -668,12 +669,15 @@ MongoDB is the only data store. It holds eight collections:
   - `achievements`, and the most recent `dailyChallenge` result.
   - An index on points and best streak serves the leaderboard.
 - **`Question`**: prompt, optional code, options, answer (stored as text and matched against the
-  options), difficulty, `primaryTopic`, `secondaryTopics` and explanation. It has indexes on
-  difficulty and the topic fields.
+  options), difficulty, `primaryTopic`, `secondaryTopics` and explanation, plus optional
+  admin-only `distractors`: tags on wrong options, each naming a misconception id from the concept
+  graph and/or short feedback (`docs/CONCEPT_GRAPH.md` §6; never sent to learners). It has indexes
+  on difficulty and the topic fields.
 - **`QuizSession`**: server-side quiz state (Section 6.1), keyed by a random `token`. A TTL index
   deletes it 24 hours after creation.
 - **`AnswerEvent`**: one immutable document per answer attempt by a logged-in user: user, session,
-  question, mode (including `daily`), selected index, correctness, attempt number and time taken.
+  question, mode (including `daily`), selected index, the chosen option's `misconceptionId` (or
+  null), correctness, attempt number and time taken.
   It is the source of accuracy (Section 5.8). It is kept when its question is deleted, and deleted
   with the user's account (Section 5.11).
 - **`UserAnsweredQuestion`**: one document per (user, question) pair, unique on the pair, with
@@ -723,6 +727,7 @@ erDiagram
     string primaryTopic "canonical"
     array secondaryTopics "canonical"
     string explanation
+    array distractors "admin-only"
   }
   QUIZ_SESSION {
     ObjectId _id
@@ -744,6 +749,7 @@ erDiagram
     ObjectId questionId
     string mode "classic|blitz|survival|daily"
     number selectedIndex
+    string misconceptionId "null if untagged"
     boolean correct
     number attemptNumber
     number timeTakenMs
@@ -785,7 +791,7 @@ relation to other collections.
 The table was generated from the Express router stacks of the route files in
 `backend/routes/v1/` (the purpose column comes from each route's OpenAPI summary). Full request and
 response schemas are served at `/api-docs` outside production, and `backend/tests/swagger.test.js`
-fails if the documentation and the real routes diverge. There are **41 operations on 38 paths**: 38
+fails if the documentation and the real routes diverge. There are **42 operations on 39 paths**: 39
 under `/api/v1` plus 3 operational endpoints.
 
 **Columns:**
@@ -833,6 +839,7 @@ under `/api/v1` plus 3 operational endpoints.
 | POST | `/api/v1/contact` | Public | No | 5 / 15 min per IP | Send a contact-form message |
 | GET | `/api/v1/validation-rules` | Public | No | — | Validation rules the frontend applies client-side |
 | GET | `/api/v1/topics` | Public | No | — | The full topic taxonomy: every topic's stable id and display name |
+| GET | `/api/v1/concept-graph` | Public | No | — | The concept graph (topics, prerequisite edges, misconceptions) |
 | POST | `/api/v1/admin/login` | Public | No | 20 / 15 min per IP | Log in as an admin |
 | POST | `/api/v1/admin/logout` | Public | No | — | Log out (clear the admin session cookies) |
 | GET | `/api/v1/admin/me` | Admin | No | — | Confirm the admin session and get a CSRF token |

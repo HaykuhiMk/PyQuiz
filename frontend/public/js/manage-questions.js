@@ -1,5 +1,6 @@
 import { api } from "./api.js";
 import { getTopicTaxonomy, getTopicNamer } from "./topics.js";
+import { createDistractorFields } from "./distractorFields.js";
 
 // Option values are stable topic ids; the visible text is the display name.
 function populateTopicOptions(select, topics) {
@@ -44,6 +45,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     populateTopicOptions(filterTopic, taxonomy);
     populateTopicOptions(editPrimaryTopicSelect, taxonomy);
     populateTopicOptions(editSecondaryTopicsSelect, taxonomy);
+    const distractorFields = await createDistractorFields({
+        container: document.getElementById("edit-distractor-fields"),
+        optionsInput: document.getElementById("edit-options"),
+        answerInput: document.getElementById("edit-answer"),
+    });
 
     function escapeHTML(str = "") {
         return String(str).replace(/[&<>"']/g, (match) => ({
@@ -123,6 +129,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 option.selected = secondary.has(option.value);
             });
             document.getElementById("edit-explanation").value = question.explanation;
+            distractorFields.setValue(question.distractors || []);
             editStatus.textContent = "";
             editSection.hidden = false;
             editSection.scrollIntoView({ behavior: "smooth" });
@@ -176,6 +183,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             primaryTopic,
             secondaryTopics,
             explanation: document.getElementById("edit-explanation").value.trim(),
+            distractors: distractorFields.getValue(),
         };
 
         try {
@@ -190,6 +198,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     cancelEditBtn.addEventListener("click", () => {
         editingId = null;
         editForm.reset();
+        distractorFields.setValue([]);
         editSection.hidden = true;
     });
 
