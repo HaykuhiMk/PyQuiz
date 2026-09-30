@@ -3,9 +3,10 @@
 // User document. Safe to re-run (each step is idempotent).
 require('dotenv').config();
 const mongoose = require('mongoose');
+const { resolveMongoUri } = require('../config/mongoUri');
 
 async function migrate() {
-  await mongoose.connect(process.env.MONGO_URI);
+  await mongoose.connect(resolveMongoUri());
 
   const User = require('../models/user');
   const UserAnsweredQuestion = require('../models/userAnsweredQuestion');

@@ -1,4 +1,4 @@
-import { api, getAchievementMeta, isLoggedIn } from './api.js';
+import { api, getAchievementMeta } from './api.js';
 import { icon } from './icons.js';
 
 const LIMIT = 50;
@@ -13,36 +13,6 @@ function formatNumber(value) {
   return Number(value || 0).toLocaleString('en-US');
 }
 
-function isGuest() {
-  return document.cookie.split('; ').some((row) => row === 'guestMode=true');
-}
-
-// The leaderboard API returns no user id and usernames aren't unique, so
-// the current user's row is identified only when exactly one row matches
-// their username *and* all three stats from /users/me. Any ambiguity means
-// no row is highlighted rather than guessing.
-function findCurrentUserRank(rows, me) {
-  if (!me) return null;
-  const stats = me.stats || {};
-  const matches = rows.filter(
-    (row) =>
-      row.username === me.username &&
-      row.totalPoints === (stats.totalPoints || 0) &&
-      row.bestStreak === (stats.bestStreak || 0) &&
-      row.totalCorrect === (stats.totalCorrect || 0)
-  );
-  return matches.length === 1 ? matches[0].rank : null;
-}
-
-async function loadCurrentUser() {
-  if (!isLoggedIn() || isGuest()) return null;
-  try {
-    return await api.getMe();
-  } catch {
-    return null;
-  }
-}
-
 function rankMark(rank) {
   const tier = rank === 1 ? ' lb-rank--first' : rank <= 3 ? ' lb-rank--podium' : '';
   return `<span class="lb-rank${tier}">${rank}</span>`;
@@ -54,7 +24,8 @@ function achievementsCell(keys = []) {
   return `<span class="lb-ach" title="${escapeHTML(labels)}"><b>${keys.length}</b><span class="pq-sr-only">: ${escapeHTML(labels)}</span></span>`;
 }
 
-function renderRow(row, isMe) {
+function renderRow(row) {
+  const isMe = Boolean(row.isCurrentUser);
   const name = escapeHTML(row.username);
   const initial = escapeHTML((row.username || '?').trim().charAt(0).toUpperCase() || '?');
   return `
@@ -74,7 +45,7 @@ function renderRow(row, isMe) {
     </tr>`;
 }
 
-function renderTable(rows, myRank) {
+function renderTable(rows) {
   return `
     <div class="card lb-table-card">
       <table class="pq-table lb-table">
@@ -90,7 +61,7 @@ function renderTable(rows, myRank) {
           </tr>
         </thead>
         <tbody>
-          ${rows.map((row) => renderRow(row, row.rank === myRank)).join('')}
+          ${rows.map((row) => renderRow(row)).join('')}
         </tbody>
       </table>
     </div>`;
@@ -124,7 +95,7 @@ async function loadLeaderboard() {
   container.innerHTML = renderSkeleton();
 
   try {
-    const [rows, me] = await Promise.all([api.getLeaderboard(LIMIT), loadCurrentUser()]);
+    const rows = await api.getLeaderboard(LIMIT);
 
     if (!rows.length) {
       container.innerHTML = '';
@@ -133,19 +104,18 @@ async function loadLeaderboard() {
       return;
     }
 
-    const myRank = findCurrentUserRank(rows, me);
     countBadge.textContent = rows.length === LIMIT ? `Top ${LIMIT}` : `${rows.length} player${rows.length === 1 ? '' : 's'}`;
     countBadge.hidden = false;
 
-    if (myRank) {
-      const myRow = rows.find((row) => row.rank === myRank);
+    const myRow = rows.find((row) => row.isCurrentUser);
+    if (myRow) {
       feedback.innerHTML = banner(
         'brand',
-        `You're ranked <strong>#${myRank}</strong> with <strong>${formatNumber(myRow.totalPoints)}</strong> points.`
+        `You're ranked <strong>#${myRow.rank}</strong> with <strong>${formatNumber(myRow.totalPoints)}</strong> points.`
       );
     }
 
-    container.innerHTML = renderTable(rows, myRank);
+    container.innerHTML = renderTable(rows);
   } catch (error) {
     container.innerHTML = '';
     countBadge.hidden = true;

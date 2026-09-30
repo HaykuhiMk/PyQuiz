@@ -5,7 +5,7 @@ const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const app = require('../app');
 const db = require('./testUtils/db');
-const { registerAndLogin } = require('./testUtils/authHelpers');
+const { registerAndLogin, adminSessionHeaders } = require('./testUtils/authHelpers');
 const User = require('../models/user');
 const Contact = require('../models/contact');
 
@@ -23,7 +23,7 @@ afterAll(async () => {
   await db.closeDatabase();
 });
 
-async function adminToken() {
+async function adminLogin() {
   const hashed = await bcrypt.hash(VALID_PASSWORD, 10);
   await User.create({
     username: 'admintester',
@@ -35,28 +35,30 @@ async function adminToken() {
   const res = await request(app)
     .post('/api/v1/admin/login')
     .send({ username: 'admintester', password: VALID_PASSWORD });
-  return res.body.data.token;
+  return adminSessionHeaders(res);
 }
 
 describe('GET /api/v1/admin/contacts', () => {
   it('rejects requests with no token', async () => {
     const res = await request(app).get('/api/v1/admin/contacts');
-    expect(res.statusCode).toBe(403);
+    expect(res.statusCode).toBe(401);
   });
 
   it('rejects a regular, non-admin user', async () => {
     const { tokenCookieValue } = await registerAndLogin('regular@example.com', { username: 'regular' });
 
+    // A regular user's JWT placed in the admin cookie slot, to exercise
+    // verifyAdmin's role check rather than its missing-cookie check.
     const res = await request(app)
       .get('/api/v1/admin/contacts')
-      .set('Authorization', `Bearer ${tokenCookieValue}`);
+      .set('Cookie', `adminToken=${tokenCookieValue}`);
 
     expect(res.statusCode).toBe(403);
   });
 
   it('returns an empty list when there are no submissions', async () => {
-    const token = await adminToken();
-    const res = await request(app).get('/api/v1/admin/contacts').set('Authorization', `Bearer ${token}`);
+    const adminHeaders = await adminLogin();
+    const res = await request(app).get('/api/v1/admin/contacts').set(adminHeaders);
 
     expect(res.statusCode).toBe(200);
     expect(res.body.data).toEqual([]);
@@ -68,8 +70,8 @@ describe('GET /api/v1/admin/contacts', () => {
     await new Promise((resolve) => setTimeout(resolve, 5));
     await Contact.create({ name: 'Bob', email: 'bob@example.com', message: 'Second message' });
 
-    const token = await adminToken();
-    const res = await request(app).get('/api/v1/admin/contacts').set('Authorization', `Bearer ${token}`);
+    const adminHeaders = await adminLogin();
+    const res = await request(app).get('/api/v1/admin/contacts').set(adminHeaders);
 
     expect(res.statusCode).toBe(200);
     expect(res.body.data).toHaveLength(2);
@@ -81,14 +83,14 @@ describe('GET /api/v1/admin/contacts', () => {
     for (let i = 0; i < 3; i += 1) {
       await Contact.create({ name: `User ${i}`, email: `user${i}@example.com`, message: 'hi' });
     }
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
 
     const page1 = await request(app)
       .get('/api/v1/admin/contacts?page=1&limit=2')
-      .set('Authorization', `Bearer ${token}`);
+      .set(adminHeaders);
     const page2 = await request(app)
       .get('/api/v1/admin/contacts?page=2&limit=2')
-      .set('Authorization', `Bearer ${token}`);
+      .set(adminHeaders);
 
     expect(page1.body.data).toHaveLength(2);
     expect(page2.body.data).toHaveLength(1);
@@ -105,8 +107,8 @@ describe('GET /api/v1/admin/contacts', () => {
       website: 'http://spam.example',
     });
 
-    const token = await adminToken();
-    const res = await request(app).get('/api/v1/admin/contacts').set('Authorization', `Bearer ${token}`);
+    const adminHeaders = await adminLogin();
+    const res = await request(app).get('/api/v1/admin/contacts').set(adminHeaders);
 
     expect(res.body.data).toEqual([]);
   });

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script>(function(){try{var t=localStorage.getItem('pyquiz-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+    <script src="/js/theme-init.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Dashboard - PyQuiz</title>
@@ -108,15 +108,17 @@
           </div>
 
           <div class="form-group">
-            <label for="topics"
-              ><i class="fas fa-tags"></i> Topics (comma-separated):</label
+            <label for="primary-topic"
+              ><i class="fas fa-tags"></i> Primary Topic (the concept a learner must understand to answer correctly):</label
             >
-            <input
-              type="text"
-              id="topics"
-              placeholder="e.g. Loops, Functions, Recursion"
-              required
-            />
+            <select id="primary-topic" required></select>
+          </div>
+
+          <div class="form-group">
+            <label for="secondary-topics"
+              ><i class="fas fa-tags"></i> Secondary Topics (optional, for filtering/search only — hold Ctrl/Cmd to select multiple):</label
+            >
+            <select id="secondary-topics" multiple size="6"></select>
           </div>
 
           <div class="form-group">

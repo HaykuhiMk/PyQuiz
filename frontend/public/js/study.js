@@ -1,4 +1,4 @@
-import { api } from './api.js';
+import { api, requireAuth } from './api.js';
 import { icon, mountIcons } from './icons.js';
 
 const PAGE_SIZE = 6;
@@ -47,7 +47,7 @@ function renderExplanation(answer, explanation) {
 }
 
 function renderCard(question) {
-  const topicsLabel = (question.topics || []).join(', ');
+  const topicsLabel = [question.primaryTopic, ...(question.secondaryTopics || [])].filter(Boolean).join(', ');
   const hasAnswer = question.answer !== undefined && question.answer !== null;
   const correctIndex = hasAnswer ? (question.options || []).indexOf(question.answer) : -1;
   return `
@@ -135,6 +135,10 @@ async function loadCards() {
     container.innerHTML = questions.map(renderCard).join('');
     if (window.Prism) Prism.highlightAllUnder(container);
   } catch (error) {
+    if (error.status === 401) {
+      window.location.href = '/login.html';
+      return;
+    }
     hasNext = false;
     updatePager();
     container.innerHTML = '';
@@ -145,6 +149,7 @@ async function loadCards() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  if (!(await requireAuth())) return;
   mountIcons(document.querySelector('main'));
 
   try {

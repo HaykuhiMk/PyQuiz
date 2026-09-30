@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script>(function(){try{var t=localStorage.getItem('pyquiz-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+    <script src="/js/theme-init.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Daily Challenge - PyQuiz</title>
@@ -20,6 +20,7 @@
         <p class="pq-body-lg pq-muted">The same questions for everyone today, with bonus points for each correct answer.</p>
       </div>
       <span class="badge" id="daily-date" hidden></span>
+      <span class="badge" id="daily-reset" hidden></span>
     </div>
 
     <div id="daily-status" role="status" aria-live="polite"></div>

@@ -1,6 +1,6 @@
 import { initUI } from './ui.js';
 import { initThemeToggle } from './theme.js';
-import { api } from './api.js';
+import { api, getSession } from './api.js';
 
 function getCookie(name) {
     const value = document.cookie.split("; ")
@@ -14,8 +14,10 @@ function getCookie(name) {
     }
 }
 
-function isLoggedIn() {
-    return Boolean(getCookie("csrfToken")) && getCookie("guestMode") !== "true";
+// Confirmed server-side (GET /api/v1/auth/me), not inferred from a cookie
+// that can outlive an expired or revoked session (docs/AUDIT.md Phase 4).
+async function isLoggedIn() {
+    return getCookie("guestMode") !== "true" && Boolean(await getSession());
 }
 
 function isGuest() {
@@ -33,11 +35,11 @@ function setActiveSidelink() {
     });
 }
 
-function renderAccountArea() {
+async function renderAccountArea() {
     const area = document.getElementById("sidebar-account-area");
     if (!area) return;
 
-    if (isLoggedIn()) {
+    if (await isLoggedIn()) {
         area.innerHTML = `
             <a href="/account.html" class="pq-side__identity">
                 <span class="pq-side__avatar" aria-hidden="true">
@@ -64,7 +66,6 @@ async function handleLogout() {
     } catch (error) {
         console.error("Logout request failed:", error);
     }
-    localStorage.removeItem("adminToken");
     document.cookie = "guestMode=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     window.location.href = "/login.html";
 }

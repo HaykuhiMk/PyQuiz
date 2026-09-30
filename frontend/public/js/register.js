@@ -1,4 +1,5 @@
 import { api } from "./api.js";
+import { getPasswordRule, showPasswordRequirements } from "./validationRules.js";
 
 document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById('registration-form');
@@ -13,10 +14,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return emailRegex.test(email);
     }
 
-    function isValidPassword(password) {
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$/;
-        return passwordRegex.test(password);
-    }
+    showPasswordRequirements(document.getElementById('password-help'));
 
     const submitBtn = form.querySelector('button[type="submit"]');
 
@@ -36,13 +34,15 @@ document.addEventListener("DOMContentLoaded", function () {
         else submitBtn.removeAttribute('aria-busy');
     }
 
-    form.addEventListener('submit', function (event) {
+    form.addEventListener('submit', async function (event) {
         event.preventDefault();
 
         const username = usernameInput.value.trim();
         const email = emailInput.value.trim();
-        const password = passwordInput.value.trim();
-        const repeatPassword = repeatPasswordInput.value.trim();
+        // Never trimmed: spaces are valid password characters, and the server
+        // stores and checks the password exactly as typed.
+        const password = passwordInput.value;
+        const repeatPassword = repeatPasswordInput.value;
 
         if (!username || !email || !password || !repeatPassword) {
             showError('All fields must be filled out.');
@@ -54,8 +54,11 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        if (!isValidPassword(password)) {
-            showError('Password must be at least 8 characters long, contain at least one uppercase letter, one number, and one special character (@, $, !, %, *, ?, &, _).');
+        // The server's own rule (see validationRules.js); if it couldn't be
+        // loaded, the server still validates on submit.
+        const passwordRule = await getPasswordRule();
+        if (passwordRule && !passwordRule.test(password)) {
+            showError(`Password requirements: ${passwordRule.requirements}`);
             return;
         }
 
@@ -83,7 +86,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    window.togglePasswordVisibility = function (fieldId) {
+    function togglePasswordVisibility(fieldId) {
         const passwordInput = document.getElementById(fieldId);
         const toggleButton = document.getElementById(`toggle-${fieldId}`);
         const reveal = passwordInput.type === 'password';
@@ -91,5 +94,11 @@ document.addEventListener("DOMContentLoaded", function () {
         passwordInput.type = reveal ? 'text' : 'password';
         toggleButton.textContent = reveal ? 'Hide' : 'Show';
         toggleButton.setAttribute('aria-pressed', String(reveal));
-    };
+    }
+
+    // Bound here rather than via inline onclick attributes, which the
+    // frontend's Content-Security-Policy blocks (docs/AUDIT.md Phase 4).
+    for (const fieldId of ['password', 'repeat-password']) {
+        document.getElementById(`toggle-${fieldId}`).addEventListener('click', () => togglePasswordVisibility(fieldId));
+    }
 });

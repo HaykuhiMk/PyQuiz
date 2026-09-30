@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script>(function(){try{var t=localStorage.getItem('pyquiz-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+    <script src="/js/theme-init.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PyQuiz - Quiz</title>
@@ -55,15 +55,6 @@
           <span data-icon="search"></span>
           <input class="pq-input" type="search" id="topic-search" placeholder="Search topics" autocomplete="off" />
         </div>
-      </div>
-
-      <div class="categories-container">
-        <button class="category-btn active" data-category="all" type="button">All Topics</button>
-        <button class="category-btn" data-category="basics" type="button">Basics</button>
-        <button class="category-btn" data-category="data-structures" type="button">Data Structures</button>
-        <button class="category-btn" data-category="functions" type="button">Functions</button>
-        <button class="category-btn" data-category="ooad" type="button">OOAD</button>
-        <button class="category-btn" data-category="advanced" type="button">Advanced</button>
       </div>
 
       <div class="bulk-actions">

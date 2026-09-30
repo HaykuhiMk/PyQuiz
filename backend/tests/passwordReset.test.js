@@ -61,6 +61,23 @@ describe('POST /api/v1/auth/forgot-password', () => {
     const entry = await ResetPassword.findOne({ email: 'resetter@example.com' });
     expect(entry).not.toBeNull();
   });
+
+  it('stores only the SHA-256 hash of the reset key, never the key itself (Phase 4)', async () => {
+    await request(app).post('/api/v1/auth/register').send({
+      username: 'hashcheck',
+      email: 'hashcheck@example.com',
+      password: 'Passw0rd!',
+    });
+    await request(app).post('/api/v1/auth/forgot-password').send({ email: 'hashcheck@example.com' });
+
+    const [, resetUrl] = sendPasswordResetEmail.mock.calls[0];
+    const resetKey = new URL(resetUrl).searchParams.get('resetKey');
+    const raw = await ResetPassword.collection.findOne({ email: 'hashcheck@example.com' });
+
+    expect(raw.resetKeyHash).toBe(require('crypto').createHash('sha256').update(resetKey).digest('hex'));
+    expect(JSON.stringify(raw)).not.toContain(resetKey);
+    expect(raw.resetKey).toBeUndefined();
+  });
 });
 
 describe('POST /api/v1/auth/reset-password/:resetKey', () => {

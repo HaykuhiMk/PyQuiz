@@ -1,12 +1,23 @@
 import { api } from "./api.js";
+import { CANONICAL_TOPICS } from "./topicTaxonomy.js";
 
-document.addEventListener("DOMContentLoaded", () => {
-    if (!localStorage.getItem("adminToken")) {
+function populateTopicOptions(select) {
+    select.innerHTML = CANONICAL_TOPICS.map((topic) => `<option value="${topic}">${topic}</option>`).join("");
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        await api.getAdminMe();
+    } catch {
         window.location.href = "admin_login.html";
         return;
     }
 
     const questionForm = document.getElementById("question-form");
+    const primaryTopicSelect = document.getElementById("primary-topic");
+    const secondaryTopicsSelect = document.getElementById("secondary-topics");
+    if (primaryTopicSelect) populateTopicOptions(primaryTopicSelect);
+    if (secondaryTopicsSelect) populateTopicOptions(secondaryTopicsSelect);
 
     if (questionForm) {
         questionForm.addEventListener("submit", async (event) => {
@@ -16,10 +27,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const optionsInput = document.getElementById("options").value.trim();
             const answer = document.getElementById("answer").value.trim();
             const difficulty = document.getElementById("difficulty").value;
-            const topicsInput = document.getElementById("topics").value.trim();
+            const primaryTopic = primaryTopicSelect.value;
+            const secondaryTopics = Array.from(secondaryTopicsSelect.selectedOptions)
+                .map((option) => option.value)
+                .filter((topic) => topic !== primaryTopic);
             const explanation = document.getElementById("explanation").value.trim();
             const options = optionsInput.split("\n").map(option => option.trim()).filter(option => option !== "");
-            const topics = topicsInput.split(",").map(topic => topic.trim());
             if (!options.includes(answer)) {
                 alert("Correct answer must be one of the options!");
                 return;
@@ -28,10 +41,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const questionData = {
                 question,
                 code,
-                options, 
+                options,
                 answer,
                 difficulty,
-                topics, 
+                primaryTopic,
+                secondaryTopics,
                 explanation
             };
             try {
@@ -49,10 +63,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const logoutBtn = document.getElementById("logout-btn");
     if (logoutBtn) {
-        logoutBtn.addEventListener("click", () => {
+        logoutBtn.addEventListener("click", async () => {
             const confirmLogout = confirm("Are you sure you want to log out?");
             if (!confirmLogout) return;
-            localStorage.removeItem("adminToken");
+            await api.adminLogout().catch(() => {});
             window.location.href = "admin_login.html";
         });
     } else {

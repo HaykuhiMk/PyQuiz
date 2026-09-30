@@ -1,4 +1,5 @@
 import { api } from "./api.js";
+import { getPasswordRule, showPasswordRequirements } from "./validationRules.js";
 
 document.addEventListener("DOMContentLoaded", function () {
     const urlParams = new URLSearchParams(window.location.search);
@@ -7,6 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const helperTextElement = document.getElementById("helper-text");
 
     const form = document.getElementById("resetPasswordForm");
+    showPasswordRequirements(document.getElementById("reset-password-help"));
     const submitBtn = form.querySelector('button[type="submit"]');
 
     function showMessage(message, tone) {
@@ -29,9 +31,11 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$/;
-        if (!passwordRegex.test(password)) {
-            showMessage("Password must be at least 8 characters long, contain at least one uppercase letter, one number, and one special character (@, $, !, %, *, ?, &, _).", "error");
+        // The server's own rule (see validationRules.js); if it couldn't be
+        // loaded, the server still validates on submit.
+        const passwordRule = await getPasswordRule();
+        if (passwordRule && !passwordRule.test(password)) {
+            showMessage(`Password requirements: ${passwordRule.requirements}`, "error");
             return;
         }
 
@@ -78,5 +82,7 @@ function toggleConfirmPasswordVisibility() {
     toggleVisibility('confirmPassword', 'toggle-confirm-password');
 }
 
-window.togglePasswordVisibility = togglePasswordVisibility;
-window.toggleConfirmPasswordVisibility = toggleConfirmPasswordVisibility;
+// Bound here rather than via inline onclick attributes, which the
+// frontend's Content-Security-Policy blocks (docs/AUDIT.md Phase 4).
+document.getElementById('toggle-password').addEventListener('click', togglePasswordVisibility);
+document.getElementById('toggle-confirm-password').addEventListener('click', toggleConfirmPasswordVisibility);

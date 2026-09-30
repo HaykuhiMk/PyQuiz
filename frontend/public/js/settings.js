@@ -1,10 +1,11 @@
 import { api, requireAuth } from './api.js';
+import { getPasswordRule, showPasswordRequirements, getAvatarRule } from './validationRules.js';
 import { showToast } from './ui.js';
 import { icon, mountIcons } from './icons.js';
 import { setTheme, getActiveTheme } from './theme.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!requireAuth()) return;
+  if (!(await requireAuth())) return;
 
   mountIcons(document.querySelector('main'));
   bindSettings();
@@ -67,6 +68,11 @@ function setStatus(elementId, message, isError = false) {
 }
 
 function bindSettings() {
+  showPasswordRequirements(document.getElementById('new-password-help'));
+  getAvatarRule().then((rule) => {
+    const help = document.getElementById('avatar-help');
+    if (rule && help) help.textContent = `JPG, PNG or WebP, up to ${Math.floor(rule.maxFileBytes / 1024)} KB.`;
+  });
   const avatarInput = document.getElementById('avatar-input');
   const uploadBtn = document.getElementById('upload-avatar-btn');
   const removeBtn = document.getElementById('remove-avatar-btn');
@@ -77,13 +83,22 @@ function bindSettings() {
     const file = avatarInput.files?.[0];
     if (!file) return;
 
-    if (file.size > 500 * 1024) {
-      setStatus('avatar-status', 'File must be under 500KB.', true);
+    // The server's real limit (GET /validation-rules): checked before the
+    // file is even read, and again on the encoded data URL, so an oversized
+    // image never gets uploaded.
+    const avatarRule = await getAvatarRule();
+    if (avatarRule && file.size > avatarRule.maxFileBytes) {
+      setStatus('avatar-status', avatarRule.tooLargeMessage, true);
+      avatarInput.value = '';
       return;
     }
 
     try {
       const dataUrl = await readFileAsDataUrl(file);
+      if (avatarRule && dataUrl.length > avatarRule.maxDataUrlLength) {
+        setStatus('avatar-status', avatarRule.tooLargeMessage, true);
+        return;
+      }
       await api.updateProfile({ avatar: dataUrl });
       renderAvatar(dataUrl);
       setStatus('avatar-status', 'Photo updated.');
@@ -130,17 +145,22 @@ function bindSettings() {
       return;
     }
 
-    // Same rule the API enforces; checked here so the message is specific.
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$/.test(newPassword)) {
-      setStatus('password-status', 'New password must be at least 8 characters long, with an uppercase letter, a lowercase letter, a number and one of @ $ ! % * ? & _.', true);
+    // The server's own rule (see validationRules.js), checked here so the
+    // message is specific; if it couldn't be loaded, the API still validates.
+    const passwordRule = await getPasswordRule();
+    if (passwordRule && !passwordRule.test(newPassword)) {
+      setStatus('password-status', `New password requirements: ${passwordRule.requirements}`, true);
       return;
     }
 
     try {
       await api.changePassword({ currentPassword, newPassword });
-      event.target.reset();
-      setStatus('password-status', 'Password updated.');
-      showToast('Password changed successfully', 'success');
+      // Changing the password invalidates every session, including this
+      // browser's own current one (docs/AUDIT.md Phase 4) — log out and
+      // send the user to log back in with the new password, rather than
+      // leaving them on a page whose session cookie no longer works.
+      await api.logout().catch((error) => console.error('Logout request failed:', error));
+      window.location.href = '/login.html?passwordChanged=1';
     } catch (error) {
       setStatus('password-status', error.message, true);
     }
@@ -157,7 +177,6 @@ function bindSettings() {
     try {
       await api.deleteAccount({ password });
       await api.logout().catch((error) => console.error('Logout request failed:', error));
-      localStorage.removeItem('adminToken');
       document.cookie = 'guestMode=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       window.location.href = '/login.html';
     } catch (error) {

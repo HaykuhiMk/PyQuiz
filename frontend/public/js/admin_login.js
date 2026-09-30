@@ -8,7 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
         event.preventDefault();
 
         const username = document.getElementById("admin-username").value.trim();
-        const password = document.getElementById("admin-password").value.trim();
+        // Never trimmed: the password must match exactly as it was set.
+        const password = document.getElementById("admin-password").value;
 
         if (!username || !password) {
             loginError.textContent = "Username and password are required!";
@@ -16,8 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const data = await api.adminLogin({ username, password });
-            localStorage.setItem("adminToken", data.token);
+            await api.adminLogin({ username, password });
             window.location.href = "admin_dashboard.html";
         } catch (error) {
             console.error("Login error:", error);

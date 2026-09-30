@@ -5,6 +5,7 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const app = require('../app');
 const db = require('./testUtils/db');
+const { registerAndLogin } = require('./testUtils/authHelpers');
 
 const VALID_PASSWORD = 'Passw0rd!';
 
@@ -57,6 +58,23 @@ describe('POST /api/v1/auth/register', () => {
     });
 
     expect(res.statusCode).toBe(400);
+  });
+
+  it('rejects a username that collides case-insensitively with an existing one', async () => {
+    await request(app).post('/api/v1/auth/register').send({
+      username: 'CaseTest',
+      email: 'casetest1@example.com',
+      password: VALID_PASSWORD,
+    });
+
+    const res = await request(app).post('/api/v1/auth/register').send({
+      username: 'casetest',
+      email: 'casetest2@example.com',
+      password: VALID_PASSWORD,
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error.message).toMatch(/already exists/i);
   });
 });
 
@@ -129,5 +147,34 @@ describe('POST /api/v1/auth/logout', () => {
 
     expect(tokenCookie).toMatch(/Expires=Thu, 01 Jan 1970/);
     expect(csrfCookie).toMatch(/Expires=Thu, 01 Jan 1970/);
+  });
+});
+
+describe('PATCH /api/v1/users/settings/profile (username uniqueness)', () => {
+  it('rejects renaming to a username that collides case-insensitively with another account', async () => {
+    await registerAndLogin('taken@example.com', { username: 'TakenName' });
+    const { cookieHeader, csrfToken } = await registerAndLogin('renamer@example.com', { username: 'renamer' });
+
+    const res = await request(app)
+      .patch('/api/v1/users/settings/profile')
+      .set('Cookie', cookieHeader)
+      .set('X-CSRF-Token', csrfToken)
+      .send({ username: 'takenname' });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error.message).toMatch(/already exists/i);
+  });
+
+  it('allows changing only the case of your own username', async () => {
+    const { cookieHeader, csrfToken } = await registerAndLogin('samecase@example.com', { username: 'MixedCase' });
+
+    const res = await request(app)
+      .patch('/api/v1/users/settings/profile')
+      .set('Cookie', cookieHeader)
+      .set('X-CSRF-Token', csrfToken)
+      .send({ username: 'mixedcase' });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data.username).toBe('mixedcase');
   });
 });

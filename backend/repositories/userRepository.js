@@ -1,15 +1,36 @@
 const User = require('../models/user');
 
+// Avatar can be up to 500KB and is only ever needed by getUserProfile
+// (docs/AUDIT.md item 9) — excluded by default so it isn't loaded on every
+// other lookup (in particular applyAnswerOutcome, called on every answer).
+// A `.select('-avatar')`-projected document can still have `avatar` set and
+// saved normally; Mongoose only omits it from what's read, not what's
+// writable.
 async function findByEmail(email) {
-  return User.findOne({ email });
+  return User.findOne({ email }).select('-avatar');
 }
 
 async function findById(userId) {
+  return User.findById(userId).select('-avatar');
+}
+
+async function findByIdWithAvatar(userId) {
   return User.findById(userId);
 }
 
+// Minimal projection for the per-request tokenVersion check in
+// authenticateToken/verifyAdmin (docs/AUDIT.md Phase 4) — runs on every
+// authenticated request, so it reads only what that check needs.
+async function findAuthFields(userId) {
+  return User.findById(userId).select('tokenVersion banned role').lean();
+}
+
+async function findByUsernameLower(usernameLower) {
+  return User.findOne({ usernameLower }).select('-avatar');
+}
+
 async function findAdminByUsername(username) {
-  return User.findOne({ username, role: 'admin' });
+  return User.findOne({ username, role: 'admin' }).select('-avatar');
 }
 
 async function createUser(payload) {
@@ -67,8 +88,13 @@ async function countUsers() {
   return User.countDocuments({});
 }
 
+// Banning also bumps tokenVersion so any session the user already holds
+// stops working immediately, rather than waiting out its own expiry
+// (docs/AUDIT.md Phase 4) — unbanning does not, since there is nothing to
+// invalidate in that direction.
 async function setBanned(userId, banned) {
-  return User.findByIdAndUpdate(userId, { banned }, { new: true }).select(
+  const update = banned ? { banned, $inc: { tokenVersion: 1 } } : { banned };
+  return User.findByIdAndUpdate(userId, update, { new: true }).select(
     'username email role banned'
   );
 }
@@ -76,6 +102,9 @@ async function setBanned(userId, banned) {
 module.exports = {
   findByEmail,
   findById,
+  findByIdWithAvatar,
+  findAuthFields,
+  findByUsernameLower,
   findAdminByUsername,
   createUser,
   saveUser,

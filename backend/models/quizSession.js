@@ -1,0 +1,50 @@
+const mongoose = require('mongoose');
+const { QUIZ_MODES, SESSION_TTL_SECONDS } = require('../config/quizConfig');
+
+const currentQuestionSchema = new mongoose.Schema(
+  {
+    questionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Question', default: null },
+    servedAt: { type: Date, default: null },
+    // Only set for Blitz; null for Classic/Survival, which have no deadline.
+    deadlineAt: { type: Date, default: null },
+    attempts: { type: Number, default: 0 },
+    resolved: { type: Boolean, default: true },
+  },
+  { _id: false }
+);
+
+const quizSessionSchema = new mongoose.Schema({
+  // The bearer credential clients use as "sessionId" in the API — a
+  // cryptographically random token (see quizSessionRepository), never the
+  // Mongo _id. Guest sessions have no other proof of ownership, and even a
+  // logged-in session shouldn't be drivable by guessing/enumerating an
+  // ObjectId, so both use the same random token.
+  token: { type: String, required: true, unique: true },
+  // Null for guest sessions: guests can play but never accrue persisted
+  // points/stats (see quizSessionService).
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  mode: { type: String, enum: QUIZ_MODES, required: true },
+  // Classic only: skips the everCorrect exclusion so a user can replay
+  // already-mastered questions (docs/AUDIT.md Phase 3 addendum) — never
+  // earns points either way, since the first-correct-ever rule already
+  // zeroes them for an everCorrect question.
+  practiceMode: { type: Boolean, default: false },
+  filters: {
+    topics: { type: [String], default: [] },
+    difficulty: { type: String, default: null },
+  },
+  // Every question already served in this session, so it's never repeated
+  // within the same run regardless of mode.
+  servedQuestionIds: { type: [mongoose.Schema.Types.ObjectId], default: [] },
+  currentQuestion: { type: currentQuestionSchema, default: () => ({}) },
+  status: { type: String, enum: ['active', 'ended'], default: 'active' },
+  endedReason: { type: String, default: null },
+  // Correct-answer count for this run only (session-scoped, distinct from
+  // the user's all-time stats).
+  score: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now, expires: SESSION_TTL_SECONDS },
+});
+
+quizSessionSchema.index({ userId: 1, createdAt: -1 });
+
+module.exports = mongoose.model('QuizSession', quizSessionSchema);

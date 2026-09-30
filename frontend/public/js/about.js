@@ -38,20 +38,17 @@ function closeFaqItem(item) {
 }
 
 async function loadLiveStats() {
-  // Real counts from the public API. If they can't be loaded, the stat
-  // keeps its "—" placeholder rather than showing a made-up number.
+  // Real counts from the public stats endpoint (aggregate numbers only). If
+  // they can't be loaded, the stat keeps its "—" placeholder rather than
+  // showing a made-up number. This used to read the total from Study mode,
+  // which has required login since Phase 2, so it always failed.
   try {
-    const [topicsRes, studyRes] = await Promise.all([
-      fetch(`${API_BASE_URL}/api/v1/questions/topics`),
-      fetch(`${API_BASE_URL}/api/v1/questions/study?page=1&limit=1`),
-    ]);
-    if (!topicsRes.ok || !studyRes.ok) return;
+    const res = await fetch(`${API_BASE_URL}/api/v1/questions/stats`);
+    if (!res.ok) return;
 
-    const topicsPayload = await topicsRes.json();
-    const studyPayload = await studyRes.json();
-
-    const topicCount = topicsPayload.data?.length;
-    const questionCount = studyPayload.meta?.total;
+    const { data } = await res.json();
+    const topicCount = data?.topicCount;
+    const questionCount = data?.totalQuestions;
 
     if (Number.isFinite(topicCount)) {
       countUp(document.querySelector('[data-count-target="topics"]'), topicCount);

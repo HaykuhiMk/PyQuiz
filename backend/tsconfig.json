@@ -1,3 +1,7 @@
+// `npm run typecheck` = `tsc --noEmit` over the JavaScript sources with
+// allowJs but checkJs: false, so this is NOT JSDoc type checking: it parses
+// every file and catches syntax errors only (turning checkJs on currently
+// reports ~1,500 errors — see docs/AUDIT.md, Phase 5).
 {
   "compilerOptions": {
     "target": "ES2020",

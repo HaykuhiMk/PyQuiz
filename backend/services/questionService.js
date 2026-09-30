@@ -1,4 +1,5 @@
 const questionRepository = require('../repositories/questionRepository');
+const userAnsweredQuestionRepository = require('../repositories/userAnsweredQuestionRepository');
 const AppError = require('../core/AppError');
 const mongoose = require('mongoose');
 
@@ -10,19 +11,32 @@ function sanitizeQuestion(question) {
     code: question.code || '',
     options: question.options,
     difficulty: question.difficulty,
-    topics: question.topics,
+    primaryTopic: question.primaryTopic,
+    secondaryTopics: question.secondaryTopics || [],
   };
 }
 
-function buildQuestionQuery({ topics = [], difficulty }) {
+// A topic filter matches a question via its primaryTopic OR any of its
+// secondaryTopics (docs/AUDIT.md Phase 3 taxonomy revision) — mastery and
+// weak-topic detection are the only things that use primaryTopic alone
+// (topicMasteryService).
+function buildQuestionQuery({ topics = [], difficulty, excludeIds = [] }) {
   const query = {};
 
   if (topics.length) {
-    query.topics = { $in: topics };
+    query.$or = [{ primaryTopic: { $in: topics } }, { secondaryTopics: { $in: topics } }];
   }
 
   if (difficulty) {
     query.difficulty = difficulty;
+  }
+
+  if (excludeIds.length) {
+    query._id = {
+      $nin: excludeIds
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+        .map((id) => new mongoose.Types.ObjectId(id)),
+    };
   }
 
   return query;
@@ -33,8 +47,19 @@ async function getTopics() {
   return topics.filter(Boolean).sort();
 }
 
-async function findQuestionPage({ topics = [], difficulty, page = 1, limit = 20 }) {
-  const query = buildQuestionQuery({ topics, difficulty });
+// Public aggregate counts for the About page (GET /api/v1/questions/stats):
+// numbers only, no question content. topicCount uses the same visible-topic
+// list the quiz filters show (topics with at least one question).
+async function getPublicStats() {
+  const [totalQuestions, topics] = await Promise.all([
+    questionRepository.countQuestions({}),
+    getTopics(),
+  ]);
+  return { totalQuestions, topicCount: topics.length };
+}
+
+async function findQuestionPage({ topics = [], difficulty, excludeIds = [], page = 1, limit = 20 }) {
+  const query = buildQuestionQuery({ topics, difficulty, excludeIds });
   const total = await questionRepository.countQuestions(query);
   const questions = await questionRepository.findQuestionsPaginated(query, { page, limit });
 
@@ -63,14 +88,7 @@ async function getQuestionsForStudy(filters) {
 }
 
 async function getRandomQuestion({ topics = [], difficulty, excludeIds = [] }) {
-  const query = buildQuestionQuery({ topics, difficulty });
-  if (excludeIds.length) {
-    query._id = {
-      $nin: excludeIds
-        .filter((id) => mongoose.Types.ObjectId.isValid(id))
-        .map((id) => new mongoose.Types.ObjectId(id)),
-    };
-  }
+  const query = buildQuestionQuery({ topics, difficulty, excludeIds });
 
   const totalQuestions = await questionRepository.countQuestions(query);
   if (!totalQuestions) {
@@ -116,11 +134,16 @@ async function updateQuestion(id, payload) {
   const merged = {
     options: existing.options,
     answer: existing.answer,
+    primaryTopic: existing.primaryTopic,
+    secondaryTopics: existing.secondaryTopics || [],
     ...payload,
   };
 
   if (!merged.options.includes(merged.answer)) {
     throw new AppError('Answer must be one of the provided options', 400);
+  }
+  if (merged.secondaryTopics.includes(merged.primaryTopic)) {
+    throw new AppError('A topic cannot be both the primary topic and a secondary topic', 400);
   }
 
   const updated = await questionRepository.updateQuestionById(id, payload);
@@ -130,34 +153,18 @@ async function updateQuestion(id, payload) {
 async function deleteQuestion(id) {
   await getQuestionByIdForAdmin(id);
   await questionRepository.deleteQuestionById(id);
-}
-
-async function checkAnswer(questionId, { selectedIndex, reveal = false } = {}) {
-  if (!mongoose.Types.ObjectId.isValid(questionId)) {
-    throw new AppError('Question not found', 404);
-  }
-
-  const question = await questionRepository.findQuestionById(questionId);
-  if (!question) {
-    throw new AppError('Question not found', 404);
-  }
-
-  const correctIndex = question.options.indexOf(question.answer);
-  const isCorrect =
-    selectedIndex !== undefined && selectedIndex !== null && Number(selectedIndex) === correctIndex;
-
-  const result = { isCorrect };
-  if (isCorrect || reveal) {
-    result.correctIndex = correctIndex;
-    result.correctAnswer = question.answer;
-    result.explanation = question.explanation;
-  }
-
-  return result;
+  // Cascades UserAnsweredQuestion so a deleted question can never keep
+  // counting toward a user's "answered"/coverage totals (docs/AUDIT.md
+  // item 7 / Phase 3 addendum). AnswerEvent is left alone — it's an
+  // immutable attempt log, not a current-state record, and topic
+  // accuracy/coverage are computed against the live Question collection
+  // anyway, so a deleted question's events simply stop contributing.
+  await userAnsweredQuestionRepository.deleteAllForQuestion(id);
 }
 
 module.exports = {
   getTopics,
+  getPublicStats,
   getQuestionsByFilters,
   getQuestionsForStudy,
   getQuestionsForAdmin,
@@ -166,5 +173,4 @@ module.exports = {
   deleteQuestion,
   getRandomQuestion,
   addQuestion,
-  checkAnswer,
 };

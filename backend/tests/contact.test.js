@@ -80,3 +80,31 @@ describe('POST /api/v1/contact', () => {
     expect(sendContactEmail).not.toHaveBeenCalled();
   });
 });
+
+// Phase 4 (docs/AUDIT.md item 13): the auto-reply was dropped entirely, so
+// a submission sends exactly one email, and only to the admin address —
+// never to the submitter-supplied address.
+describe('sendContactEmail (no auto-reply)', () => {
+  it('sends a single email to the admin and nothing to the submitter', async () => {
+    const sendMail = jest.fn().mockResolvedValue({});
+    const originalEmailUser = process.env.EMAIL_USER;
+    process.env.EMAIL_USER = 'admin@pyquiz.test';
+
+    let realSendContactEmail;
+    jest.isolateModules(() => {
+      jest.doMock('nodemailer', () => ({ createTransport: () => ({ sendMail }) }));
+      // The top of this file mocks emailUtils for the route tests; this
+      // test needs the real implementation (with nodemailer mocked instead).
+      ({ sendContactEmail: realSendContactEmail } = jest.requireActual('../utils/emailUtils'));
+    });
+    try {
+      await realSendContactEmail('Mallory', 'victim@example.com', 'Buy cheap stuff at http://spam.example');
+    } finally {
+      process.env.EMAIL_USER = originalEmailUser;
+    }
+
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    expect(sendMail.mock.calls[0][0].to).toBe('admin@pyquiz.test');
+    expect(JSON.stringify(sendMail.mock.calls)).not.toMatch(/"to":"victim@example.com"/);
+  });
+});

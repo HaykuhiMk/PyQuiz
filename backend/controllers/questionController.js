@@ -45,16 +45,6 @@ async function addQuestion(req, res, next) {
   }
 }
 
-async function checkAnswer(req, res, next) {
-  try {
-    const { selectedIndex, reveal } = req.body;
-    const result = await questionService.checkAnswer(req.params.id, { selectedIndex, reveal });
-    return res.json(successResponse(result));
-  } catch (error) {
-    return next(error);
-  }
-}
-
 async function getStudyQuestions(req, res, next) {
   try {
     const { topics = [], difficulty, page, limit } = req.query;
@@ -70,11 +60,20 @@ async function getStudyQuestions(req, res, next) {
   }
 }
 
+async function getPublicStats(req, res, next) {
+  try {
+    const stats = await questionService.getPublicStats();
+    return res.json(successResponse(stats));
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   getTopics,
+  getPublicStats,
   getAllQuestions,
   getRandomQuestion,
   addQuestion,
-  checkAnswer,
   getStudyQuestions,
 };

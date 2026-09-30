@@ -1,33 +1,31 @@
 const { z } = require('zod');
-
-const passwordSchema = z
-  .string()
-  .min(8)
-  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$/);
-
-const updateProgressSchema = z.object({
-  questionId: z.string().min(1),
-  selectedIndex: z.coerce.number().int().min(0).nullable().optional(),
-  mode: z.enum(['classic', 'blitz', 'survival']).optional().default('classic'),
-  timeSpentSec: z.coerce.number().min(0).max(3600).optional().default(0),
-});
+const { passwordRule } = require('./authValidators');
 
 const updateProfileSchema = z.object({
   username: z.string().trim().min(2).max(50).optional(),
-  avatar: z.union([z.string().max(500_000), z.null()]).optional(),
+  // Length is enforced by userService.validateAvatar (config/validationRules.js
+  // AVATAR_MAX_DATA_URL_LENGTH, with the user-facing "Image is too large"
+  // message) and bounded by the route's 1 MB body limit (app.js).
+  avatar: z.union([z.string(), z.null()]).optional(),
 });
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
-  newPassword: passwordSchema,
+  newPassword: passwordRule,
 });
 
 const deleteAccountSchema = z.object({
   password: z.string().min(1),
 });
 
+// GET /api/v1/users/leaderboard. Same rules as the admin endpoints'
+// paginationQuerySchema limit: an integer from 1 to 100, else 400.
+const leaderboardQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
 module.exports = {
-  updateProgressSchema,
+  leaderboardQuerySchema,
   updateProfileSchema,
   changePasswordSchema,
   deleteAccountSchema,

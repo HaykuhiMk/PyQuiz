@@ -5,6 +5,7 @@ const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const app = require('../app');
 const db = require('./testUtils/db');
+const { adminSessionHeaders } = require('./testUtils/authHelpers');
 const User = require('../models/user');
 
 const VALID_PASSWORD = 'Passw0rd!';
@@ -32,10 +33,10 @@ async function createAdmin(username = 'admintester') {
   return admin;
 }
 
-async function adminToken(username = 'admintester') {
+async function adminLogin(username = 'admintester') {
   await createAdmin(username);
   const res = await request(app).post('/api/v1/admin/login').send({ username, password: VALID_PASSWORD });
-  return res.body.data.token;
+  return adminSessionHeaders(res);
 }
 
 async function createRegularUser(username, email) {
@@ -46,14 +47,14 @@ async function createRegularUser(username, email) {
 describe('GET /api/v1/admin/users', () => {
   it('rejects requests with no token', async () => {
     const res = await request(app).get('/api/v1/admin/users');
-    expect(res.statusCode).toBe(403);
+    expect(res.statusCode).toBe(401);
   });
 
   it('lists users without exposing password hashes', async () => {
     await createRegularUser('alice', 'alice@example.com');
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
 
-    const res = await request(app).get('/api/v1/admin/users').set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get('/api/v1/admin/users').set(adminHeaders);
 
     expect(res.statusCode).toBe(200);
     expect(res.body.data.length).toBeGreaterThanOrEqual(2); // alice + the admin itself
@@ -71,16 +72,16 @@ describe('PATCH /api/v1/admin/users/:id/ban', () => {
     const res = await request(app)
       .patch(`/api/v1/admin/users/${user._id}/ban`)
       .send({ banned: true });
-    expect(res.statusCode).toBe(403);
+    expect(res.statusCode).toBe(401);
   });
 
   it('bans a regular user', async () => {
     const user = await createRegularUser('carol', 'carol@example.com');
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
 
     const res = await request(app)
       .patch(`/api/v1/admin/users/${user._id}/ban`)
-      .set('Authorization', `Bearer ${token}`)
+      .set(adminHeaders)
       .send({ banned: true });
 
     expect(res.statusCode).toBe(200);
@@ -93,11 +94,11 @@ describe('PATCH /api/v1/admin/users/:id/ban', () => {
   it('unbans a previously banned user', async () => {
     const user = await createRegularUser('dave', 'dave@example.com');
     await User.findByIdAndUpdate(user._id, { banned: true });
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
 
     const res = await request(app)
       .patch(`/api/v1/admin/users/${user._id}/ban`)
-      .set('Authorization', `Bearer ${token}`)
+      .set(adminHeaders)
       .send({ banned: false });
 
     expect(res.statusCode).toBe(200);
@@ -106,11 +107,11 @@ describe('PATCH /api/v1/admin/users/:id/ban', () => {
 
   it('refuses to ban an admin account', async () => {
     const target = await createAdmin('otheradmin');
-    const token = await adminToken('bannerAdmin');
+    const adminHeaders = await adminLogin('bannerAdmin');
 
     const res = await request(app)
       .patch(`/api/v1/admin/users/${target._id}/ban`)
-      .set('Authorization', `Bearer ${token}`)
+      .set(adminHeaders)
       .send({ banned: true });
 
     expect(res.statusCode).toBe(403);
@@ -119,21 +120,21 @@ describe('PATCH /api/v1/admin/users/:id/ban', () => {
   });
 
   it('returns 404 for a user that does not exist', async () => {
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
     const res = await request(app)
       .patch('/api/v1/admin/users/507f1f77bcf86cd799439011/ban')
-      .set('Authorization', `Bearer ${token}`)
+      .set(adminHeaders)
       .send({ banned: true });
     expect(res.statusCode).toBe(404);
   });
 
   it('rejects a non-boolean banned value', async () => {
     const user = await createRegularUser('erin', 'erin@example.com');
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
 
     const res = await request(app)
       .patch(`/api/v1/admin/users/${user._id}/ban`)
-      .set('Authorization', `Bearer ${token}`)
+      .set(adminHeaders)
       .send({ banned: 'yes' });
 
     expect(res.statusCode).toBe(400);
@@ -149,11 +150,11 @@ describe('Banned users cannot log in', () => {
       password: VALID_PASSWORD,
     });
     const user = await User.findOne({ email });
-    const token = await adminToken();
+    const adminHeaders = await adminLogin();
 
     await request(app)
       .patch(`/api/v1/admin/users/${user._id}/ban`)
-      .set('Authorization', `Bearer ${token}`)
+      .set(adminHeaders)
       .send({ banned: true });
 
     const loginRes = await request(app)

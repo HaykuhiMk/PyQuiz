@@ -5,6 +5,7 @@ import { icon } from './icons.js';
 let challenge = null;
 let currentIndex = 0;
 let selectedIndex = null;
+let resetInterval = null;
 const answers = [];
 
 function escapeHTML(str = '') {
@@ -23,6 +24,39 @@ function formatChallengeDate(dateKey) {
   const date = new Date(`${dateKey}T00:00:00Z`);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
+}
+
+function formatCountdown(ms) {
+  const totalMinutes = Math.max(0, Math.floor(ms / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `Resets in ${hours}h ${String(minutes).padStart(2, '0')}m`;
+}
+
+// Counts down to the server's next-reset instant (Asia/Yerevan midnight),
+// rendered in the viewer's own clock — no timezone math needed client-side,
+// since `nextResetAt` is already an absolute UTC timestamp.
+function startResetCountdown(nextResetAtIso) {
+  clearInterval(resetInterval);
+  const badge = document.getElementById('daily-reset');
+  if (!badge || !nextResetAtIso) return;
+
+  const deadline = new Date(nextResetAtIso).getTime();
+  if (Number.isNaN(deadline)) return;
+
+  const render = () => {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) {
+      badge.textContent = 'Resets soon';
+      clearInterval(resetInterval);
+      return;
+    }
+    badge.textContent = formatCountdown(remaining);
+  };
+
+  badge.hidden = false;
+  render();
+  resetInterval = setInterval(render, 30000);
 }
 
 function verdict(accuracy) {
@@ -89,7 +123,10 @@ function renderQuestion() {
       <div class="pq-question__in">
         <div class="pq-question__meta">
           ${question.difficulty ? `<span class="badge">${escapeHTML(capitalize(question.difficulty))}</span>` : ''}
-          ${question.topics?.length ? `<span>${escapeHTML(question.topics.join(', '))}</span>` : ''}
+          ${(() => {
+            const topics = [question.primaryTopic, ...(question.secondaryTopics || [])].filter(Boolean);
+            return topics.length ? `<span>${escapeHTML(topics.join(', '))}</span>` : '';
+          })()}
         </div>
         <h2 class="pq-title" id="daily-question-title" tabindex="-1">${escapeHTML(question.question)}</h2>
         ${
@@ -229,6 +266,8 @@ async function loadChallenge() {
       dateBadge.hidden = false;
     }
 
+    startResetCountdown(challenge.nextResetAt);
+
     if (challenge.completed) {
       quizEl().hidden = true;
       statusEl().innerHTML = banner('sun', "<strong>You've completed today's challenge.</strong> Your score is saved.");
@@ -257,8 +296,8 @@ async function loadChallenge() {
   }
 }
 
-function init() {
-  if (!requireAuth()) return;
+async function init() {
+  if (!(await requireAuth())) return;
   loadChallenge();
 }
 

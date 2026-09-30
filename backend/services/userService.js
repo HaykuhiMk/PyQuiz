@@ -1,12 +1,24 @@
 const bcrypt = require('bcryptjs');
 const AppError = require('../core/AppError');
+const { passwordRule } = require('../validators/authValidators');
+const {
+  PASSWORD_REQUIREMENTS,
+  AVATAR_MAX_DATA_URL_LENGTH,
+  AVATAR_TOO_LARGE_MESSAGE,
+} = require('../config/validationRules');
 const userRepository = require('../repositories/userRepository');
 const userAnsweredQuestionRepository = require('../repositories/userAnsweredQuestionRepository');
+const answerEventRepository = require('../repositories/answerEventRepository');
+const quizSessionRepository = require('../repositories/quizSessionRepository');
+const resetPasswordRepository = require('../repositories/resetPasswordRepository');
 const { getTotalQuestionCount } = require('../utils/questionCount');
-const Question = require('../models/questionModel');
+const {
+  BASE_POINTS_BY_MODE,
+  BLITZ_TIME_BONUS_MAX,
+  BLITZ_TIME_BONUS_DIVISOR_SEC,
+} = require('../config/quizConfig');
+const { RANK_THRESHOLDS } = require('../config/masteryConfig');
 
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$/;
-const MAX_AVATAR_LENGTH = 500_000;
 const ACHIEVEMENTS = [
   { key: 'first_correct', predicate: (s) => s.totalCorrect >= 1 },
   { key: 'streak_5', predicate: (s) => s.bestStreak >= 5 },
@@ -15,17 +27,11 @@ const ACHIEVEMENTS = [
   { key: 'points_500', predicate: (s) => s.totalPoints >= 500 },
 ];
 
-function basePointsByMode(mode) {
-  if (mode === 'survival') return 15;
-  if (mode === 'blitz') return 12;
-  return 10;
-}
-
 function computePoints({ isCorrect, mode, timeSpentSec }) {
   if (!isCorrect) return 0;
-  const base = basePointsByMode(mode);
+  const base = BASE_POINTS_BY_MODE[mode] ?? BASE_POINTS_BY_MODE.classic;
   if (mode !== 'blitz') return base;
-  const timeBonus = Math.max(0, 10 - Math.floor(timeSpentSec / 3));
+  const timeBonus = Math.max(0, BLITZ_TIME_BONUS_MAX - Math.floor(timeSpentSec / BLITZ_TIME_BONUS_DIVISOR_SEC));
   return base + timeBonus;
 }
 
@@ -45,7 +51,10 @@ function unlockAchievements(user) {
 }
 
 async function getUserProfile(userId) {
-  const user = await userRepository.findById(userId);
+  // The only read path that needs the (up-to-500KB) avatar field —
+  // findById excludes it by default so it isn't loaded on every other
+  // user lookup (docs/AUDIT.md item 9).
+  const user = await userRepository.findByIdWithAvatar(userId);
   if (!user) {
     throw new AppError('User not found', 404);
   }
@@ -69,10 +78,8 @@ async function getUserProfile(userId) {
 
 function computeRank(stats = {}) {
   const points = stats.totalPoints || 0;
-  if (points >= 500) return 'Python Master';
-  if (points >= 200) return 'Advanced';
-  if (points >= 50) return 'Intermediate';
-  return 'Beginner';
+  const tier = RANK_THRESHOLDS.find((candidate) => points >= candidate.minPoints);
+  return tier ? tier.rank : 'Beginner';
 }
 
 async function getUserProgress(userId) {
@@ -96,22 +103,47 @@ async function getUserProgress(userId) {
   };
 }
 
-async function updateUserProgress(userId, payload) {
+// Applies the outcome of a single, already-adjudicated answer to a user's
+// stats. The caller (quizSessionService) is the trust boundary: it derives
+// `isCorrect` from a server-side deadline/attempt check and takes `mode`
+// from the session, never from client input, so this function never
+// re-derives correctness itself.
+//
+// Points and streaks reward a *first-attempt* correct answer specifically
+// (`attemptNumber === 1`): getting it right after one or more wrong Classic/
+// Blitz attempts on the same question still counts toward totalCorrect (and
+// toward topic accuracy/coverage, computed separately by
+// topicMasteryService from AnswerEvent/UserAnsweredQuestion), but earns no
+// points and does not extend the streak — a wrong attempt already broke it.
+// Daily Challenge questions are single-shot by construction, so every
+// correct answer there is attempt 1.
+//
+// On top of that, points are awarded only the first time this user has ever
+// gotten this exact question right on a first attempt, across all modes and
+// sessions (see docs/AUDIT.md Phase 1 addendum) — `UserAnsweredQuestion.
+// everCorrect` records exactly that, so a question only ever guessed right
+// on a later attempt remains eligible for real points in a future session.
+// `alreadyCorrectBefore`/`firstAttemptCorrect` tell the caller which of
+// these applied, so it can explain a 0-point correct answer instead of it
+// looking like a bug.
+//
+// `pointsOverride` bypasses the point calculation above entirely (still
+// updates streaks/accuracy/everCorrect as usual): the Daily Challenge pays a
+// flat per-question bonus independent of the first-correct-ever rule, so it
+// calls this once per question with `pointsOverride: 0` and awards its own
+// points separately in one lump sum.
+async function applyAnswerOutcome(
+  userId,
+  question,
+  { isCorrect, mode, timeSpentSec = 0, attemptNumber = 1, pointsOverride }
+) {
   const user = await userRepository.findById(userId);
   if (!user) {
     throw new AppError('User not found', 404);
   }
 
-  const { questionId, selectedIndex, mode = 'classic', timeSpentSec = 0 } = payload;
-
-  const question = await Question.findById(questionId).lean();
-  if (!question) {
-    throw new AppError('Question not found', 404);
-  }
-
-  const correctIndex = question.options.indexOf(question.answer);
-  const isCorrect =
-    selectedIndex !== undefined && selectedIndex !== null && Number(selectedIndex) === correctIndex;
+  const firstAttemptCorrect = isCorrect && attemptNumber === 1;
+  const alreadyCorrectBefore = await userAnsweredQuestionRepository.wasEverCorrect(userId, question._id);
 
   user.stats = user.stats || {};
   user.stats.currentStreak = user.stats.currentStreak || 0;
@@ -121,23 +153,30 @@ async function updateUserProgress(userId, payload) {
   user.stats.totalAnswered = user.stats.totalAnswered || 0;
   user.stats.timedModes = user.stats.timedModes || { blitzBestScore: 0, survivalBestStreak: 0 };
 
-  await userAnsweredQuestionRepository.markAnswered(userId, questionId);
+  await userAnsweredQuestionRepository.markAnswered(userId, question._id, { correct: firstAttemptCorrect });
 
   user.stats.totalAnswered += 1;
   if (isCorrect) {
     user.stats.totalCorrect += 1;
+  }
+  if (firstAttemptCorrect) {
     user.stats.currentStreak += 1;
   } else {
     user.stats.currentStreak = 0;
   }
 
   user.stats.bestStreak = Math.max(user.stats.bestStreak, user.stats.currentStreak);
-  const points = computePoints({ isCorrect, mode, timeSpentSec });
-  user.stats.totalPoints += points;
+  const pointsAwarded =
+    pointsOverride !== undefined
+      ? pointsOverride
+      : firstAttemptCorrect && !alreadyCorrectBefore
+        ? computePoints({ isCorrect: true, mode, timeSpentSec })
+        : 0;
+  user.stats.totalPoints += pointsAwarded;
   user.stats.lastAnsweredAt = new Date();
 
   if (mode === 'blitz') {
-    user.stats.timedModes.blitzBestScore = Math.max(user.stats.timedModes.blitzBestScore || 0, points);
+    user.stats.timedModes.blitzBestScore = Math.max(user.stats.timedModes.blitzBestScore || 0, pointsAwarded);
   }
   if (mode === 'survival') {
     user.stats.timedModes.survivalBestStreak = Math.max(
@@ -146,24 +185,13 @@ async function updateUserProgress(userId, payload) {
     );
   }
 
-  if (question.topics?.length) {
-    user.topicStats = user.topicStats || [];
-    for (const topic of question.topics) {
-      let entry = user.topicStats.find((item) => item.topic === topic);
-      if (!entry) {
-        entry = { topic, correct: 0, attempted: 0 };
-        user.topicStats.push(entry);
-      }
-      entry.attempted += 1;
-      if (isCorrect) entry.correct += 1;
-    }
-  }
-
   const newAchievements = unlockAchievements(user);
   await userRepository.saveUser(user);
 
   return {
-    pointsAwarded: points,
+    pointsAwarded,
+    alreadyCorrectBefore,
+    firstAttemptCorrect,
     currentStreak: user.stats.currentStreak,
     bestStreak: user.stats.bestStreak,
     totalPoints: user.stats.totalPoints,
@@ -171,7 +199,7 @@ async function updateUserProgress(userId, payload) {
   };
 }
 
-async function getGlobalLeaderboard(limit = 50) {
+async function getGlobalLeaderboard(limit = 50, viewerUserId = null) {
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
   const users = await userRepository.findLeaderboard(safeLimit);
   return users.map((user, index) => ({
@@ -180,6 +208,12 @@ async function getGlobalLeaderboard(limit = 50) {
     totalPoints: user.stats?.totalPoints || 0,
     bestStreak: user.stats?.bestStreak || 0,
     totalCorrect: user.stats?.totalCorrect || 0,
+    // Server-computed instead of the frontend matching by username+stats
+    // (docs/AUDIT.md item 9) — that heuristic broke down whenever two users
+    // shared a username, which case-insensitive uniqueness now prevents
+    // going forward, but this is also just a more direct, correct way to
+    // identify "my row."
+    isCurrentUser: viewerUserId ? String(user._id) === String(viewerUserId) : false,
     achievements: (user.achievements || []).map((a) => a.key),
   }));
 }
@@ -189,8 +223,8 @@ function validateAvatar(avatar) {
   if (typeof avatar !== 'string' || !avatar.startsWith('data:image/')) {
     throw new AppError('Avatar must be a valid image file', 400);
   }
-  if (avatar.length > MAX_AVATAR_LENGTH) {
-    throw new AppError('Image is too large. Please use a file under 500KB.', 400);
+  if (avatar.length > AVATAR_MAX_DATA_URL_LENGTH) {
+    throw new AppError(AVATAR_TOO_LARGE_MESSAGE, 400);
   }
   return avatar;
 }
@@ -205,6 +239,12 @@ async function updateProfile(userId, { username, avatar }) {
     const trimmed = username.trim();
     if (trimmed.length < 2 || trimmed.length > 50) {
       throw new AppError('Username must be between 2 and 50 characters', 400);
+    }
+    if (trimmed.toLowerCase() !== user.usernameLower) {
+      const existing = await userRepository.findByUsernameLower(trimmed.toLowerCase());
+      if (existing) {
+        throw new AppError('Username already exists.', 400);
+      }
     }
     user.username = trimmed;
   }
@@ -232,14 +272,19 @@ async function changePassword(userId, { currentPassword, newPassword }) {
     throw new AppError('Current password is incorrect', 400);
   }
 
-  if (!PASSWORD_REGEX.test(newPassword)) {
-    throw new AppError(
-      'Password must be at least 8 characters long, contain at least one uppercase letter, one number, and one special character (@, $, !, %, *, ?, &, _).',
-      400
-    );
+  // Same rule as registration and reset (validators/authValidators.js); the
+  // route validates it too, this keeps a readable message for the Settings
+  // form instead of the generic "Validation failed".
+  if (!passwordRule.safeParse(newPassword).success) {
+    throw new AppError(`Password requirements: ${PASSWORD_REQUIREMENTS}`, 400);
   }
 
   user.password = await bcrypt.hash(newPassword, 10);
+  // Invalidates every session issued before this change (docs/AUDIT.md
+  // Phase 4, item 10) — the caller's own current token stops working too,
+  // by design; the frontend logs out and redirects to login right after a
+  // successful password change.
+  user.tokenVersion = (user.tokenVersion || 0) + 1;
   await userRepository.saveUser(user);
   return { message: 'Password changed successfully.' };
 }
@@ -259,15 +304,26 @@ async function deleteAccount(userId, { password }) {
     throw new AppError('Password is incorrect', 400);
   }
 
+  // The account goes first, so its sessions stop authenticating at once
+  // (every request re-checks the user), then everything linked to it: the
+  // answered-question records, the per-attempt AnswerEvent log, any quiz
+  // sessions, and any pending password-reset key for its email. Nothing
+  // keyed to this user remains afterwards. Contact-form messages are not
+  // account data (anyone can send one without an account) and are kept.
   await userRepository.deleteById(userId);
-  await userAnsweredQuestionRepository.deleteAllForUser(userId);
+  await Promise.all([
+    userAnsweredQuestionRepository.deleteAllForUser(userId),
+    answerEventRepository.deleteAllForUser(userId),
+    quizSessionRepository.deleteAllForUser(userId),
+    resetPasswordRepository.deleteByEmail(user.email),
+  ]);
   return { message: 'Account deleted successfully.' };
 }
 
 module.exports = {
   getUserProfile,
   getUserProgress,
-  updateUserProgress,
+  applyAnswerOutcome,
   getGlobalLeaderboard,
   updateProfile,
   changePassword,

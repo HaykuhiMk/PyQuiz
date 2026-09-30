@@ -4,6 +4,7 @@
   "main": "app.js",
   "scripts": {
     "test": "jest --runInBand",
+    "test:coverage": "jest --runInBand --coverage",
     "test:watch": "jest --watch",
     "start": "NODE_ENV=development nodemon scripts/dev-server.js",
     "start:prod-local": "NODE_ENV=development node app.js",
@@ -13,7 +14,8 @@
     "lint:fix": "eslint . --ext .js --fix",
     "format": "prettier . --write",
     "typecheck": "tsc --noEmit",
-    "seed": "node database/json_to_mongo.js"
+    "seed": "node database/json_to_mongo.js",
+    "benchmark": "node scripts/benchmark.js"
   },
   "keywords": [],
   "author": "",
@@ -46,6 +48,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.6.0",
+    "autocannon": "^8.0.0",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",

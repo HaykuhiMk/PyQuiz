@@ -2,7 +2,7 @@ import { api, getAchievementMeta, requireAuth } from './api.js';
 import { icon, mountIcons } from './icons.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!requireAuth()) return;
+  if (!(await requireAuth())) return;
 
   mountIcons(document.querySelector('.account-container'));
   document.getElementById('logout').addEventListener('click', handleLogout);
@@ -57,8 +57,10 @@ function updateUI(profile) {
   document.getElementById('streak-stat-value').textContent = stats.currentStreak || 0;
   document.getElementById('streak-stat-desc').textContent = `Best: ${stats.bestStreak || 0}`;
 
-  // Overall accuracy from the account's own totals. (Summing per-topic
-  // stats would count a multi-topic question once per topic.)
+  // "Questions answered correctly": the account's own totals, one count per
+  // resolved question (correct on any attempt). Deliberately labelled
+  // differently from the per-topic "Attempts correct", which counts every
+  // attempt (AnswerEvent) — see the help texts in account.html.
   document.getElementById('accuracy-value').textContent =
     stats.totalAnswered > 0 ? `${Math.round(((stats.totalCorrect || 0) / stats.totalAnswered) * 100)}%` : '—';
 
@@ -79,6 +81,8 @@ const MASTERY_LEVEL_LABEL = {
   intermediate: 'Progressing',
   beginner: 'Started',
   new: 'Not started',
+  measuring: 'Not enough attempts yet',
+  unavailable: 'Not enough questions yet',
 };
 
 function renderTopicMastery(mastery) {
@@ -90,7 +94,7 @@ function renderTopicMastery(mastery) {
   }
 
   const attempted = mastery.filter((topic) => topic.answered > 0);
-  const rows = (attempted.length ? attempted : mastery).slice(0, 8);
+  const rows = attempted.length ? attempted : mastery;
 
   list.innerHTML = rows
     .map(
@@ -121,7 +125,7 @@ function renderWeakTopics(weakTopics) {
         <a href="/questions.html" class="card pq-card--fold fold-card">
           <div class="card__meta"><span>${topic.attempted} attempted</span></div>
           <h3 class="pq-heading fold-card__title">${escapeHTML(topic.topic)}</h3>
-          <p class="pq-muted pq-small">Accuracy so far: ${topic.accuracy}%</p>
+          <p class="pq-muted pq-small">Attempts correct: ${topic.accuracy}%</p>
           <div class="pq-meter pq-meter--sm" style="--v: ${topic.coverage}%"><span></span></div>
         </a>`
     )
@@ -190,7 +194,6 @@ async function handleLogout() {
   } catch (error) {
     console.error('Logout request failed:', error);
   }
-  localStorage.removeItem('adminToken');
   document.cookie = 'guestMode=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   window.location.href = '/login.html';
 }

@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const { spawn } = require('child_process');
 const path = require('path');
 
+const { resolveMongoUri, redactMongoUri, MISSING_MONGO_URI_MESSAGE } = require('../config/mongoUri');
+
 async function isMongoReachable(uri) {
   try {
     await mongoose.connect(uri, { serverSelectionTimeoutMS: 2500 });
@@ -33,15 +35,20 @@ function runSeed() {
 
 async function main() {
   let memoryServer = null;
-  const configuredUri = process.env.MONGO_URI;
+  const configuredUri = resolveMongoUri();
+
+  if (!configuredUri) {
+    console.error(`❌ ${MISSING_MONGO_URI_MESSAGE}`);
+    process.exit(1);
+  }
 
   if (!(await isMongoReachable(configuredUri))) {
-    console.warn(`MongoDB not reachable at ${configuredUri}`);
+    console.warn(`MongoDB not reachable at ${redactMongoUri(configuredUri)}`);
     const memory = await startMemoryMongo();
-    process.env.MONGO_URI = memory.uri;
+    process.env.MONGODB_URI = memory.uri;
     memoryServer = memory.mongod;
   } else {
-    console.log(`Connected to MongoDB at ${configuredUri}`);
+    console.log(`Connected to MongoDB at ${redactMongoUri(configuredUri)}`);
   }
 
   try {

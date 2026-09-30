@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script>(function(){try{var t=localStorage.getItem('pyquiz-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+    <script src="/js/theme-init.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - PyQuiz</title>
@@ -36,7 +36,7 @@
                         <button type="button" id="upload-avatar-btn" class="secondary-btn">Upload photo</button>
                         <button type="button" id="remove-avatar-btn" class="secondary-btn" hidden>Remove</button>
                     </div>
-                    <p class="pq-help">JPG, PNG or WebP, up to 500 KB.</p>
+                    <p class="pq-help" id="avatar-help">JPG, PNG or WebP, up to 366 KB.</p>
                     <p id="avatar-status" class="settings-status pq-status" aria-live="polite"></p>
                 </div>
             </section>

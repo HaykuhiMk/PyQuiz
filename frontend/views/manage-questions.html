@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script>(function(){try{var t=localStorage.getItem('pyquiz-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+    <script src="/js/theme-init.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Manage Questions - PyQuiz Admin</title>
@@ -50,7 +50,9 @@
       </header>
 
       <section id="question-filters">
-        <input type="text" id="filter-topic" placeholder="Filter by topic..." />
+        <select id="filter-topic">
+          <option value="">All topics</option>
+        </select>
         <select id="filter-difficulty">
           <option value="">All difficulties</option>
           <option value="easy">Easy</option>
@@ -68,7 +70,8 @@
             <tr>
               <th>Question</th>
               <th>Difficulty</th>
-              <th>Topics</th>
+              <th>Primary Topic</th>
+              <th>Secondary Topics</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -131,10 +134,17 @@
           </div>
 
           <div class="form-group">
-            <label for="edit-topics"
-              ><i class="fas fa-tags"></i> Topics (comma-separated):</label
+            <label for="edit-primary-topic"
+              ><i class="fas fa-tags"></i> Primary Topic:</label
             >
-            <input type="text" id="edit-topics" required />
+            <select id="edit-primary-topic" required></select>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-secondary-topics"
+              ><i class="fas fa-tags"></i> Secondary Topics (optional — hold Ctrl/Cmd to select multiple):</label
+            >
+            <select id="edit-secondary-topics" multiple size="6"></select>
           </div>
 
           <div class="form-group">

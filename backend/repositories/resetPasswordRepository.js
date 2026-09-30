@@ -1,23 +1,28 @@
 const ResetPassword = require('../models/resetPassword');
 
-async function upsertResetKey(email, resetKey) {
+async function upsertResetKeyHash(email, resetKeyHash) {
   return ResetPassword.findOneAndUpdate(
     { email },
-    { resetKey, createdAt: Date.now() },
+    { resetKeyHash, createdAt: Date.now() },
     { upsert: true, new: true }
   );
 }
 
-async function findByResetKey(resetKey) {
-  return ResetPassword.findOne({ resetKey });
+async function findByResetKeyHash(resetKeyHash) {
+  return ResetPassword.findOne({ resetKeyHash });
 }
 
-async function deleteByResetKey(resetKey) {
-  return ResetPassword.deleteOne({ resetKey });
+async function deleteByResetKeyHash(resetKeyHash) {
+  return ResetPassword.deleteOne({ resetKeyHash });
+}
+
+async function deleteByEmail(email) {
+  return ResetPassword.deleteMany({ email });
 }
 
 module.exports = {
-  upsertResetKey,
-  findByResetKey,
-  deleteByResetKey,
+  deleteByEmail,
+  upsertResetKeyHash,
+  findByResetKeyHash,
+  deleteByResetKeyHash,
 };
