@@ -266,9 +266,11 @@ The dashboard shows the user's rank, points, streaks, accuracy and progress:
   (500 or more).
 - **Points:** total accumulated points.
 - **Streaks:** current and best streak.
-- **Accuracy:** overall accuracy = questions answered correctly ÷ questions answered. Each
-  question counts once, when it is resolved, and counts as correct if it was answered correctly on
-  any attempt. This differs from topic accuracy (Section 5.8), which counts every attempt.
+- **"Questions answered correctly"** (overall accuracy) = questions answered correctly ÷ questions
+  answered. Each question counts once, when it is resolved, and counts as correct if it was
+  answered correctly on any attempt. The dashboard labels it this way, with help text saying so,
+  so that it cannot be confused with the per-topic "Attempts correct" (Section 5.8), which counts
+  every attempt.
 - **Progress:** questions answered out of questions available.
 
 It also shows the day's Daily Challenge status, unlocked achievements and the topic mastery list.
@@ -281,9 +283,14 @@ drift, and uses **primary topics only**. For each topic the server computes two 
 - **Coverage** = questions in the topic the user has ever answered ÷ questions currently in the
   topic, as a percentage. It comes from `UserAnsweredQuestion`, joined against the current
   questions.
-- **Accuracy** = correct attempts ÷ all recorded attempts on the topic's questions, as a
-  percentage. It comes from `AnswerEvent`, which stores one document per attempt, so attempts 2
-  and 3 count too.
+- **Accuracy**, shown as **"Attempts correct"** = correct attempts ÷ all recorded attempts on the
+  topic's questions, as a percentage. It comes from `AnswerEvent`, which stores one document per
+  attempt, so attempts 2 and 3 count too.
+
+On the dashboard, the weak-topic cards show "Attempts correct", with help text saying it counts
+every try, including second and third attempts. The mastery list's bar shows coverage, with help
+text saying so. Because the two measures count different things, a user who needed several
+attempts can see a lower "Attempts correct" than "Questions answered correctly".
 
 Each topic then gets one level, checked in this order:
 
@@ -291,7 +298,7 @@ Each topic then gets one level, checked in this order:
 |---|---|
 | `unavailable` ("Not enough questions yet") | the topic has fewer than **3** questions (`MIN_QUESTIONS_FOR_MASTERY`) |
 | `new` | coverage is 0 |
-| `measuring` ("Accuracy being measured") | fewer than **3** recorded attempts (`MIN_ACCURACY_EVENTS`) |
+| `measuring` ("Not enough attempts yet") | fewer than **3** recorded attempts (`MIN_ACCURACY_EVENTS`) |
 | `master` | coverage ≥ **80%** and accuracy ≥ **70%** |
 | `intermediate` | coverage ≥ **50%** |
 | `beginner` | otherwise |
@@ -909,14 +916,15 @@ allows 1 MB so that an oversized photo gets a readable "Image is too large" erro
 
 ## 13. Testing
 
-**Backend.** The backend has **223 automated tests in 28 test suites** (Jest and Supertest against a
+**Backend.** The backend has **224 automated tests in 29 test suites** (Jest and Supertest against a
 real MongoDB, via `mongodb-memory-server` or a local test database), all passing. Before this
 remediation work began, it had 89 tests in 9 suites.
 
-**Frontend.** A Playwright suite in `e2e/` has **12 browser tests**, all passing:
+**Frontend.** A Playwright suite in `e2e/` has **13 browser tests**, all passing:
 - **7 smoke tests:** guest quiz, login and logout, a Classic quiz, the Daily Challenge, the theme
   toggle, the About page, and CSRF recovery after a reload;
-- **5 tests** that the frontend's validation matches the server's.
+- **5 tests** that the frontend's validation matches the server's;
+- **1 test** that the dashboard's two accuracy measures are labelled and filled separately.
 
 It runs against its own backend, frontend and a disposable local database, and fails on any
 Content-Security-Policy violation or page error.
@@ -924,12 +932,12 @@ Content-Security-Policy violation or page error.
 **Coverage** (`npm run test:coverage`, measured over all runtime backend code: everything except
 the one-off `scripts/` and `database/` tools):
 
-| | Before (commit `d8ad91e`, 89 tests) | Now (223 tests) |
+| | Before (commit `d8ad91e`, 89 tests) | Now (224 tests) |
 |---|---|---|
-| Lines | 77.69% | 89.67% |
+| Lines | 77.69% | 89.72% |
 | Branches | 50.39% | 74.92% |
-| Statements | 77.19% | 89.38% |
-| Functions | 72.57% | 89.76% |
+| Statements | 77.19% | 89.42% |
+| Functions | 72.57% | 89.88% |
 
 Both columns use the same coverage configuration, so they measure the same set of files. The
 least-covered code is the unused BullMQ email queue (0%) and the Redis-only caching code, which the
@@ -1157,8 +1165,8 @@ provides:
 - a leaderboard;
 - account management and an admin panel.
 
-Its security measures are described in Section 12. Its behaviour is covered by 223 backend tests
-(89.67% line and 74.92% branch coverage) and 12 browser tests.
+Its security measures are described in Section 12. Its behaviour is covered by 224 backend tests
+(89.72% line and 74.92% branch coverage) and 13 browser tests.
 
 Its main limitations are the small question bank, answers being readable in Study mode, a typecheck
 step that does not type-check, and an email queue that is not yet wired up (Section 19). The

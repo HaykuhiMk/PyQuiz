@@ -55,8 +55,9 @@
                 <span class="pq-stat__v" id="points-count">0</span>
             </div>
             <div class="pq-stat">
-                <span class="pq-stat__l">Accuracy</span>
+                <span class="pq-stat__l" id="accuracy-label">Questions answered correctly</span>
                 <span class="pq-stat__v" id="accuracy-value">—</span>
+                <span class="pq-stat__d" id="accuracy-help">Each question counts once, as correct if you got it right on any attempt.</span>
             </div>
             <div class="pq-stat">
                 <span class="pq-stat__l">Streak</span>
@@ -77,10 +78,12 @@
         <div class="dashboard-grid-2">
             <div class="pq-stack" id="weak-topics-section" hidden>
                 <h3 class="card-heading">Needs practice</h3>
+                <p class="pq-help" id="attempts-correct-help">"Attempts correct" counts every try in the topic, including second and third attempts.</p>
                 <div class="fold-card-grid" id="weak-topics-grid"></div>
             </div>
             <div class="card" id="mastery-card">
                 <h3 class="card-heading">Topic mastery</h3>
+                <p class="pq-help" id="mastery-help">The bar shows how many of the topic's questions you have answered. Levels also use your attempts correct.</p>
                 <div id="topic-mastery-list"></div>
             </div>
         </div>
