@@ -18,6 +18,13 @@ async function answerFirstQuestion(page) {
 }
 
 test('guest can play a quiz without an account', async ({ page }) => {
+  // Slow /auth/me down: the landing page's buttons must work immediately,
+  // not only once the session check has answered (they used to be wired up
+  // only after it, so an early click did nothing).
+  await page.route('**/api/v1/auth/me', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await route.continue();
+  });
   await page.goto('/index.html');
   await page.click('#guest-btn');
   await expect(page).toHaveURL(/\/questions\.html$/);
