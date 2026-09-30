@@ -22,9 +22,11 @@ Commit history for this task, oldest first:
 - `39aa508` — Phase 3: canonical topic taxonomy migration and admin form restriction
 - `732d281` — Phase 3 follow-up: production migration safety, dashboard mastery cap removed
 
-**Phase 4 (Security) is complete** — see "Phase 4 addendum" in `docs/AUDIT.md`. Suite is now
-**156 tests across 18 suites**, lint and typecheck clean. **Next up: Phase 5 (Testing and tooling)**,
-verbatim instructions below. Nothing in Phase 5 or 6 has been started.
+**Phases 4 and 5 are complete** — see the "Phase 4 addendum" and "Phase 5 addendum" in
+`docs/AUDIT.md`. Suite is now **187 tests across 23 suites** (coverage 89.37% lines / 74.66%
+branches), plus a 7-test Playwright suite in `e2e/`; lint and typecheck clean. **Next up: Phase 6
+(system description)**, verbatim instructions below. Nothing in Phase 6 has been started. The
+consolidated production deployment checklist is at the end of `docs/AUDIT.md`.
 
 ## Every decision made so far (index — see docs/AUDIT.md for full reasoning and evidence)
 
@@ -64,6 +66,17 @@ verbatim instructions below. Nothing in Phase 5 or 6 has been started.
 - `/metrics`: bearer token (`METRICS_TOKEN`) in production, 404 if unset. `/api-docs`: off in
   production unless `ENABLE_API_DOCS=true`.
 - Frontend CSP with no `'unsafe-inline'` scripts: inline scripts/handlers moved to external files.
+
+**Phase 5 — testing and tooling (decisions made in advance by the owner):**
+- Coverage measured over all runtime code; before/after both measured with the same config.
+- Playwright: minimal `e2e/` suite (7 tests) incl. About page, login/logout, and CSRF-after-reload.
+- Swagger: every endpoint annotated; `tests/swagger.test.js` keeps spec and routes in sync.
+- BullMQ email queue: skipped, documented as future work.
+- `scripts/benchmark.js`: localhost by default, other targets only via explicit `--url`; one local
+  run recorded with machine and dataset. `BENCHMARK_DISABLE_RATE_LIMITS` (ignored in production)
+  added so the benchmark measures endpoints rather than 429s.
+- Open finding for the owner: `POST /questions/:id/check` exposes Daily Challenge answers publicly
+  (see Phase 5 addendum, "Found while annotating").
 
 **Pre-Phase-3 / Phase 3:**
 - `TRUST_PROXY` is a required env var read at startup (hop count, or `"true"` — logs a warning if

@@ -9,9 +9,11 @@ Backend endpoints are validated with Zod and errors go through a centralized err
 
 - Backend dev server: `cd backend && npm start` (nodemon, port from `.env`, default 7498)
 - Frontend server: `cd frontend && npm start` (plain Express static server, default port 3000)
-- Backend tests: `cd backend && npm test` (Jest + Supertest, `--runInBand`)
+- Backend tests: `cd backend && npm test` (Jest + Supertest, `--runInBand`); coverage: `npm run test:coverage`
 - Lint: `cd backend && npm run lint`
-- Typecheck: `cd backend && npm run typecheck` (`tsc --noEmit` over JSDoc types, no build)
+- Typecheck: `cd backend && npm run typecheck` (`tsc --noEmit`, `checkJs` off: syntax check only)
+- Frontend smoke tests: `cd e2e && npm install && npm test` (Playwright; own servers + local `pyquiz_e2e` DB)
+- Benchmark: `cd backend && npm run benchmark -- --url <local API>` (see docs/AUDIT.md Phase 5)
 - Seed local dev DB: `cd backend && npm run seed` (reads `database/questions.json`)
 
 ## Ground rules

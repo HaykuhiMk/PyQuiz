@@ -6,3 +6,8 @@
 
 # Scratch files for one-off scripts/verification during a task — never committed
 /tmp/
+
+# Playwright smoke suite artifacts
+/e2e/node_modules/
+/e2e/test-results/
+/e2e/playwright-report/

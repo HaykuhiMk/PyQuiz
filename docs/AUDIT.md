@@ -1196,3 +1196,169 @@ has been run against production.
     Submit the contact form, and confirm only the admin receives an email.
 19. Watch the backend logs for `MONGO_URI is deprecated`, `TRUST_PROXY=true`, and 4xx/5xx spikes
     during the first hour.
+
+---
+
+## Phase 5 addendum — testing and tooling (implemented)
+
+Owner's decisions for this phase:
+- report real line and branch coverage;
+- a minimal Playwright suite that also covers the About page and login/logout;
+- Swagger annotations for every endpoint;
+- skip the BullMQ email queue and leave it as documented future work;
+- a `benchmark.js` that can only target localhost or an explicitly passed URL, run once locally with
+  the numbers, machine and dataset recorded.
+
+### Coverage (real numbers, `cd backend && npm run test:coverage`)
+
+`jest.config.js` previously collected coverage only from `controllers/`, `services/` and
+`middleware/`. It now covers all runtime code: `app.js`, `config`, `controllers`, `core`, `docs`,
+`jobs`, `middleware`, `models`, `observability`, `repositories`, `routes`, `services`, `utils` and
+`validators`. It excludes `scripts/` and `database/`, which are one-off CLI migration and seed tools
+run by hand. The "before" numbers come from checking out `d8ad91e` (the Phase 0 audit commit, before
+any fix) and running the same config, so both columns measure the same file set.
+
+| | Before (`d8ad91e`) | After (this commit) |
+|---|---|---|
+| Tests / suites | 89 / 9 | 187 / 23 |
+| Lines | 77.69% (763/982) | 89.37% (1304/1459) |
+| Branches | 50.39% (191/379) | 74.66% (495/663) |
+| Statements | 77.19% (775/1004) | 89.08% (1331/1494) |
+| Functions | 72.57% (127/175) | 89.72% (227/253) |
+
+The least-covered files are `jobs/emailQueue.js` and `jobs/queue.js` at 0%, since BullMQ is unused
+without `REDIS_URL` and was skipped this phase, followed by `middleware/cache.js` (31.8% lines) and
+`config/redis.js` (50%). Both of those only run with Redis configured, which the test suite doesn't
+set up.
+
+### Playwright smoke suite (`cd e2e && npm install && npm test`)
+
+A self-contained `e2e/` package using `@playwright/test`. It runs on the locally installed Google
+Chrome (`channel: 'chrome'`); remove that line and run `npx playwright install chromium` to use
+bundled Chromium instead.
+- **Servers.** It starts its own backend (port 7598) and frontend (port 3998), so running dev servers
+  are untouched.
+- **Database.** The backend uses a dedicated local `pyquiz_e2e` database, which `e2e/start-backend.js`
+  drops and re-seeds from `questions.json` on every run. It refuses to run against anything that
+  isn't a local `*_e2e` database.
+- **Checks.** Every test fails on any Content-Security-Policy violation or uncaught page error.
+
+Seven tests, all passing (three consecutive runs, 27–41 s each):
+1. Guest quiz flow.
+2. Login shows the logged-in state; logout ends the session, and a protected page then redirects to
+   login.
+3. A logged-in Classic quiz.
+4. Completing the Daily Challenge.
+5. The theme toggle switches and persists across a reload.
+6. The About page shows the live counts from `/questions/stats`.
+7. The cross-host CSRF case: log in, delete the readable `csrfToken` cookie, reload, and a
+   state-changing request still succeeds because the token is re-fetched from `/auth/me`.
+
+### Swagger (`/api-docs`)
+
+Every endpoint is annotated: 40 operations on 37 paths, from `@openapi` blocks above each route in
+`backend/routes/v1/*.js`, plus `/healthz`, `/readyz` and `/metrics` defined in `docs/swagger.js`.
+The docs include security schemes for the user cookie, the admin cookie, the CSRF header and the
+metrics bearer token. Request schemas are derived from the Zod validators, and the topic and mode
+enums are built from config.
+
+`tests/swagger.test.js` derives the real route list by walking the Express router stacks. It asserts
+that the spec and the routes match in both directions, so an undocumented or stale route fails the
+suite. It also checks that the spec is valid OpenAPI 3: `$ref`s resolve, path parameters are
+declared and required, and operation ids are unique. `GET /` and a legacy redirect are deliberately
+undocumented.
+
+In the webpack bundle (`dist/server.js`), swagger-jsdoc reads the route files from disk relative to
+`dist/`. So `/api-docs` is only populated when the source `routes/` folder is deployed alongside the
+bundle; without it the page loads with just the three operational paths.
+
+### Build and typecheck, stated plainly
+
+- **Webpack:** `npm run build` bundles `app.js` and its dependencies into a single `dist/server.js`,
+  so production starts from one file (`npm run prod`). Its `production` mode also bakes
+  `NODE_ENV === 'production'` into the bundle.
+- **`tsc --noEmit`:** runs with `allowJs: true` but `checkJs: false`, so it is **not** JSDoc type
+  checking. It parses the 114 JS files and catches syntax errors only. There are no `.ts` files.
+  Enabling `checkJs` currently reports 1,564 errors, so it's future work rather than a flag to flip.
+- The same explanation is in comments in `webpack.config.js` and `tsconfig.json`.
+
+### BullMQ email queue: skipped (owner's decision)
+
+Documented future work. `backend/jobs/queue.js` and `backend/jobs/emailQueue.js` exist, but emails
+are sent synchronously. The intended change is to enqueue password-reset and contact emails when
+`REDIS_URL` is set, falling back to synchronous sending otherwise.
+
+### Benchmark (`cd backend && npm run benchmark -- --url <target>`)
+
+`backend/scripts/benchmark.js` uses autocannon. It prints requests, average req/s, p50/p90/p99/max
+latency, non-2xx and error counts for:
+- `GET /questions/random` (question fetch);
+- `POST /quiz/sessions/:id/answer` (answer submit): a fixed number of answers, one per quiz session,
+  with the sessions created before the timed run;
+- `GET /users/leaderboard`;
+- `GET /users/me` and `GET /users/topic-mastery`, the two calls the dashboard makes.
+
+**Target safety.** The default is `http://localhost:7498`. The target is never read from an
+environment variable, any other target must be passed with `--url`, and a non-local URL prints a
+warning.
+
+**Rate limits.** The run registers a throwaway user and writes quiz data. The rate limiters would
+answer most benchmark requests with 429, so the target backend runs with
+`BENCHMARK_DISABLE_RATE_LIMITS=true`. The new `config/rateLimitBypass.js` honours this only when
+`NODE_ENV` isn't `production`, re-checks it on every request, and logs an error if it's set in
+production. `tests/rateLimitBypass.test.js` covers unset, development and production.
+
+**Recorded run (2026-09-30 12:19 +04, one run, not averaged):**
+
+| Endpoint | Requests | Avg req/s | p50 ms | p90 ms | p99 ms | max ms | non-2xx |
+|---|---|---|---|---|---|---|---|
+| `GET /questions/random` | 22,323 | 2,233 | 4 | 6 | 9 | 19 | 0 |
+| `POST /quiz/sessions/:id/answer` | 2,000 | 125 | 75 | 102 | 125 | 137 | 0 |
+| `GET /users/leaderboard` | 25,727 | 2,339 | 4 | 5 | 7 | 13 | 0 |
+| `GET /users/me` | 22,752 | 2,276 | 4 | 5 | 7 | 40 | 0 |
+| `GET /users/topic-mastery` | 25,219 | 2,293 | 4 | 5 | 7 | 12 | 0 |
+
+- **Settings:** 10 connections; each GET ran for 10 s, and the answer-submit run was a fixed 2,000
+  requests.
+- **Machine:** Intel Core i7-6700HQ @ 2.60 GHz (8 logical cores), 16 GB RAM, macOS 12.7.6, Node
+  v20.11.0, MongoDB 7.0.15 on the same machine (127.0.0.1), autocannon 8.0.0. The client, API and
+  database all ran on one laptop, which also had the developer's own backend dev server and editor
+  running.
+- **Backend configuration:** `NODE_ENV=development`, no Redis (so no response caching),
+  `LOG_LEVEL=error`, rate limits bypassed.
+- **Dataset:** a fresh local database seeded with the 47 questions (10 visible topics). It had 2
+  users, both benchmark users, one from a 3 s trial run just before. So the leaderboard ranked 2
+  users, and `topic-mastery` computed over the benchmark user's own answer history, 2,000
+  `AnswerEvent`s by the time it ran. That's far smaller than a real user base, and leaderboard
+  numbers in particular say nothing about behaviour with thousands of users. The database was
+  dropped afterwards.
+- **Reading the numbers:** answer submit is the write path (session update, `AnswerEvent`,
+  `UserAnsweredQuestion`, stats), about 20× slower per request than the reads here. These figures
+  are for this machine and dataset only, not a production capacity estimate.
+
+### Found while annotating every endpoint (reported, not changed in this phase)
+
+The first five were confirmed directly against the code:
+1. **Daily Challenge answers are publicly queryable.** `POST /api/v1/questions/:id/check` needs no
+   authentication. With `reveal: true` it returns `correctAnswer`, `correctIndex` and `explanation`
+   for any question id, today's Daily Challenge questions included. Even without `reveal`, trying
+   `selectedIndex` 0–3 reveals which option is correct. That undoes the Phase 2 intent behind
+   making Study mode login-only and excluding the day's set. The frontend doesn't call this
+   endpoint (`api.checkAnswer` is defined but unused), so removing it, or requiring login and
+   excluding today's set, would close it.
+2. `checkAnswerSchema.reveal` uses `z.coerce.boolean()`, so the string `"false"` parses as `true`.
+3. `express.json()` uses its default 100 kB body limit, while the avatar field allows 500,000
+   characters. Large avatars get a 413 before validation runs.
+4. Registration and reset accept any characters (plus the required classes), but change-password
+   only allows `[A-Za-z\d@$!%*?&_]`. A password containing `#` can be registered but not set via
+   change-password.
+5. Admin login returns 404 "Admin not found" for an unknown username and 401 for a wrong password,
+   so it reveals which admin usernames exist.
+6. Reported by the annotation pass but not separately re-verified:
+   - `verifyAdmin` returns 403 with no cookie but 401 for an invalid token.
+   - Auth middleware and limiters return `{ error }` rather than the standard envelope.
+   - User auth still accepts an `Authorization: Bearer` header, which the CSRF checks don't account
+     for.
+   - Quiz routes run `optionalAuthenticate` twice (once globally, once per route).
+   - Contact and Daily Challenge submit validation live outside `validators/`.
+   - Leaderboard `limit` has no Zod schema (the service clamps it).

@@ -102,8 +102,23 @@ In `backend/`:
 
 - `npm run lint`
 - `npm run test` (set `MONGOMS_VERSION=7.0.15` if the bundled in-memory MongoDB binary won't start on your machine)
-- `npm run typecheck`
+- `npm run test:coverage` — the same suite with line/branch coverage (`coverage/`, gitignored)
+- `npm run typecheck` — `tsc --noEmit` with `checkJs` off, i.e. a syntax check of the JS sources, not type checking
+- `npm run benchmark -- --url http://localhost:<port>` — autocannon latency/throughput for the main endpoints; defaults to `http://localhost:7498` and never reads its target from env. Start the target backend with `BENCHMARK_DISABLE_RATE_LIMITS=true` (ignored in production) and a throwaway database — it registers a user and writes quiz data.
 - `npm run build`
+
+## Frontend smoke tests
+
+```bash
+cd e2e && npm install && npm test
+```
+
+A minimal Playwright suite (guest quiz, login/logout, Classic quiz, Daily Challenge, theme toggle,
+About page, CSRF recovery after reload). It starts its own backend on port 7598 and frontend on
+port 3998 against a local `pyquiz_e2e` MongoDB database that it drops and re-seeds on every run, so
+it needs a local MongoDB on `127.0.0.1:27017` and never touches your dev data. It uses your
+installed Google Chrome; to use Playwright's Chromium instead, run `npx playwright install chromium`
+and remove `channel: 'chrome'` from `e2e/playwright.config.js`.
 
 ## License
 

@@ -10,6 +10,7 @@ const pinoHttp = require('pino-http');
 const logger = require('./config/logger');
 const { configureTrustProxy } = require('./config/trustProxy');
 const { resolveMongoUri, redactMongoUri, MISSING_MONGO_URI_MESSAGE } = require('./config/mongoUri');
+const { rateLimitsBypassed, warnAboutRateLimitBypass } = require('./config/rateLimitBypass');
 const optionalAuthenticate = require('./middleware/optionalAuth');
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { setupSwagger } = require('./docs/swagger');
@@ -30,6 +31,7 @@ const app = express();
 // limiters below do) — see backend/config/trustProxy.js and docs/AUDIT.md
 // item 15.
 configureTrustProxy(app);
+warnAboutRateLimitBypass();
 
 const allowedOrigins = [
   'http://localhost:3000',
@@ -90,6 +92,7 @@ const GENERAL_LIMIT_PER_GUEST_IP = 1000;
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: (req) => (req.user?.userId ? GENERAL_LIMIT_PER_USER : GENERAL_LIMIT_PER_GUEST_IP),
+  skip: rateLimitsBypassed,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => (req.user?.userId ? `user:${req.user.userId}` : `ip:${ipKeyGenerator(req.ip)}`),
@@ -102,6 +105,7 @@ function createAuthLimiter() {
   return rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 20,
+    skip: rateLimitsBypassed,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many attempts. Please try again later.' },
@@ -111,6 +115,7 @@ function createAuthLimiter() {
 const contactLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
+  skip: rateLimitsBypassed,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many messages sent. Please try again later.' },

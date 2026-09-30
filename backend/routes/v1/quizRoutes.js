@@ -1,5 +1,6 @@
 const express = require('express');
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
+const { rateLimitsBypassed } = require('../../config/rateLimitBypass');
 const quizController = require('../../controllers/quizController');
 const optionalAuthenticate = require('../../middleware/optionalAuth');
 const { verifyCsrfIfAuthenticated } = require('../../middleware/csrf');
@@ -25,6 +26,7 @@ const router = express.Router();
 const createSessionLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: (req) => (req.user?.userId ? 60 : 300),
+  skip: rateLimitsBypassed,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => (req.user?.userId ? `user:${req.user.userId}` : `ip:${ipKeyGenerator(req.ip)}`),
@@ -34,6 +36,50 @@ const createSessionLimiter = rateLimit({
 // Guests can play Classic/Blitz/Survival without an account (they just never
 // accrue persisted points/stats), so none of these require authentication —
 // verifyCsrfIfAuthenticated still protects logged-in sessions.
+/**
+ * @openapi
+ * /quiz/sessions:
+ *   post:
+ *     tags: [Quiz]
+ *     summary: Start a quiz session and get its first question
+ *     description: >
+ *       Guests allowed (no persisted points/stats). When the request carries the user session
+ *       cookie, `X-CSRF-Token` is required.
+ *       Limited to 60 new sessions per 15 minutes per user, 300 per guest IP.
+ *     operationId: quizCreateSession
+ *     security:
+ *       - {}
+ *       - userCookie: []
+ *         csrfHeader: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [mode]
+ *             properties:
+ *               mode: { $ref: '#/components/schemas/QuizMode' }
+ *               topics:
+ *                 type: array
+ *                 maxItems: 150
+ *                 default: []
+ *                 items: { $ref: '#/components/schemas/Topic' }
+ *               difficulty: { $ref: '#/components/schemas/Difficulty' }
+ *               practiceMode:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Only honoured for classic mode.
+ *     responses:
+ *       200:
+ *         description: OK.
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ApiSuccess' }
+ *       400: { $ref: '#/components/responses/ValidationError' }
+ *       403: { $ref: '#/components/responses/CsrfForbidden' }
+ *       429: { $ref: '#/components/responses/TooManyRequests' }
+ */
 router.post(
   '/sessions',
   optionalAuthenticate,
@@ -42,12 +88,102 @@ router.post(
   validate(createSessionSchema),
   quizController.createSession
 );
+/**
+ * @openapi
+ * /quiz/sessions/{sessionId}/next:
+ *   post:
+ *     tags: [Quiz]
+ *     summary: Advance to the next question
+ *     description: >
+ *       Guests allowed (no persisted points/stats). When the request carries the user session
+ *       cookie, `X-CSRF-Token` is required.
+ *       An unanswered Blitz question is resolved as a timeout.
+ *     operationId: quizNextQuestion
+ *     security:
+ *       - {}
+ *       - userCookie: []
+ *         csrfHeader: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/SessionIdPath'
+ *     responses:
+ *       200:
+ *         description: OK.
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ApiSuccess' }
+ *       400:
+ *         description: Session has ended, or the current question has not been answered yet.
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ApiError' }
+ *       403: { $ref: '#/components/responses/CsrfForbidden' }
+ *       404:
+ *         description: Session not found (malformed token, unknown token, or owned by another user).
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ApiError' }
+ *       429: { $ref: '#/components/responses/TooManyRequests' }
+ */
 router.post(
   '/sessions/:sessionId/next',
   optionalAuthenticate,
   verifyCsrfIfAuthenticated,
   quizController.nextQuestion
 );
+/**
+ * @openapi
+ * /quiz/sessions/{sessionId}/answer:
+ *   post:
+ *     tags: [Quiz]
+ *     summary: Submit an answer to the current question
+ *     description: >
+ *       Guests allowed (no persisted points/stats). When the request carries the user session
+ *       cookie, `X-CSRF-Token` is required.
+ *     operationId: quizSubmitAnswer
+ *     security:
+ *       - {}
+ *       - userCookie: []
+ *         csrfHeader: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/SessionIdPath'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [questionId]
+ *             properties:
+ *               questionId: { $ref: '#/components/schemas/ObjectId' }
+ *               selectedIndex:
+ *                 type: integer
+ *                 minimum: 0
+ *                 nullable: true
+ *                 description: Coerced to a number; null or omitted means no answer.
+ *     responses:
+ *       200:
+ *         description: OK.
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ApiSuccess' }
+ *       400:
+ *         description: Validation failed, session ended, no active/already-resolved question, or no attempts left.
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ApiError' }
+ *       403: { $ref: '#/components/responses/CsrfForbidden' }
+ *       404:
+ *         description: Session not found (malformed token, unknown token, or owned by another user).
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ApiError' }
+ *       429: { $ref: '#/components/responses/TooManyRequests' }
+ *       409:
+ *         description: questionId does not match the session's current question.
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ApiError' }
+ */
 router.post(
   '/sessions/:sessionId/answer',
   optionalAuthenticate,
@@ -55,6 +191,41 @@ router.post(
   validate(submitAnswerSchema),
   quizController.submitAnswer
 );
+/**
+ * @openapi
+ * /quiz/sessions/{sessionId}/reveal:
+ *   post:
+ *     tags: [Quiz]
+ *     summary: Reveal the answer to an exhausted question
+ *     description: >
+ *       Guests allowed (no persisted points/stats). When the request carries the user session
+ *       cookie, `X-CSRF-Token` is required.
+ *     operationId: quizRevealAnswer
+ *     security:
+ *       - {}
+ *       - userCookie: []
+ *         csrfHeader: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/SessionIdPath'
+ *     responses:
+ *       200:
+ *         description: OK.
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ApiSuccess' }
+ *       400:
+ *         description: Session ended, no exhausted question to reveal, or attempts remain.
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ApiError' }
+ *       403: { $ref: '#/components/responses/CsrfForbidden' }
+ *       404:
+ *         description: Session not found (malformed token, unknown token, or owned by another user).
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ApiError' }
+ *       429: { $ref: '#/components/responses/TooManyRequests' }
+ */
 router.post(
   '/sessions/:sessionId/reveal',
   optionalAuthenticate,
