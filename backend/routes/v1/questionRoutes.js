@@ -15,6 +15,8 @@ const {
 const router = express.Router();
 
 router.get('/topics', cacheMiddleware('questions:topics', 300), questionController.getTopics);
+// Public, takes no input: aggregate counts only (About page).
+router.get('/stats', cacheMiddleware('questions:stats', 300), questionController.getPublicStats);
 // Study mode requires login (Phase 2 decision, docs/AUDIT.md item 4): it
 // shows full answers/explanations, and unauthenticated access was also a
 // way to look up today's Daily Challenge answers before the exclusion added

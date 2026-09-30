@@ -70,8 +70,18 @@ async function getStudyQuestions(req, res, next) {
   }
 }
 
+async function getPublicStats(req, res, next) {
+  try {
+    const stats = await questionService.getPublicStats();
+    return res.json(successResponse(stats));
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   getTopics,
+  getPublicStats,
   getAllQuestions,
   getRandomQuestion,
   addQuestion,

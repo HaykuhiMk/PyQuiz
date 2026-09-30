@@ -47,6 +47,17 @@ async function getTopics() {
   return topics.filter(Boolean).sort();
 }
 
+// Public aggregate counts for the About page (GET /api/v1/questions/stats):
+// numbers only, no question content. topicCount uses the same visible-topic
+// list the quiz filters show (topics with at least one question).
+async function getPublicStats() {
+  const [totalQuestions, topics] = await Promise.all([
+    questionRepository.countQuestions({}),
+    getTopics(),
+  ]);
+  return { totalQuestions, topicCount: topics.length };
+}
+
 async function findQuestionPage({ topics = [], difficulty, excludeIds = [], page = 1, limit = 20 }) {
   const query = buildQuestionQuery({ topics, difficulty, excludeIds });
   const total = await questionRepository.countQuestions(query);
@@ -177,6 +188,7 @@ async function checkAnswer(questionId, { selectedIndex, reveal = false } = {}) {
 
 module.exports = {
   getTopics,
+  getPublicStats,
   getQuestionsByFilters,
   getQuestionsForStudy,
   getQuestionsForAdmin,
