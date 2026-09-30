@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const AppError = require('../core/AppError');
+const { passwordRule } = require('../validators/authValidators');
 const userRepository = require('../repositories/userRepository');
 const userAnsweredQuestionRepository = require('../repositories/userAnsweredQuestionRepository');
 const { getTotalQuestionCount } = require('../utils/questionCount');
@@ -10,7 +11,6 @@ const {
 } = require('../config/quizConfig');
 const { RANK_THRESHOLDS } = require('../config/masteryConfig');
 
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$/;
 const MAX_AVATAR_LENGTH = 500_000;
 const ACHIEVEMENTS = [
   { key: 'first_correct', predicate: (s) => s.totalCorrect >= 1 },
@@ -265,9 +265,12 @@ async function changePassword(userId, { currentPassword, newPassword }) {
     throw new AppError('Current password is incorrect', 400);
   }
 
-  if (!PASSWORD_REGEX.test(newPassword)) {
+  // Same rule as registration and reset (validators/authValidators.js); the
+  // route validates it too, this keeps a readable message for the Settings
+  // form instead of the generic "Validation failed".
+  if (!passwordRule.safeParse(newPassword).success) {
     throw new AppError(
-      'Password must be at least 8 characters long, contain at least one uppercase letter, one number, and one special character (@, $, !, %, *, ?, &, _).',
+      'Password must be at least 8 characters long and contain a lowercase letter, an uppercase letter, a number, and one of @ $ ! % * ? & _.',
       400
     );
   }

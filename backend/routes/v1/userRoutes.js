@@ -205,9 +205,7 @@ router.patch(
  *               newPassword:
  *                 allOf:
  *                   - $ref: '#/components/schemas/Password'
- *                 description: >
- *                   Same rules as registration, but additionally restricted to letters, digits
- *                   and `@$!%*?&_` only.
+ *                 description: Exactly the same rule as registration and password reset.
  *     responses:
  *       200:
  *         description: Password changed.

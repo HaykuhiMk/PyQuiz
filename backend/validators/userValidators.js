@@ -1,9 +1,5 @@
 const { z } = require('zod');
-
-const passwordSchema = z
-  .string()
-  .min(8)
-  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$/);
+const { passwordRule } = require('./authValidators');
 
 const updateProfileSchema = z.object({
   username: z.string().trim().min(2).max(50).optional(),
@@ -15,7 +11,7 @@ const updateProfileSchema = z.object({
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
-  newPassword: passwordSchema,
+  newPassword: passwordRule,
 });
 
 const deleteAccountSchema = z.object({

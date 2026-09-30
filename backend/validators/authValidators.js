@@ -1,6 +1,8 @@
 const { z } = require('zod');
 
 const emailRule = z.string().email();
+// The single password rule for every place a password is set: registration,
+// reset, and change-password (validators/userValidators.js imports it).
 const passwordRule = z
   .string()
   .min(8)
@@ -30,6 +32,7 @@ const resetKeyParamSchema = z.object({
 });
 
 module.exports = {
+  passwordRule,
   registerSchema,
   loginSchema,
   forgotPasswordSchema,
