@@ -11,3 +11,10 @@
 /e2e/node_modules/
 /e2e/test-results/
 /e2e/playwright-report/
+
+# Environment files hold real secrets: ignore every .env and .env.* in any
+# folder. Only the placeholder example files are committed.
+.env
+.env.*
+!backend/env.example
+!frontend/.env.example
