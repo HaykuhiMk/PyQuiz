@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const client = require('prom-client');
+const { errorResponse } = require('../core/apiResponse');
 
 client.collectDefaultMetrics();
 
@@ -19,13 +20,13 @@ function requireMetricsToken(req, res, next) {
   if (!configuredToken) {
     // Fail closed: no token configured in production means /metrics is
     // unreachable rather than silently public.
-    return res.status(404).end();
+    return res.status(404).json(errorResponse('Route not found'));
   }
 
   const expected = Buffer.from(configuredToken);
   const provided = Buffer.from(providedToken);
   if (expected.length !== provided.length || !crypto.timingSafeEqual(expected, provided)) {
-    return res.status(401).end();
+    return res.status(401).json(errorResponse('Authentication required.'));
   }
 
   return next();

@@ -56,6 +56,10 @@ async function main() {
     CLIENT_URI: FRONTEND_ORIGIN,
     TRUST_PROXY: '',
     LOG_LEVEL: 'warn',
+    // Never send real email from the e2e run, whatever backend/.env holds
+    // (dotenv does not override variables that are already set).
+    EMAIL_USER: '',
+    EMAIL_PASS: '',
   });
   const app = require(path.join(BACKEND, 'app'));
   app.listen(PORT, () => console.log(`e2e backend listening on ${PORT}`));

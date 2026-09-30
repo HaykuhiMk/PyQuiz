@@ -34,9 +34,6 @@ const envelope = (dataSchema = { type: 'object' }) => ({
 const errorContent = {
   'application/json': { schema: { $ref: '#/components/schemas/ApiError' } },
 };
-const middlewareErrorContent = {
-  'application/json': { schema: { $ref: '#/components/schemas/MiddlewareError' } },
-};
 
 const spec = swaggerJsdoc({
   definition: {
@@ -46,10 +43,10 @@ const spec = swaggerJsdoc({
       version: '1.0.0',
       description:
         'API documentation for PyQuiz backend services.\n\n' +
-        'Responses from controllers use the envelope `{ success, data, error, meta }`. Errors raised ' +
-        'through the central error handler use the same envelope with `success: false` and ' +
-        '`error: { message, details }`. Rejections from the auth middleware and the rate limiters are ' +
-        'NOT enveloped: they return `{ error: "<message>" }` (see the `MiddlewareError` schema).\n\n' +
+        'Responses use the envelope `{ success, data, error, meta }`. Every error response, including ' +
+        'authentication failures and every rate limiter, goes through the central error handler and ' +
+        'uses the same envelope with `success: false` and `error: { message, details }` (see the ' +
+        '`ApiError` schema).\n\n' +
         'Regular-user sessions ride the httpOnly cookie `token` (`__Host-token` in production); admin ' +
         'sessions ride a separate httpOnly cookie `adminToken` (`__Host-adminToken` in production). ' +
         'State-changing authenticated routes also require the `X-CSRF-Token` header, an HMAC bound to ' +
@@ -144,14 +141,6 @@ const spec = swaggerJsdoc({
               },
             },
             meta: { type: 'object' },
-          },
-        },
-        MiddlewareError: {
-          type: 'object',
-          description:
-            'Non-enveloped rejection from the auth middleware or a rate limiter.',
-          properties: {
-            error: { type: 'string', example: 'Unauthorized. No token provided.' },
           },
         },
         Message: envelope({
@@ -314,7 +303,7 @@ const spec = swaggerJsdoc({
         },
         Unauthorized: {
           description: 'Missing, invalid or expired session.',
-          content: middlewareErrorContent,
+          content: errorContent,
         },
         CsrfForbidden: {
           description: 'Invalid or missing CSRF token.',
@@ -324,34 +313,18 @@ const spec = swaggerJsdoc({
           description:
             'A valid session that belongs to a non-admin account (including a demoted admin), or an ' +
             'invalid/missing CSRF token on state-changing routes.',
-          content: {
-            'application/json': {
-              schema: {
-                oneOf: [
-                  { $ref: '#/components/schemas/MiddlewareError' },
-                  { $ref: '#/components/schemas/ApiError' },
-                ],
-              },
-            },
-          },
+          content: errorContent,
         },
         AdminUnauthorized: {
           description:
             'No valid admin session: the admin cookie is missing, malformed or expired, or the session was ' +
             'revoked (tokenVersion) or the account is banned or deleted.',
-          content: middlewareErrorContent,
+          content: errorContent,
         },
         NotFound: { description: 'Resource not found.', content: errorContent },
         TooManyRequests: {
-          description:
-            'Rate limit exceeded. Route-specific limiters return `{ error }` JSON; the general /api limiter ' +
-            'returns a plain-text message.',
-          content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/MiddlewareError' },
-            },
-            'text/plain': { schema: { type: 'string' } },
-          },
+          description: 'Rate limit exceeded (every limiter answers with the standard error envelope).',
+          content: errorContent,
         },
       },
     },
@@ -401,12 +374,9 @@ const spec = swaggerJsdoc({
               },
             },
             503: {
-              description: 'Not connected to MongoDB.',
-              content: {
-                'application/json': {
-                  schema: { $ref: '#/components/schemas/Readiness' },
-                },
-              },
+              description:
+                'Not connected to MongoDB. Error envelope; `error.details` is `{ ready: false, dbState }`.',
+              content: errorContent,
             },
           },
         },
@@ -427,11 +397,12 @@ const spec = swaggerJsdoc({
               content: { 'text/plain': { schema: { type: 'string' } } },
             },
             401: {
-              description: 'Production only: missing or wrong bearer token (empty body).',
+              description: 'Production only: missing or wrong bearer token.',
+              content: errorContent,
             },
             404: {
-              description:
-                'Production only: METRICS_TOKEN is not configured (empty body).',
+              description: 'Production only: METRICS_TOKEN is not configured.',
+              content: errorContent,
             },
           },
         },

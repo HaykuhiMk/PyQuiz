@@ -1,3 +1,4 @@
+const AppError = require('../core/AppError');
 const { verifyJwt, findValidSessionAccount } = require('./authenticateToken');
 const { authCookieName } = require('../utils/authCookies');
 
@@ -16,13 +17,13 @@ const { authCookieName } = require('../utils/authCookies');
 module.exports = async function (req, res, next) {
     const token = req.cookies?.[authCookieName('admin')];
 
-    if (!token) return res.status(401).json({ error: "Authentication required." });
+    if (!token) return next(new AppError("Authentication required.", 401));
 
     let decoded;
     try {
         decoded = verifyJwt(token);
     } catch (err) {
-        return res.status(401).json({ error: "Invalid or expired session." });
+        return next(new AppError("Invalid or expired session.", 401));
     }
 
     let account;
@@ -33,13 +34,13 @@ module.exports = async function (req, res, next) {
     }
 
     if (!account) {
-        return res.status(401).json({ error: "Invalid or expired session." });
+        return next(new AppError("Invalid or expired session.", 401));
     }
 
     // The JWT's role claim is only what was true at login; the account is
     // re-checked too, so a demoted admin loses access immediately.
     if (decoded.role !== "admin" || account.role !== "admin") {
-        return res.status(403).json({ error: "Admin access required." });
+        return next(new AppError("Admin access required.", 403));
     }
 
     req.admin = decoded;

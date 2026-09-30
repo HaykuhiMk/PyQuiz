@@ -1,6 +1,7 @@
 const express = require('express');
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { rateLimitsBypassed } = require('../../config/rateLimitBypass');
+const rateLimitHandler = require('../../middleware/rateLimitHandler');
 const quizController = require('../../controllers/quizController');
 const optionalAuthenticate = require('../../middleware/optionalAuth');
 const { verifyCsrfIfAuthenticated } = require('../../middleware/csrf');
@@ -30,7 +31,7 @@ const createSessionLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => (req.user?.userId ? `user:${req.user.userId}` : `ip:${ipKeyGenerator(req.ip)}`),
-  message: { error: 'Too many quiz sessions started. Please try again later.' },
+  handler: rateLimitHandler('Too many quiz sessions started. Please try again later.'),
 });
 
 // Guests can play Classic/Blitz/Survival without an account (they just never

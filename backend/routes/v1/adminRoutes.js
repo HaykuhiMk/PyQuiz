@@ -182,10 +182,7 @@ router.get('/users', verifyAdmin, validate(paginationQuerySchema, 'query'), admi
  *         description: Not an admin session, invalid/missing CSRF token, or the target is an admin account.
  *         content:
  *           application/json:
- *             schema:
- *               oneOf:
- *                 - $ref: '#/components/schemas/MiddlewareError'
- *                 - $ref: '#/components/schemas/ApiError'
+ *             schema: { $ref: '#/components/schemas/ApiError' }
  *       404: { $ref: '#/components/responses/NotFound' }
  *       429: { $ref: '#/components/responses/TooManyRequests' }
  */

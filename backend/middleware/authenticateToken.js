@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const AppError = require('../core/AppError');
 const { authCookieName } = require('../utils/authCookies');
 const userRepository = require('../repositories/userRepository');
 
@@ -48,19 +49,19 @@ const authenticate = async (req, res, next) => {
     const token = extractToken(req);
 
     if (!token) {
-        return res.status(401).json({ error: "Unauthorized. No token provided." });
+        return next(new AppError("Authentication required.", 401));
     }
 
     let decoded;
     try {
         decoded = verifyJwt(token);
     } catch (error) {
-        return res.status(401).json({ error: "Unauthorized. Invalid token." });
+        return next(new AppError("Invalid or expired session.", 401));
     }
 
     try {
         if (!(await isSessionStillValid(decoded))) {
-            return res.status(401).json({ error: "Unauthorized. Session expired, please log in again." });
+            return next(new AppError("Session expired, please log in again.", 401));
         }
     } catch (error) {
         return next(error);

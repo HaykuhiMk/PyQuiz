@@ -26,7 +26,9 @@ describe('/metrics in production', () => {
   it('requires the configured bearer token', async () => {
     const app = loadApp({ NODE_ENV: 'production', METRICS_TOKEN: 'metrics-secret' });
 
-    expect((await request(app).get('/metrics')).statusCode).toBe(401);
+    const missing = await request(app).get('/metrics');
+    expect(missing.statusCode).toBe(401);
+    expect(missing.body).toMatchObject({ success: false, data: null, error: { message: expect.any(String) } });
     expect((await request(app).get('/metrics').set('Authorization', 'Bearer wrong')).statusCode).toBe(401);
 
     const ok = await request(app).get('/metrics').set('Authorization', 'Bearer metrics-secret');
@@ -37,7 +39,9 @@ describe('/metrics in production', () => {
   it('fails closed (404) when no METRICS_TOKEN is configured', async () => {
     delete process.env.METRICS_TOKEN;
     const app = loadApp({ NODE_ENV: 'production' });
-    expect((await request(app).get('/metrics')).statusCode).toBe(404);
+    const res = await request(app).get('/metrics');
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toMatchObject({ success: false, data: null, error: { message: 'Route not found' } });
   });
 
   it('stays open outside production', async () => {

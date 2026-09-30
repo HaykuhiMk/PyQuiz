@@ -11,6 +11,8 @@ const logger = require('./config/logger');
 const { configureTrustProxy } = require('./config/trustProxy');
 const { resolveMongoUri, redactMongoUri, MISSING_MONGO_URI_MESSAGE } = require('./config/mongoUri');
 const { rateLimitsBypassed, warnAboutRateLimitBypass } = require('./config/rateLimitBypass');
+const rateLimitHandler = require('./middleware/rateLimitHandler');
+const { errorResponse } = require('./core/apiResponse');
 const optionalAuthenticate = require('./middleware/optionalAuth');
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { setupSwagger } = require('./docs/swagger');
@@ -105,6 +107,7 @@ const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => (req.user?.userId ? `user:${req.user.userId}` : `ip:${ipKeyGenerator(req.ip)}`),
+  handler: rateLimitHandler('Too many requests. Please try again later.'),
 });
 
 // A factory, not a single shared instance: each mount below gets its own
@@ -117,7 +120,7 @@ function createAuthLimiter() {
     skip: rateLimitsBypassed,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: 'Too many attempts. Please try again later.' },
+    handler: rateLimitHandler('Too many attempts. Please try again later.'),
   });
 }
 
@@ -127,7 +130,7 @@ const contactLimiter = rateLimit({
   skip: rateLimitsBypassed,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many messages sent. Please try again later.' },
+  handler: rateLimitHandler('Too many messages sent. Please try again later.'),
 });
 
 app.use('/api', optionalAuthenticate);
@@ -192,10 +195,11 @@ app.get('/readyz', (req, res) => {
   const isReady =
     process.env.SKIP_DB_CONNECT === 'true' ||
     mongoose.connection.readyState === 1;
-  res.status(isReady ? 200 : 503).json({
-    ready: isReady,
-    dbState: mongoose.connection.readyState,
-  });
+  const dbState = mongoose.connection.readyState;
+  if (!isReady) {
+    return res.status(503).json(errorResponse('Service not ready.', { ready: false, dbState }));
+  }
+  return res.json({ ready: true, dbState });
 });
 
 app.get('/', (req, res) => {
