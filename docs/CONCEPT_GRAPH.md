@@ -38,7 +38,9 @@ There are 16 topics: the 11 existing canonical topics plus the 5 new topics you 
 ## 2. Prerequisite edges
 
 `A → B` means *a learner should understand A before B*: B's core ideas are defined in terms of A.
-Only genuine dependencies are listed, not "related to" links. The graph was checked mechanically:
+Only genuine dependencies are listed, not "related to" links. **Every edge is a plain prerequisite
+and means "must come first"** (owner's decision): a topic with several incoming edges needs all of
+them. The graph was checked mechanically:
 16 nodes, 14 edges, no unknown topics or duplicates, and **acyclic** (a topological sort
 succeeds).
 
@@ -65,9 +67,11 @@ Deliberately not edges:
 - **`loops` → `exceptions`:** `try` is its own control structure, not built on loops.
 - **`scope` → `classes`:** attribute lookup is an object mechanism, not LEGB scope.
 - **`strings` → `slicing`** and **`tuples` → `slicing`:** any one sequence type suffices before
-  slicing, and edge 2 stands for that. A learner who knows only strings is not blocked from
-  slicing; Stage 2 may want to model this as "any one of `lists`, `strings`, `tuples`" rather than
-  as a single edge.
+  slicing, and edge 2 stands for that. Because every edge means "must come first", adding these
+  would wrongly require all three. The single `lists` → `slicing` edge is kept.
+
+**Possible future refinement (not implemented):** "any one of" prerequisites, e.g. `slicing`
+requiring any one of `lists`, `strings` or `tuples`. The graph has plain edges only for now.
 
 ## 3. Misconceptions
 
@@ -97,8 +101,10 @@ Checked and kept where they are, as the closest calls:
 - `tuples.failed-augmented-assignment-changes-nothing`: the fix combines `+=` mutating in place
   (`mutability`) with the tuple refusing the assignment back. What's new, and only happens with
   tuples, is the second step, so it stays in `tuples`.
-- `sets.add-returns-set` and `lists.sort-returns-list`: the fix, "mutating methods return
-  `None`", is taught per type, and each belief is about that type's method.
+- `sets.add-returns-set` and `lists.sort-returns-list`: **these two share one underlying belief**,
+  that a method which changes an object returns the changed object. The fix, "mutating methods
+  return `None`", is taught per type, and each belief is about that type's method, so they stay
+  as two misconceptions in their own topics. The adaptive engine can treat them as related.
 - `scope.mutation-needs-global`: it relies on mutation vs rebinding, but the fix is what
   `global` does, which is `scope`.
 
