@@ -48,12 +48,34 @@ async function adminLogin() {
 }
 
 describe('POST /api/v1/admin/login', () => {
-  it('rejects an unknown admin username', async () => {
+  // Was 404 "Admin not found" before, which revealed which admin usernames
+  // exist; it now gets the same generic 401 as a wrong password.
+  it('rejects an unknown admin username with the generic invalid-credentials error', async () => {
     const res = await request(app)
       .post('/api/v1/admin/login')
       .send({ username: 'nobody', password: VALID_PASSWORD });
 
-    expect(res.statusCode).toBe(404);
+    expect(res.statusCode).toBe(401);
+    expect(res.body.error.message).toBe('Invalid credentials');
+  });
+
+  it('answers an unknown username and a wrong password identically', async () => {
+    const hashed = await bcrypt.hash(VALID_PASSWORD, 10);
+    await User.create({ username: 'realadmin', email: 'realadmin@example.com', password: hashed, role: 'admin' });
+    // A regular (non-admin) account's username must not be distinguishable either.
+    await User.create({ username: 'plainuser', email: 'plainuser@example.com', password: hashed, role: 'user' });
+
+    const unknown = await request(app).post('/api/v1/admin/login').send({ username: 'nobody', password: 'Wr0ng!pass' });
+    const wrongPassword = await request(app)
+      .post('/api/v1/admin/login')
+      .send({ username: 'realadmin', password: 'Wr0ng!pass' });
+    const nonAdmin = await request(app).post('/api/v1/admin/login').send({ username: 'plainuser', password: VALID_PASSWORD });
+
+    for (const res of [unknown, wrongPassword, nonAdmin]) {
+      expect(res.statusCode).toBe(401);
+      expect(res.body).toEqual(wrongPassword.body);
+      expect(res.headers['set-cookie']).toBeUndefined();
+    }
   });
 
   it('rejects an incorrect password', async () => {
@@ -83,7 +105,9 @@ describe('POST /api/v1/admin/login', () => {
       .post('/api/v1/admin/login')
       .send({ username: 'notanadmin', password: VALID_PASSWORD });
 
-    expect(res.statusCode).toBe(404);
+    // Generic 401 (was 404) so the response doesn't reveal that the account exists.
+    expect(res.statusCode).toBe(401);
+    expect(res.body.error.message).toBe('Invalid credentials');
   });
 
   it('rejects a missing password (validation)', async () => {

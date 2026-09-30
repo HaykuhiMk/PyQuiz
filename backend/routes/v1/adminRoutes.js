@@ -59,12 +59,9 @@ const router = express.Router();
  *                         csrfToken: { type: string }
  *       400: { $ref: '#/components/responses/ValidationError' }
  *       401:
- *         description: Wrong password.
- *         content:
- *           application/json:
- *             schema: { $ref: '#/components/schemas/ApiError' }
- *       404:
- *         description: No admin account with that username.
+ *         description: >
+ *           "Invalid credentials" — the same response for an unknown username, a non-admin
+ *           account, or a wrong password.
  *         content:
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ApiError' }
