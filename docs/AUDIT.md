@@ -1399,3 +1399,39 @@ list.
 
 Suite after these: **201 tests across 25 suites**, all passing, with 89.50% line and 75.00% branch
 coverage. `npm run lint` and `npm run typecheck` are clean, and the Playwright suite passes 7/7.
+
+---
+
+## Remaining-items fixes (implemented, one commit each)
+
+1. **One definition of the password rule (`e32468e`).** The register, reset-password and settings
+   pages each hard-coded a stricter regex than the server, so passwords the server accepts (e.g.
+   `Passw0rd!#`) were refused in the browser. The rule now lives only in
+   `backend/config/validationRules.js`, and the Zod `passwordRule` is built from it. The public
+   `GET /api/v1/validation-rules` serves it, and `frontend/public/js/validationRules.js` rebuilds
+   the check with `new RegExp(pattern)`. All three pages use it and show the server's
+   requirements wording.
+   - A backend test checks that a client check built from the endpoint agrees with the Zod rule on
+     11 edge-case passwords.
+   - Playwright tests cover registration (accepts `Passw0rd!#`, rejects a weak password without an
+     API call) and settings change-password.
+2. **Landing page race (`2ca18a0`), found while running the suite.** Since Phase 4, `index.js`
+   attached the button handlers only after `GET /auth/me` answered, so an early click did nothing.
+   The handlers are now bound first. The Playwright guest test delays `/auth/me` by 1.5 s to catch
+   this deterministically; it fails on the old code.
+3. **Avatar limit (`0942d13`).** The server's limit is a 500,000-character data URL. After base64
+   and the 23-character `data:image/jpeg;base64,` prefix, that's a file of at most 374,982 bytes
+   (366 KB), not the 500 KB the picker allowed. The limit is defined in the same config file and
+   served by the same endpoint. The picker checks it before reading and before uploading, and
+   shows "Image is too large. The maximum is 366 KB.".
+   - Backend boundary tests for JPEG, PNG and WebP: exactly the maximum is accepted, and one byte
+     more gets the message.
+   - A Playwright test: one byte over is refused with no upload request, and exactly the maximum
+     uploads.
+4. **User login timing (`36f0ae3`).** An unknown email returned before any bcrypt work. It now does
+   one comparison against a dummy hash and gets the identical 401. This goes through the new
+   `utils/passwordCheck.js`, which admin login now shares. The test asserts exactly one
+   `bcrypt.compare` per attempt rather than timing, so it stays stable; it fails on the old code.
+
+After these fixes the backend suite has **220 tests across 27 suites**, with 89.67% line and
+74.92% branch coverage. Lint and typecheck are clean, and Playwright passes 11/11.

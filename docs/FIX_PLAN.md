@@ -2,7 +2,7 @@
 
 Resumption document for the `fix/review-weaknesses` audit/remediation task, written so a fresh
 session can do the remaining work (Phase 6) without the conversation that produced Phases 0–5.
-Branch: `fix/review-weaknesses`. Last updated after commit `576b69b` (2026-09-30).
+Branch: `fix/review-weaknesses`. Last updated after commit `36f0ae3` (2026-09-30).
 
 ## Status so far
 
@@ -33,6 +33,12 @@ Commit history for this task, oldest first:
 - `93dafed` — Phase 5 follow-up: avatar route 1 MB body limit, readable "image too large" error
 - `c6eb877` — Phase 5 follow-up: change-password uses the registration password rule
 - `576b69b` — Phase 5 follow-up: admin login returns one generic error
+- `28ecc54` — this document: Phases 0–5 complete, Phase 4/5 decisions
+- `e32468e` — password rule defined once (`config/validationRules.js`), served by
+  `GET /api/v1/validation-rules`; register/reset/settings derive their checks from it
+- `2ca18a0` — landing page buttons wired up before the `/auth/me` check (Phase 4 race)
+- `0942d13` — avatar picker enforces the server's real limit (374,982 bytes / 366 KB) before upload
+- `36f0ae3` — user login: same bcrypt work and generic error for an unknown email
 
 ## Every decision made so far (index — see docs/AUDIT.md for full reasoning and evidence)
 
@@ -161,22 +167,40 @@ addendum"):**
   - Change-password uses exactly the registration password rule.
   - Admin login returns one generic 401 "Invalid credentials" for an unknown username, a non-admin
     account and a wrong password, with equal bcrypt work in each case.
+- Second round of follow-ups (owner's decisions, 2026-09-30):
+  - **Single definition of client-facing validation rules.** `backend/config/validationRules.js`
+    holds the password rule (min length, a RegExp source string, the requirements wording) and the
+    avatar limit. The Zod schemas and services read it, and the public, input-free
+    `GET /api/v1/validation-rules` serves it. The register, reset and settings pages build their
+    checks and help text from that response via `frontend/public/js/validationRules.js`, so there
+    is no client copy to drift. If the fetch fails, the client check is skipped and the server
+    still validates.
+  - Avatar picker: the real maximum is a 500,000-character data URL, which is 374,982 bytes (366 KB)
+    of file after base64. The picker checks it before reading and before uploading, with the
+    server's "Image is too large. The maximum is 366 KB." message.
+  - User login: an unknown email does the same single bcrypt comparison (against a dummy hash) and
+    gets the same 401 as a wrong password. The shared `utils/passwordCheck.js` is used by both user
+    and admin login.
+  - Found and fixed while testing: since Phase 4 the landing page bound its buttons only after
+    `/auth/me` answered, so an early click did nothing.
 
-## Facts for Phase 6 (all measured, as of `576b69b`)
+## Facts for Phase 6 (all measured, as of `36f0ae3`)
 
-- **Tests.** Backend: **201 tests across 25 suites**, all passing (`cd backend && npm test`).
-  Frontend: the 7-test Playwright suite in `e2e/`, passing. The baseline before Phase 1 was 89
+- **Tests.** Backend: **220 tests across 27 suites**, all passing (`cd backend && npm test`).
+  Frontend: the Playwright suite in `e2e/` has **11 tests**, all passing: 7 smoke tests in
+  `smoke.spec.js` plus 4 client/server validation tests in `validation.spec.js`. The baseline before Phase 1 was 89
   tests across 9 suites.
 - **Coverage** (`npm run test:coverage`, same config both times):
-  - now: **89.50% lines, 75.00% branches** (89.21% statements, 89.64% functions);
+  - now: **89.67% lines, 74.92% branches** (89.38% statements, 89.76% functions);
   - before (`d8ad91e`): 77.69% lines, 50.39% branches.
   - The Phase 5 addendum records 187 tests / 89.37% / 74.66%. That was at `6a29b92`, before the
     follow-ups; use the numbers above.
 - **Content.** 47 questions. 11 canonical topics, of which 10 have questions and are therefore
   visible, as returned by `GET /api/v1/questions/stats` on the seed data. Content gaps are listed
   in `docs/AUDIT.md`.
-- **API surface.** 39 documented operations on 36 paths: the 40 in the Phase 5 addendum minus the removed
-  `POST /questions/:id/check`. Swagger annotations live in `backend/routes/v1/*.js`, and
+- **API surface.** **40 documented operations on 37 paths.** That is the 40 in the Phase 5
+  addendum, minus the removed `POST /questions/:id/check`, plus the new public
+  `GET /validation-rules`. Swagger annotations live in `backend/routes/v1/*.js`, and
   `tests/swagger.test.js` guarantees they match the real routes. Generate the Phase 6 endpoint
   table from those route files.
 - **Breaking API changes across all phases:**
@@ -192,12 +216,11 @@ addendum"):**
 - **Deployment.** The consolidated production deployment checklist is at the end of
   `docs/AUDIT.md`.
 - **Open items noticed but not changed** (candidates for "Current Limitations"):
-  - The frontend register/reset pages still apply a stricter client-side password whitelist than
-    the server rule.
-  - The avatar picker allows files up to 500 KB, but the server limit is 500,000 data-URL
-    characters (about 375 KB of image).
-  - The regular-user login returns before bcrypt for an unknown email, a timing difference.
-  - Items in the Phase 5 addendum's "Found while annotating" list marked as not re-verified.
+  - The registration page trims the password (`.trim()`) before validating and sending it, while
+    login, reset and change-password send it untrimmed. A password with leading or trailing spaces
+    is therefore stored without them. That's pre-existing and unchanged.
+  - Items in the Phase 5 addendum's "Found while annotating" list that are marked as not
+    re-verified.
   - `tsc` doesn't type-check (`checkJs` off).
   - BullMQ email queue not wired up.
 
