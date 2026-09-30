@@ -13,7 +13,9 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 // in production (utils/authCookies.js), which stops a sibling subdomain from
 // overwriting the session cookie itself.
 function tokenMatches(authToken, headerToken) {
-  if (!authToken || typeof headerToken !== 'string' || !headerToken) return false;
+  if (typeof authToken !== 'string' || !authToken || typeof headerToken !== 'string' || !headerToken) {
+    return false;
+  }
 
   const expected = Buffer.from(computeCsrfToken(authToken), 'hex');
   const actual = Buffer.from(headerToken, 'hex');

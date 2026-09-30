@@ -92,8 +92,8 @@ const spec = swaggerJsdoc({
           name: 'token',
           description:
             'httpOnly regular-user session cookie (a 1h JWT) set by POST /auth/login. Named ' +
-            '`__Host-token` in production. The auth middleware also accepts the same JWT as ' +
-            '`Authorization: Bearer <jwt>`, but the CSRF check only works with the cookie.',
+            '`__Host-token` in production. This cookie is the only way to authenticate as a user; an ' +
+            '`Authorization` header is ignored.',
         },
         adminCookie: {
           type: 'apiKey',

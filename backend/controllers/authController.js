@@ -47,7 +47,9 @@ async function logout(req, res) {
 async function me(req, res, next) {
   try {
     const user = await authService.getSessionUser(req.user.userId || req.user.id);
-    const csrfToken = computeCsrfToken(req.cookies?.[authCookieName()] || '');
+    // authenticateToken only lets a request through with a valid session
+    // cookie, so this is always bound to that real session.
+    const csrfToken = computeCsrfToken(req.cookies[authCookieName()]);
     return res.json(successResponse({ user, csrfToken }));
   } catch (error) {
     return next(error);

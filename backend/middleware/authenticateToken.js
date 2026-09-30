@@ -3,13 +3,12 @@ const AppError = require('../core/AppError');
 const { authCookieName } = require('../utils/authCookies');
 const userRepository = require('../repositories/userRepository');
 
-// Shared by authenticateToken, verifyAdmin, and optionalAuth so all three
-// decode a JWT and resolve its user id the same way instead of maintaining
-// independent implementations.
+// Regular-user authentication works only through the httpOnly session
+// cookie. An Authorization: Bearer header is ignored (it used to be accepted
+// here, but nothing sent it and the CSRF checks only know about the
+// cookie). Shared by authenticateToken and optionalAuth.
 function extractToken(req) {
-    const authHeader = req.headers.authorization || "";
-    const headerToken = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
-    return (req.cookies && req.cookies[authCookieName()]) || headerToken;
+    return req.cookies?.[authCookieName()] || null;
 }
 
 function verifyJwt(token) {

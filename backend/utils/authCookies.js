@@ -55,7 +55,13 @@ function cookieOptions(extra = {}) {
 // session cookie's exact contents, which a sibling subdomain setting its
 // own cookies has no way to read. Keyed by JWT_SECRET with a distinct label
 // so this is a different derivation from the JWT's own signature.
+//
+// Only ever computed for a real session token: an empty or missing token
+// would otherwise yield the same "CSRF token" for everyone.
 function computeCsrfToken(authToken) {
+  if (typeof authToken !== 'string' || authToken.length === 0) {
+    throw new Error('computeCsrfToken requires a session token');
+  }
   return crypto.createHmac('sha256', process.env.JWT_SECRET).update(`csrf:${authToken}`).digest('hex');
 }
 

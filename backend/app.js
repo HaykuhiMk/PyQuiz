@@ -46,7 +46,9 @@ const allowedOrigins = [
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+  // No Authorization header: browser clients authenticate only through the
+  // httpOnly session cookies (/metrics is scraped server-to-server).
+  allowedHeaders: ['Content-Type', 'X-CSRF-Token'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
 }));
 
