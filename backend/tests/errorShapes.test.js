@@ -45,6 +45,13 @@ async function hitUntil429(makeRequest, max) {
   throw new Error(`no 429 within ${max} requests`);
 }
 
+// The two tests below exhaust a real rate limit by sending real requests
+// (up to 70 session starts; 301 general /api requests), so how long they
+// take depends on machine speed: about 1.3 s and 2.4 s on an idle dev laptop,
+// but over Jest's 5 s default under CPU load, which made them fail
+// intermittently. They get an explicit timeout sized for that work instead.
+const LIMITER_TEST_TIMEOUT_MS = 30000;
+
 describe('central error envelope', () => {
   it('user auth middleware (401)', async () => {
     expectEnvelope(await request(app).get('/api/v1/users/me'), 401, /authentication required/i);
@@ -91,13 +98,13 @@ describe('central error envelope', () => {
       70
     );
     expectEnvelope(res, 429, /too many quiz sessions/i);
-  });
+  }, LIMITER_TEST_TIMEOUT_MS);
 
   it('general /api rate limiter (429), previously plain text', async () => {
     const user = await registerAndLogin('shapegeneral@example.com', { username: 'shapegeneral' });
     const res = await hitUntil429(() => request(app).get('/api/v1/auth/me').set('Cookie', user.cookieHeader), 320);
     expectEnvelope(res, 429, /too many requests/i);
-  });
+  }, LIMITER_TEST_TIMEOUT_MS);
 
   it('/readyz 503 when the database is not connected', async () => {
     const mongoose = require('mongoose');
