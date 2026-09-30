@@ -31,7 +31,8 @@ form.addEventListener("submit", (event) => {
     event.preventDefault(); 
 
     const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
+    // Never trimmed: the password must match exactly as it was set.
+    const password = passwordInput.value;
 
     if (!email || !password) {
         showError("Email and password are required.");

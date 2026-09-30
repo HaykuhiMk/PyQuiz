@@ -8,7 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
         event.preventDefault();
 
         const username = document.getElementById("admin-username").value.trim();
-        const password = document.getElementById("admin-password").value.trim();
+        // Never trimmed: the password must match exactly as it was set.
+        const password = document.getElementById("admin-password").value;
 
         if (!username || !password) {
             loginError.textContent = "Username and password are required!";

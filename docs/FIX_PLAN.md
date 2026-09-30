@@ -2,7 +2,7 @@
 
 Resumption document for the `fix/review-weaknesses` audit/remediation task, written so a fresh
 session can do the remaining work (Phase 6) without the conversation that produced Phases 0–5.
-Branch: `fix/review-weaknesses`. Last updated after commit `36f0ae3` (2026-09-30).
+Branch: `fix/review-weaknesses`. Last updated after the password-trimming fix (2026-09-30).
 
 ## Status so far
 
@@ -39,6 +39,8 @@ Commit history for this task, oldest first:
 - `2ca18a0` — landing page buttons wired up before the `/auth/me` check (Phase 4 race)
 - `0942d13` — avatar picker enforces the server's real limit (374,982 bytes / 366 KB) before upload
 - `36f0ae3` — user login: same bcrypt work and generic error for an unknown email
+- `8f94663` — docs: remaining-items fixes recorded, Phase 6 facts refreshed
+- (next commit) — passwords are never trimmed on any page; server verified not to trim either
 
 ## Every decision made so far (index — see docs/AUDIT.md for full reasoning and evidence)
 
@@ -183,12 +185,16 @@ addendum"):**
     and admin login.
   - Found and fixed while testing: since Phase 4 the landing page bound its buttons only after
     `/auth/me` answered, so an early click did nothing.
+  - Passwords are never trimmed (owner's decision). The register, login and admin-login pages used
+    to `.trim()` the password; reset and change-password didn't, so a password set there with
+    surrounding spaces could never be used to log in. The server never trimmed passwords, and tests
+    now pin that. Emails and usernames are still trimmed.
 
-## Facts for Phase 6 (all measured, as of `36f0ae3`)
+## Facts for Phase 6 (all measured, as of the password-trimming fix)
 
-- **Tests.** Backend: **220 tests across 27 suites**, all passing (`cd backend && npm test`).
-  Frontend: the Playwright suite in `e2e/` has **11 tests**, all passing: 7 smoke tests in
-  `smoke.spec.js` plus 4 client/server validation tests in `validation.spec.js`. The baseline before Phase 1 was 89
+- **Tests.** Backend: **223 tests across 28 suites**, all passing (`cd backend && npm test`).
+  Frontend: the Playwright suite in `e2e/` has **12 tests**, all passing: 7 smoke tests in
+  `smoke.spec.js` plus 5 client/server validation tests in `validation.spec.js`. The baseline before Phase 1 was 89
   tests across 9 suites.
 - **Coverage** (`npm run test:coverage`, same config both times):
   - now: **89.67% lines, 74.92% branches** (89.38% statements, 89.76% functions);
@@ -216,9 +222,6 @@ addendum"):**
 - **Deployment.** The consolidated production deployment checklist is at the end of
   `docs/AUDIT.md`.
 - **Open items noticed but not changed** (candidates for "Current Limitations"):
-  - The registration page trims the password (`.trim()`) before validating and sending it, while
-    login, reset and change-password send it untrimmed. A password with leading or trailing spaces
-    is therefore stored without them. That's pre-existing and unchanged.
   - Items in the Phase 5 addendum's "Found while annotating" list that are marked as not
     re-verified.
   - `tsc` doesn't type-check (`checkJs` off).

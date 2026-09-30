@@ -98,3 +98,28 @@ test('avatar picker refuses a file over the server limit before uploading, and a
   await expect(page.locator('#avatar-status')).toHaveText('Photo updated.');
   expect(profilePatches).toBe(1);
 });
+
+test('a password with leading and trailing spaces works exactly as typed through the forms', async ({ page }) => {
+  const spaced = '  Passw0rd! spaced  ';
+  const suffix = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
+  const email = `space${suffix}@example.com`;
+
+  await page.goto('/registration.html');
+  await page.fill('#username', `space${suffix}`);
+  await page.fill('#email', email);
+  await page.fill('#password', spaced);
+  await page.fill('#repeat-password', spaced);
+  await page.click('#registration-form button[type="submit"]');
+  await expect(page).toHaveURL(/\/login\.html$/);
+
+  // The trimmed variant must not work: nothing may have trimmed it on the way in.
+  await page.fill('#email', email);
+  await page.fill('#password', spaced.trim());
+  await page.click('#login-form button[type="submit"]');
+  await expect(page.locator('#helper-text')).toContainText(/invalid credentials/i);
+  await expect(page).toHaveURL(/\/login\.html$/);
+
+  await page.fill('#password', spaced);
+  await page.click('#login-form button[type="submit"]');
+  await expect(page).toHaveURL(/\/account\.html$/);
+});

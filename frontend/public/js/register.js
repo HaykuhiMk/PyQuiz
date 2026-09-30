@@ -39,8 +39,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const username = usernameInput.value.trim();
         const email = emailInput.value.trim();
-        const password = passwordInput.value.trim();
-        const repeatPassword = repeatPasswordInput.value.trim();
+        // Never trimmed: spaces are valid password characters, and the server
+        // stores and checks the password exactly as typed.
+        const password = passwordInput.value;
+        const repeatPassword = repeatPasswordInput.value;
 
         if (!username || !email || !password || !repeatPassword) {
             showError('All fields must be filled out.');
