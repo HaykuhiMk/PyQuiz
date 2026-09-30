@@ -139,7 +139,7 @@ describe('POST /api/v1/questions/add (admin only)', () => {
   it('rejects requests with no token', async () => {
     const res = await request(app).post('/api/v1/questions/add').send(validQuestionPayload);
 
-    expect(res.statusCode).toBe(403);
+    expect(res.statusCode).toBe(401);
     expect(await Question.countDocuments()).toBe(0);
   });
 
@@ -190,7 +190,7 @@ describe('Admin question management (list/get/update/delete)', () => {
   describe('GET /api/v1/admin/questions', () => {
     it('rejects requests with no token', async () => {
       const res = await request(app).get('/api/v1/admin/questions');
-      expect(res.statusCode).toBe(403);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns full question detail, including the answer, for an admin', async () => {
@@ -210,7 +210,7 @@ describe('Admin question management (list/get/update/delete)', () => {
     it('rejects requests with no token', async () => {
       const q = await createQuestionDirectly();
       const res = await request(app).get(`/api/v1/admin/questions/${q._id}`);
-      expect(res.statusCode).toBe(403);
+      expect(res.statusCode).toBe(401);
     });
 
     it('returns 404 for a question that does not exist', async () => {
@@ -240,7 +240,7 @@ describe('Admin question management (list/get/update/delete)', () => {
       const res = await request(app)
         .patch(`/api/v1/admin/questions/${q._id}`)
         .send({ explanation: 'Updated explanation' });
-      expect(res.statusCode).toBe(403);
+      expect(res.statusCode).toBe(401);
     });
 
     it('updates a single field and persists it', async () => {
@@ -306,7 +306,7 @@ describe('Admin question management (list/get/update/delete)', () => {
     it('rejects requests with no token', async () => {
       const q = await createQuestionDirectly();
       const res = await request(app).delete(`/api/v1/admin/questions/${q._id}`);
-      expect(res.statusCode).toBe(403);
+      expect(res.statusCode).toBe(401);
       expect(await Question.findById(q._id)).not.toBeNull();
     });
 

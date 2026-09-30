@@ -38,4 +38,15 @@ async function logIn(page, { email, password }) {
   await expect(page).toHaveURL(/\/account\.html$/);
 }
 
-module.exports = { test, expect, API, PASSWORD, registerUser, logIn };
+// The admin account created by start-backend.js.
+const ADMIN = { username: 'e2eadmin', password: PASSWORD };
+
+async function adminLogIn(page) {
+  await page.goto('/admin_login.html');
+  await page.fill('#admin-username', ADMIN.username);
+  await page.fill('#admin-password', ADMIN.password);
+  await page.click('#admin-login-form button[type="submit"]');
+  await page.waitForURL(/\/admin_dashboard\.html$/);
+}
+
+module.exports = { test, expect, API, PASSWORD, ADMIN, registerUser, logIn, adminLogIn };

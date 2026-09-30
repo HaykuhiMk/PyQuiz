@@ -41,7 +41,7 @@ async function adminLogin() {
 describe('GET /api/v1/admin/contacts', () => {
   it('rejects requests with no token', async () => {
     const res = await request(app).get('/api/v1/admin/contacts');
-    expect(res.statusCode).toBe(403);
+    expect(res.statusCode).toBe(401);
   });
 
   it('rejects a regular, non-admin user', async () => {

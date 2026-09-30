@@ -64,7 +64,8 @@ describe('verifyAdmin: separate admin cookie only (Phase 4)', () => {
       .set('X-CSRF-Token', csrfToken)
       .send(validQuestionPayload);
 
-    expect(res.statusCode).toBe(403);
+    // No admin cookie at all: unauthenticated for admin routes (401).
+    expect(res.statusCode).toBe(401);
     expect(await Question.countDocuments()).toBe(0);
   });
 
@@ -77,7 +78,7 @@ describe('verifyAdmin: separate admin cookie only (Phase 4)', () => {
       .set('Authorization', `Bearer ${adminJwt}`)
       .send(validQuestionPayload);
 
-    expect(res.statusCode).toBe(403);
+    expect(res.statusCode).toBe(401);
     expect(await Question.countDocuments()).toBe(0);
   });
 
@@ -151,6 +152,38 @@ describe('verifyAdmin: separate admin cookie only (Phase 4)', () => {
     await User.updateOne({ username: 'admintester' }, { role: 'user' });
 
     const res = await request(app).get('/api/v1/admin/me').set('Cookie', adminHeaders.Cookie);
-    expect(res.statusCode).toBe(401);
+    // A valid session that no longer belongs to an admin: forbidden (403).
+    expect(res.statusCode).toBe(403);
+  });
+});
+
+// Admin status codes match regular-user auth: 401 when there is no valid
+// session (so the frontend redirects to the admin login), 403 only for a
+// valid session that belongs to a non-admin.
+describe('verifyAdmin status codes', () => {
+  it('returns 401 for a missing, malformed, expired or revoked admin session', async () => {
+    const adminHeaders = await adminLogin();
+    const admin = await User.findOne({ username: 'admintester' });
+    const jwt = require('jsonwebtoken');
+    const expired = jwt.sign(
+      { id: admin._id, username: 'admintester', role: 'admin', tokenVersion: 0, exp: Math.floor(Date.now() / 1000) - 5 },
+      process.env.JWT_SECRET
+    );
+
+    const missing = await request(app).get('/api/v1/admin/me');
+    const malformed = await request(app).get('/api/v1/admin/me').set('Cookie', 'adminToken=not-a-jwt');
+    const expiredRes = await request(app).get('/api/v1/admin/me').set('Cookie', `adminToken=${expired}`);
+    await User.updateOne({ _id: admin._id }, { $inc: { tokenVersion: 1 } });
+    const revoked = await request(app).get('/api/v1/admin/me').set('Cookie', adminHeaders.Cookie);
+
+    for (const res of [missing, malformed, expiredRes, revoked]) {
+      expect(res.statusCode).toBe(401);
+    }
+  });
+
+  it('returns 403 for a valid session that belongs to a non-admin', async () => {
+    const user = await registerAndLogin('plainuser403@example.com', { username: 'plainuser403' });
+    const res = await request(app).get('/api/v1/admin/me').set('Cookie', `adminToken=${user.tokenCookieValue}`);
+    expect(res.statusCode).toBe(403);
   });
 });

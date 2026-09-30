@@ -47,7 +47,7 @@ async function createRegularUser(username, email) {
 describe('GET /api/v1/admin/users', () => {
   it('rejects requests with no token', async () => {
     const res = await request(app).get('/api/v1/admin/users');
-    expect(res.statusCode).toBe(403);
+    expect(res.statusCode).toBe(401);
   });
 
   it('lists users without exposing password hashes', async () => {
@@ -72,7 +72,7 @@ describe('PATCH /api/v1/admin/users/:id/ban', () => {
     const res = await request(app)
       .patch(`/api/v1/admin/users/${user._id}/ban`)
       .send({ banned: true });
-    expect(res.statusCode).toBe(403);
+    expect(res.statusCode).toBe(401);
   });
 
   it('bans a regular user', async () => {

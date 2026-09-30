@@ -322,8 +322,8 @@ const spec = swaggerJsdoc({
         },
         AdminForbidden: {
           description:
-            'No admin cookie, or the JWT is not an admin token (auth middleware), or an invalid/missing ' +
-            'CSRF token on state-changing routes (error-handler envelope).',
+            'A valid session that belongs to a non-admin account (including a demoted admin), or an ' +
+            'invalid/missing CSRF token on state-changing routes.',
           content: {
             'application/json': {
               schema: {
@@ -337,7 +337,8 @@ const spec = swaggerJsdoc({
         },
         AdminUnauthorized: {
           description:
-            'Admin cookie present but the JWT is invalid, or the account is no longer a valid admin.',
+            'No valid admin session: the admin cookie is missing, malformed or expired, or the session was ' +
+            'revoked (tokenVersion) or the account is banned or deleted.',
           content: middlewareErrorContent,
         },
         NotFound: { description: 'Resource not found.', content: errorContent },

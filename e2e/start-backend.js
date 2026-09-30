@@ -34,6 +34,20 @@ async function main() {
   });
   if (seed.status !== 0) throw new Error('Seeding the e2e database failed.');
 
+  // One admin account for the admin-page tests (see tests/fixtures.js).
+  const bcrypt = require(path.join(BACKEND, 'node_modules', 'bcryptjs'));
+  await mongoose.connect(MONGODB_URI);
+  await mongoose.connection.collection('users').insertOne({
+    username: 'e2eadmin',
+    usernameLower: 'e2eadmin',
+    email: 'e2eadmin@example.com',
+    password: await bcrypt.hash('Passw0rd!', 10),
+    role: 'admin',
+    banned: false,
+    tokenVersion: 0,
+  });
+  await mongoose.disconnect();
+
   Object.assign(process.env, {
     NODE_ENV: 'development',
     MONGODB_URI,
