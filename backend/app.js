@@ -69,6 +69,14 @@ app.use(
   })
 );
 app.use(cookieParser());
+// The profile route carries the avatar as a data URL of up to 500,000
+// characters (services/userService.js), far above express.json()'s 100 kB
+// default, which used to reject any real photo with a bare 413 before the
+// service's "Image is too large" check could run. It gets its own 1 MB
+// parser, mounted first so the global parser below skips it (body-parser
+// won't re-parse a body); every other route keeps the 100 kB default.
+// Bodies over 1 MB are still refused with 413.
+app.use('/api/v1/users/settings/profile', express.json({ limit: '1mb' }));
 app.use(express.json());
 app.use(
   pinoHttp({

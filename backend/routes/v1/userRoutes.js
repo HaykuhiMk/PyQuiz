@@ -146,8 +146,9 @@ router.get('/topic-mastery', authenticateToken, userController.getTopicMastery);
  *                 nullable: true
  *                 maxLength: 500000
  *                 description: >
- *                   A `data:image/...` URL, or null / empty string to remove the avatar. Note the
- *                   JSON body parser's default 100kb request limit applies before this check.
+ *                   A `data:image/...` URL, or null / empty string to remove the avatar. Longer
+ *                   than 500,000 characters returns 400 "Image is too large"; this route accepts
+ *                   request bodies up to 1 MB (413 beyond that).
  *     responses:
  *       200:
  *         description: Profile updated.
