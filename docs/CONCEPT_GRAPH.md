@@ -18,20 +18,20 @@ There are 16 topics: the 11 existing canonical topics plus the 5 new topics you 
 
 | Proposed id | Display name | New | Covers |
 |---|---|---|---|
-| `mutability` | Names, Mutability & Identity | | How names bind to objects: assignment creates references, not copies; mutation vs rebinding; aliasing; `is` (identity) vs `==` (equality); which types are mutable. |
+| `mutability` | Names, Mutability & Identity | | How names bind to objects: assignment creates references, not copies; mutation vs rebinding; aliasing, including arguments passed to functions, repeated references (`[[0] * 2] * 2`) and shallow copies; `is` (identity) vs `==` (equality); which types are mutable. |
 | `loops` | Loops & Control Flow | | `if`/`for`/`while`, `break`/`continue`, the loop `else` clause, `range`, and the order in which statements run. |
 | `dicts` | Dictionaries | | Creating, reading and updating dicts: key lookup and missing keys, iteration (keys, `.values()`, `.items()`), views, and which keys count as the same key. |
 | `types` | Data Types & Conversion | | Built-in types and converting between them (`int()`, `float()`, `str()`, `bool()`), truthiness, and which operations are defined across types. |
 | `strings` | Strings | | String immutability, indexing, and methods that return new strings (`upper`, `strip`, `split`, `replace`, …). |
-| `functions` | Functions & Built-ins | | Defining and calling functions: parameters, defaults, return values (including the implicit `None`), passing objects to functions, and common built-ins (`len`, `sorted`, `zip`, `enumerate`, `print`, …). |
+| `functions` | Functions & Built-ins | | Defining and calling functions: parameters, defaults, return values (including the implicit `None`), and common built-ins (`len`, `sorted`, `zip`, `enumerate`, `print`, …). |
 | `sets` | Sets | | Set literals and `set()`, uniqueness, membership, set operations, and that sets are unordered and unindexed. |
 | `lists` | Lists | | Creating and changing lists: `append`/`extend`/`insert`/`remove`, in-place methods that return `None`, list repetition and nesting. |
-| `slicing` | Indexing & Slicing | | Positive and negative indices, `start:stop:step` slices, out-of-range behaviour, and slices as shallow copies. |
+| `slicing` | Indexing & Slicing | | Positive and negative indices, `start:stop:step` slices, out-of-range behaviour, and slicing making a new object. Slicing works on every sequence type: lists, strings and tuples. |
 | `tuples` | Tuples | | Tuple syntax (the comma makes the tuple), packing and unpacking, and immutability of the container, not its contents. |
 | `numbers` | Numbers & Arithmetic | | `int`/`float` arithmetic: `/` vs `//` vs `%`, floor division with negatives, float precision, `round`, `**`/`pow`. |
 | `classes` | Classes & Objects | **new** | Defining and instantiating a single class: `self` and method binding, `__init__`/`__new__`, instance vs class attributes and the lookup fallback between them, default object equality. |
 | `inheritance` | Inheritance & MRO | **new** | Subclassing, overriding and polymorphism, `super()`, constructor chaining, multiple inheritance and the method resolution order. |
-| `scope` | Scope & Namespaces | **new** | How names are resolved: local vs global, LEGB, `global`/`nonlocal`, shadowing, `UnboundLocalError`, closures and comprehension scope. |
+| `scope` | Scope & Namespaces | **new** | How names are resolved: local vs global, LEGB, `global`/`nonlocal`, shadowing, `UnboundLocalError`, closures, comprehension scope, and the absence of a scope for `for` loops. |
 | `generators` | Generators & Iterators | **new** | `yield`, generator expressions, `iter`/`next`, lazy evaluation (including `map`/`filter`/`zip`), exhaustion and `StopIteration`. |
 | `exceptions` | Exceptions | **new** | `try`/`except`/`else`/`finally` control flow, `raise`, `assert`, the order `except` clauses are matched in, and what happens after an exception is handled or left uncaught. |
 
@@ -45,7 +45,7 @@ succeeds).
 | # | Prerequisite → Topic | Reason |
 |---|---|---|
 | 1 | `lists` → `mutability` | Aliasing and in-place mutation can only be demonstrated with a mutable container, and lists are the first one learners meet. |
-| 2 | `lists` → `slicing` | Slicing is defined on sequences, and its copy semantics (`a[:]`) only matter for a mutable sequence. |
+| 2 | `lists` → `slicing` | Slicing is defined on sequences, so a learner needs **one sequence type first**. Slicing applies equally to strings and tuples; the edge comes from `lists` because it is the first sequence learners usually meet and the one they slice most. It stands for "one sequence type first", not "lists specifically". |
 | 3 | `mutability` → `tuples` | "Tuples are immutable" only makes sense once the mutable/immutable distinction exists; the classic trap is a tuple that holds a mutable list. |
 | 4 | `mutability` → `sets` | Set members must be hashable, which is a consequence of immutability. |
 | 5 | `mutability` → `dicts` | Dict keys must be hashable, and dict values are references that can be aliased. |
@@ -64,15 +64,45 @@ succeeds).
 Deliberately not edges:
 - **`loops` → `exceptions`:** `try` is its own control structure, not built on loops.
 - **`scope` → `classes`:** attribute lookup is an object mechanism, not LEGB scope.
-- **`strings` → `slicing`:** either strings or lists suffice to teach slicing; lists are chosen for
-  the copy semantics.
+- **`strings` → `slicing`** and **`tuples` → `slicing`:** any one sequence type suffices before
+  slicing, and edge 2 stands for that. A learner who knows only strings is not blocked from
+  slicing; Stage 2 may want to model this as "any one of `lists`, `strings`, `tuples`" rather than
+  as a single edge.
 
 ## 3. Misconceptions
 
-Each misconception has a stable id `<topic-id>.<wrong-belief>`. It belongs to exactly one topic,
-the one whose concept corrects it, following the same concept rule as primary topics. For example,
-the mutable-default-argument trap belongs to `functions`: the correct model is about *when a
-default is evaluated*, not about lists.
+Each misconception has a stable id `<topic-id>.<wrong-belief>` and belongs to exactly one topic.
+
+**Placement rule (owner's decision): a misconception belongs to the topic whose correct mental
+model fixes it**, not to the topic whose syntax the example happens to use. For example:
+- the mutable-default-argument trap belongs to `functions`: the correct model is about *when a
+  default is evaluated*, not about lists;
+- `[[0] * 2] * 2` sharing its rows uses list syntax, but what fixes it is the reference model
+  (`*` repeats references to one object), so it belongs to `mutability`.
+
+**All 59 were checked against the rule.** Four moved:
+
+| Was | Now | Why |
+|---|---|---|
+| `lists.multiplication-copies-rows` | `mutability.multiplication-copies-rows` | Owner's decision. The fix is that `*` repeats references to the same object. |
+| `loops.loop-variable-discarded` | `scope.loop-variable-discarded` | Owner's decision. The fix is that a `for` loop creates no scope. |
+| `functions.arguments-are-copied` | `mutability.arguments-are-copied` | The fix is the same reference model as `mutability.assignment-copies`: a parameter is one more name bound to the caller's object. Nothing about functions corrects it. |
+| `slicing.slice-copy-is-deep` | `mutability.slice-copy-is-deep` | The fix is shallow vs deep copying (inner objects are shared references). This applies equally to `list(a)` and `a.copy()`, so it isn't a slicing rule. |
+
+Checked and kept where they are, as the closest calls:
+- `strings.methods-modify-in-place` and `strings.item-assignment`: the fix is "strings are
+  immutable, so methods return new strings", a fact about `str` itself, which `strings` covers.
+- `tuples.contents-immutable`: the fix is what tuple immutability means (slots can't be
+  rebound), which `tuples` covers. It builds on `mutability` through edge 3.
+- `tuples.failed-augmented-assignment-changes-nothing`: the fix combines `+=` mutating in place
+  (`mutability`) with the tuple refusing the assignment back. What's new, and only happens with
+  tuples, is the second step, so it stays in `tuples`.
+- `sets.add-returns-set` and `lists.sort-returns-list`: the fix, "mutating methods return
+  `None`", is taught per type, and each belief is about that type's method.
+- `scope.mutation-needs-global`: it relies on mutation vs rebinding, but the fix is what
+  `global` does, which is `scope`.
+
+The other 47 fit the rule without discussion.
 
 Each misconception gives the wrong belief, a minimal example where that belief predicts the wrong
 result, what actually happens, and the correct mental model. **Every example was executed on
@@ -88,6 +118,9 @@ Python pitfalls; no research is cited.
 | `mutability.is-means-equal` | `is` compares values, like `==`. | `a = [1, 2]; b = [1, 2]; print(a == b, a is b)` → `True False` | `is` tests identity (same object); `==` tests equality of value. |
 | `mutability.augmented-assignment-rebinds` | `b += [2]` makes a new list, like `b = b + [2]`. | `a = [1]; b = a; b += [2]; print(a)` → `[1, 2]` | For mutable types, `+=` mutates in place (`__iadd__`), so every alias sees it. |
 | `mutability.rebinding-mutates` | Assigning a new value to a name changes the object other names refer to. | `a = [1]; b = a; b = b + [2]; print(a)` → `[1]` | `b = …` rebinds only `b`; the object `a` refers to is untouched. |
+| `mutability.arguments-are-copied` | Passing a list to a function gives it a copy. | `def fill(lst): lst.append(0)`; `items = []; fill(items); print(items)` → `[0]` | Arguments are passed as references to the same objects; mutation inside is visible outside. |
+| `mutability.multiplication-copies-rows` | `[[0] * 2] * 2` makes two independent rows. | `grid[0][0] = 1` → `[[1, 0], [1, 0]]` | `*` repeats **references** to the same inner list; build rows with a comprehension. |
+| `mutability.slice-copy-is-deep` | `a[:]` copies nested objects too. | `a = [[1]]; b = a[:]; b[0].append(2); print(a)` → `[[1, 2]]` | A slice is a **shallow** copy: a new outer list sharing the same inner objects. |
 
 ### `loops`: Loops & Control Flow
 
@@ -96,7 +129,6 @@ Python pitfalls; no research is cited.
 | `loops.remove-while-iterating` | Removing items while looping over a list still visits every item. | `nums = [1, 2, 2, 3]`; remove each `2` inside `for n in nums` → `[1, 2, 3]` | The loop walks indices; removing shifts later items left, so the next one is skipped. Iterate over a copy or build a new list. |
 | `loops.range-includes-stop` | `range(1, 5)` includes 5. | `list(range(1, 5))` → `[1, 2, 3, 4]` | `range` stops *before* `stop`. |
 | `loops.else-runs-after-break` | A loop's `else` runs when the loop exits via `break` (or always). | loop that `break`s, with `else: print('no break')`, then `print('end')` → `end` | The loop `else` runs only when the loop finishes **without** `break`. |
-| `loops.loop-variable-discarded` | The loop variable disappears after the loop. | `for i in range(3): pass` then `print(i)` → `2` | A `for` loop doesn't create a scope; the variable keeps its last value. |
 
 ### `dicts`: Dictionaries
 
@@ -132,7 +164,6 @@ Python pitfalls; no research is cited.
 | `functions.default-argument-fresh` | A default value like `bucket=[]` is created fresh on every call. | `def add(item, bucket=[])` that appends; `add(1)`, then `print(add(2))` → `[1, 2]` | Defaults are evaluated **once**, when the function is defined; use `None` and create the list inside. |
 | `functions.print-returns-value` | `print` returns what it printed. | `result = print('hi'); print(result)` → `hi` then `None` | `print` writes to output and returns `None`. |
 | `functions.implicit-return-last-value` | A function returns the value of its last expression. | `def double(x): x * 2`; `print(double(3))` → `None` | Without `return`, a function returns `None`. |
-| `functions.arguments-are-copied` | Passing a list to a function gives it a copy. | `def fill(lst): lst.append(0)`; `items = []; fill(items); print(items)` → `[0]` | Arguments are passed as references to the same objects; mutation inside is visible outside. |
 
 ### `sets`: Sets
 
@@ -148,7 +179,6 @@ Python pitfalls; no research is cited.
 |---|---|---|---|
 | `lists.sort-returns-list` | `nums.sort()` returns the sorted list. | `result = [3, 1, 2].sort()` → `None` (the list itself is sorted) | In-place methods return `None`; `sorted(nums)` returns a new list. |
 | `lists.append-extends` | `append([3, 4])` adds two items. | `a = [1, 2]; a.append([3, 4])` → `[1, 2, [3, 4]]`, length 3 | `append` adds one object (here, a list); `extend` adds each item. |
-| `lists.multiplication-copies-rows` | `[[0] * 2] * 2` makes two independent rows. | `grid[0][0] = 1` → `[[1, 0], [1, 0]]` | `*` repeats **references** to the same inner list; build rows with a comprehension. |
 | `lists.assignment-extends` | Assigning past the end grows the list. | `a = [1]; a[3] = 2` → `IndexError: list assignment index out of range` | Indices must exist; use `append`/`extend`/`insert` to grow a list. |
 
 ### `slicing`: Indexing & Slicing
@@ -157,7 +187,6 @@ Python pitfalls; no research is cited.
 |---|---|---|---|
 | `slicing.stop-inclusive` | A slice includes the `stop` index. | `'python'[1:3]` → `yt` | Slices are half-open: `start` included, `stop` excluded. |
 | `slicing.out-of-range-raises` | Slicing beyond the end raises an error, like indexing. | `[1, 2][5:]` → `[]`, but `[1, 2][5]` → `IndexError` | Slice bounds are clipped to the sequence; single indices must exist. |
-| `slicing.slice-copy-is-deep` | `a[:]` copies nested objects too. | `a = [[1]]; b = a[:]; b[0].append(2); print(a)` → `[[1, 2]]` | A slice is a **shallow** copy: a new outer list sharing the same inner objects. |
 
 ### `tuples`: Tuples
 
@@ -201,6 +230,7 @@ Python pitfalls; no research is cited.
 | `scope.mutation-needs-global` | `global` is needed to change a global list. | `items = []; def add(): items.append(1)`; `add(); print(items)` → `[1]` | `global` is only needed to **rebind** a name; mutating the object it refers to needs no declaration. |
 | `scope.closures-capture-values` | A lambda remembers the loop variable's value at creation. | `[lambda: i for i in range(3)]`, each called → `[2, 2, 2]` | Closures capture the **variable**, looked up when called (late binding); bind with a default (`lambda i=i: i`). |
 | `scope.comprehension-variable-leaks` | A comprehension's loop variable is still defined afterwards. | `[n * n for n in range(3)]`; `print(n)` → `NameError: name 'n' is not defined` | In Python 3, comprehensions have their own scope (unlike a `for` loop). |
+| `scope.loop-variable-discarded` | The loop variable disappears after the loop. | `for i in range(3): pass` then `print(i)` → `2` | A `for` loop doesn't create a scope; the variable keeps its last value. |
 
 ### `generators`: Generators & Iterators (new)
 
@@ -219,7 +249,7 @@ Python pitfalls; no research is cited.
 | `exceptions.else-always-runs` | A `try` statement's `else` block always runs. | `1 / 0` caught; `else: print('else')` → only `caught` | `else` runs only if the `try` block raised nothing. |
 | `exceptions.caught-exception-keeps-propagating` | An error still stops the program even after it's caught. | `raise ValueError` caught, then `print('continues')` → `handled` then `continues` | A handled exception is finished; execution continues after the `try` statement. |
 
-**Totals: 59 misconceptions across 16 topics**, 3–4 per topic.
+**Totals: 59 misconceptions across 16 topics**, 2–7 per topic: `mutability` 7; `scope` 5; `dicts`, `types`, `strings`, `numbers`, `classes` and `exceptions` 4 each; `loops`, `functions`, `sets`, `lists`, `tuples`, `inheritance` and `generators` 3 each; `slicing` 2.
 
 ## 4. Diagram
 
@@ -343,11 +373,7 @@ here, pending your decision.
 ## Open points for review
 
 1. **Topic ids:** *resolved*: the proposed ids were accepted and implemented (§5).
-2. **Edges:** confirm the 14 edges, especially the judgement calls `lists → slicing` (vs strings)
-   and `mutability → classes`.
-3. **Misconception ownership:** some beliefs sit between topics.
-   - `lists.multiplication-copies-rows` is about references, so it could sit under `mutability`.
-   - `loops.loop-variable-discarded` could sit under `scope`.
-
-   They are placed by the concept that corrects them; say if you'd assign any differently.
+2. **Edges:** *resolved*: all 14 kept, including `lists → slicing` (read as "one sequence type
+   first", §2) and `mutability → classes`.
+3. **Misconception ownership:** *resolved*: the placement rule in §3; four misconceptions moved.
 4. **§5 decision:** *resolved*: stable ids now, implemented (§5).
