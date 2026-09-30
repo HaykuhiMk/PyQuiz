@@ -1,9 +1,9 @@
 # PyQuiz audit and remediation — Final report
 
 Branch `fix/review-weaknesses`: 31 commits from `d8ad91e` (Phase 0 audit) to `d16e14d`, plus the
-commit adding this report. The
-branch has **not** been merged, and nothing has been deployed. All migrations and scripts have
-been run only against the local development database, never against production.
+commit adding this report. The branch has **not** been merged, and nothing has been deployed. All
+migrations and scripts have been run only against the local development database, never against
+production.
 
 The full evidence and reasoning for everything below is in `docs/AUDIT.md`, with one addendum per
 phase. `docs/FIX_PLAN.md` indexes every decision. The production deployment steps are the "Production
