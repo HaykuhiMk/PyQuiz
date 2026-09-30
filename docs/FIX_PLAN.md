@@ -11,7 +11,10 @@ Branch: `fix/review-weaknesses`. Last updated after the password-trimming fix (2
 mermaid-cli, a generated endpoint table, TODO(author) placeholders for Related Work, Pedagogical
 Background, the user study and deployment details) and added `docs/evaluation/questionnaire.md`.
 **Remaining:** the Final report (instructions at the end of this document) and the author's
-TODO(author) items in those two files. Full detail, evidence and
+TODO(author) items in those two files.
+
+**Deployment preparation is paused** (production data migration). Read "Deployment preparation
+(paused)" below before any deploy or any work against `pyquiz_prodcopy`. Full detail, evidence and
 reasoning for every item live in `docs/AUDIT.md` (one addendum per phase). This document only
 indexes it, plus the facts Phase 6 needs (see "Facts for Phase 6" below).
 
@@ -232,6 +235,165 @@ addendum"):**
 - **Open items noticed but not changed** (candidates for "Current Limitations"):
   - `tsc` doesn't type-check (`checkJs` off).
   - BullMQ email queue not wired up.
+
+## Deployment preparation (paused)
+
+Paused on 2026-09-30 at the owner's request, before any migration was applied. **Nothing has been
+applied to `pyquiz_prodcopy`** (the local copy of the production database), apart from the index
+side effect described under "autoIndex issue" below. No personal data was printed, saved or
+committed. Only counts, question ids and question content were used.
+
+### Production version
+
+- **Production runs commit `9b0d8b4`** (2025-04-05, "Update README.md", an ancestor of `main`, 54
+  commits before it) **plus 11 uncommitted modified files on the server**. Those files haven't
+  been seen yet.
+- **The production data doesn't match `9b0d8b4` alone.** At that commit the question model uses
+  `answer` and there is no `contact` model (added in `f6bc5fe`, 2025-07-24). Production questions
+  use `correctAnswer`, `createdBy`, `createdAt` and `updatedAt`, and a `contacts` collection
+  exists. No commit in this repository, on any branch, ever wrote `correctAnswer`, `createdBy` or
+  timestamps to questions.
+- **These differences very likely come from the 11 uncommitted files.** First step when resuming:
+  get those files' diffs, and re-derive the migration list below from `9b0d8b4` plus that diff.
+  The M1–M10 list was derived from the data itself plus the closest matching commit for users and
+  sessions (`eb480a5` = `d159696^`).
+
+### The copy as found (counts only)
+
+| Collection | Documents | Notes |
+|---|---|---|
+| `questions` | 146 | Fields `question`, `code`, `options`, `correctAnswer`, `difficulty`, `topics`, `explanation`, `createdBy`, `createdAt`, `updatedAt`. 78 easy, 15 medium, 5 hard among the 98 unmatched. 3–18 options per question. |
+| `users` | 60 | Only `username`, `email`, `password` (all 60 bcrypt cost 10, compatible), `role` (59 user, 1 admin), `answeredQuestions`. No `stats`, `achievements`, `dailyChallenge`, `banned`, `tokenVersion` or `usernameLower`. Total points 0. |
+| `quizsessions` | 247 | **Old model** (`email`, `startTime`, `status`) |
+| `quizprogresses`, `contacts`, `resetpasswords` | 0 each | |
+| `answerevents`, `dailychallengesets` | absent | Created on first use by the new code |
+
+### Migration list (M1–M10) and decisions so far
+
+| # | Collection | Change | Migration | Decision |
+|---|---|---|---|---|
+| M1 | questions | `correctAnswer` → `answer` | **new script**, with dry run | approved |
+| M2 | questions | `topics` → `primaryTopic` + `secondaryTopics` | existing `migrateQuestionTopics.js`, plus mappings for the 98 unmatched questions and the new topics | approved (see below) |
+| M3 | questions | extra `createdBy`, `createdAt`, `updatedAt` | none needed; the schema ignores them | open: keep or remove |
+| M4 | questions | content problems and the duplicated question (see below) | content-fix script, reusable on production | approved once the owner has reviewed `content-fixes.md` |
+| M5 | users | backfill `usernameLower` (all 60 users) | existing `backfillUsernameLower.js` | ready |
+| M6 | users | case-insensitive username duplicates (4 groups) | existing `reportDuplicateUsernames.js` | **do not rename**; the owner inspects first |
+| M7 | users → `useransweredquestions` | `answeredQuestions` array (994 entries, 43 users; all strings, all valid question ids) → collection | existing `database/migrateAnsweredQuestions.js`, which needs a dry-run mode and a native-driver `$unset` | approved; migrated records get `everCorrect: false` (the old history has no correctness), to be documented |
+| M8 | users | missing `stats`, `achievements`, `dailyChallenge`, `banned`, `tokenVersion` | none strictly needed (schema defaults, `tokenVersion` treated as 0), but lean reads (leaderboard, auth check) see them as missing | open: proposal to backfill defaults with native writes |
+| M9 | quizsessions | old model shares the new model's collection name | drop the collection (the mongodump backup is the archive), as a migration step with a dry run | approved |
+| M10 | quizprogresses | model deleted; empty collection | drop | open: proposal |
+
+Also checked: `admins` (none in production; the admin is a `users` row), `resetpasswords` (0
+documents, so there's no `resetKey` → hash migration), and the new collections (created on
+demand; indexes built at app startup). `resetFarmedPoints.js` would affect **0 users**, because
+production has no points. It isn't needed, and note that it **writes by default** (`--dry-run` is
+opt-in).
+
+### Answer-field problem (M1)
+
+All 146 production questions store the answer as `correctAnswer` (the text, not an index; in 145
+of 146 it is one of the options). The new code reads `answer`, so without M1 **no answer on the
+live site could ever be scored correct**, and admin edits would fail validation (`answer` is
+required).
+
+### 98 unmapped questions and the new topics (M2)
+
+- **Dry run:** `migrateQuestionTopics.js` matched 48 of 146 questions by exact seed code. One
+  seed question exists twice. **98 are unmatched**, so `--apply` refuses to run. None of the 98 is
+  a whitespace variant of a seed question.
+- **Proposals:** per-question proposals, using the Phase 3 concept rule, are in
+  `tmp/prodcopy/topic-proposals.md`, with full content in `tmp/prodcopy/unmatched-questions.json`
+  (local, gitignored).
+  - 31 of the 98 fit existing topics: Functions & Built-ins 21, Names/Mutability/Identity 3,
+    Dictionaries 2, Strings 1, Lists 1, Data Types & Conversion 1, Loops & Control Flow 1, and
+    Numbers & Arithmetic 1 (its first primary question).
+  - 67 need new topics: **Inheritance & MRO 19, Classes & Objects 17, Scope & Namespaces 13,
+    Generators & Iterators 11, Exceptions 7.**
+- **Owner's decision:**
+  - add all five new topics (taxonomy 11 → 16), keeping Inheritance & MRO and Classes & Objects
+    **separate** (no OOP merge);
+  - map the 31 as proposed;
+  - still to do: recompute primary-topic counts for all 146 questions and flag any topic above
+    about a third.
+
+### Old `quizsessions` collection (M9)
+
+247 documents from the pre-`d159696` model (`email`, `startTime`, `status`), in the same collection
+the new `QuizSession` model uses. They contain email addresses, have no `createdAt` (so they never
+expire) and no `token` (so the new unique index on `token` can't be built). The owner decided to
+drop the collection, with the mongodump backup serving as the archive.
+
+### Username collisions (M6)
+
+All 60 users lack `usernameLower`. There are 4 case-insensitive collision groups, meaning 4
+accounts would be renamed with a numeric suffix. **Owner's decision: rename nothing yet**; the
+owner inspects them with this read-only query (not run by Claude, results never shown):
+
+```bash
+mongosh --quiet "mongodb://127.0.0.1:27017/pyquiz_prodcopy" --eval '
+db.users.aggregate([
+  { $sort: { _id: 1 } },
+  { $group: { _id: { $toLower: "$username" }, count: { $sum: 1 },
+              accounts: { $push: { _id: "$_id", username: "$username" } } } },
+  { $match: { count: { $gt: 1 } } },
+  { $sort: { _id: 1 } }
+]).forEach(printjson)'
+```
+
+### Content problems (M4)
+
+Proposed fixes go into `tmp/prodcopy/content-fixes.md` (not written yet) for the owner's review,
+then are applied by a script so the same fixes can run on production.
+- **Answer not among its options:** `67c45ba322943ce7acd24d29`.
+- **Duplicated option text:** `67e2f3bff5addb214fc6a82d` (`'Box Magic'` twice).
+- **Stated answer wrong:** `67dd83578e2ddadc28e387f6` prints `foo` then `main`, but the answer is
+  `main` and no option matches.
+- **Ambiguous:** `67e2b4aef5addb214fc6a7e1`: output printed before an error; the dataset is
+  inconsistent about this.
+- **Wrong or misleading explanations:** about 9, listed per question in `topic-proposals.md`
+  (Q68, Q74 copied from Q73, Q96, Q82, Q81, Q27, Q17, Q24, Q55).
+- **Error text that depends on the Python version:** 3 (Q66, 3.12; Q61, 3.10; Q43, 3.14).
+- **Duplicated seed question:** `67c45ba322943ce7acd24d21` and `67dd1ccbe41a42083801b230`.
+  Decision: keep whichever copy the answer history references, and repoint references from the
+  other.
+
+### autoIndex issue
+
+- **What happened:** the first dry runs loaded the Mongoose models with the default
+  `autoIndex: true`, which created indexes on the copy. It created the empty `useransweredquestions`
+  collection with its unique `userId+questionId` index, and very likely the `users` indexes
+  `usernameLower_1` (unique, sparse) and `stats.totalPoints_-1_stats.bestStreak_-1`. **No
+  documents were changed**: document counts and a points fingerprint were identical before and
+  after.
+- **Consequence:** the same scripts would do this on production.
+- **Fix, applied only to the scratch guard so far:** `tmp/prodcopy/guard.js` forces
+  `autoIndex: false` and `autoCreate: false`. The repository's scripts don't do this yet.
+
+### Requirements for every migration script (owner's decisions)
+
+Dry-run mode (dry run by default), native-driver writes (no Mongoose `$unset`), `autoIndex: false`,
+the `127.0.0.1:27017/pyquiz_prodcopy` guard during testing, idempotent re-runs, and the target host
+and database printed before each run. Then:
+1. one ordered migration runbook script (dry run by default, `--apply` to write);
+2. update the deployment checklist in `docs/AUDIT.md` to match;
+3. rehearse on a **fresh** `pyquiz_rehearsal` restored from the backup: `--dry-run`, then
+   `--apply`, start the backend against it, and smoke-test quizzes, study, the Daily Challenge,
+   the dashboard and the leaderboard;
+4. stop after each stage; never print personal data; don't push or tag.
+
+### When resuming, in order
+
+1. Get the diffs of the 11 uncommitted server files and re-derive M1–M10 from `9b0d8b4` plus those
+   diffs.
+2. Decide M3, M8 and M10.
+3. Recompute the taxonomy counts for all 146 questions.
+4. Write the scripts (M1, M2 mappings, M4, M7, M9, and M8/M10 if approved).
+5. Write `content-fixes.md` for review.
+6. Build the runbook, update the AUDIT.md checklist, and rehearse.
+
+Local working files (gitignored, question content only, no personal data): `tmp/prodcopy/`
+(`guard.js`, `run.sh`, `unmatched-questions.json`, `topic-proposals.md`, `1-topics-dryrun.txt`, and
+the read-only survey scripts).
 
 ## Rule: scratch files go in `tmp/` inside the repo
 
