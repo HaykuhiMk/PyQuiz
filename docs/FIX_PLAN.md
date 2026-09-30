@@ -378,6 +378,33 @@ then are applied by a script so the same fixes can run on production.
   Decision: keep whichever copy the answer history references, and repoint references from the
   other.
 
+**Seed-question fixes (approved, made in `backend/database/questions.json`).** These seed questions
+are also in production (48 production questions matched seed questions by code), so the same
+fixes must be applied there. Question numbers are positions in the seed file:
+- **Q11** (`is` vs `==`): rewritten so its answer doesn't depend on the CPython version. It no
+  longer uses `sys.getrefcount` or small-integer caching, only lists and a slice copy. New code,
+  options, answer and explanation; secondary topics now `lists`, `slicing`.
+- **Q18** (`dict_keys` indexing): the answer no longer quotes a version-specific error message. It
+  is now `TypeError (a dict_keys view can't be indexed)`, and the explanation notes that the
+  wording differs between versions.
+- **Q20** (`removeprefix`/`removesuffix`/`strip`): the answer and three options showed underscores
+  as `_ _ _`; they are now as printed (`~~Hello___World~~`). The explanation is corrected:
+  `removesuffix('~')` and `removeprefix('~')` remove one tilde each, not all of them.
+- **Q23:** typo in an option (`'Java]` → `'Java']`).
+- **Q28** (comparisons): the stored answer was wrong, because `set1` had an extra `8`. It is
+  removed from `set1` and from the explanation, so the stored answer is now the real output.
+- **Q37:** typo in an option (`[['a', 'b', 'c'] d` → `['a', 'b', 'c'] d`).
+
+Checked: every seed snippet's real output matches its stored answer on CPython 3.9.6 and 3.14.5
+(`tmp/concept-graph/check-seed.py`).
+
+**Order matters for Q11 and Q28.** `migrateQuestionTopics.js` (M2) matches production questions to
+seed entries by their exact `code`, and the seed file now holds the **new** code for Q11 and Q28.
+Apply these content fixes to production **before** M2, so their code matches, or M2 reports both
+as unmatched and refuses to apply. The other four fixes don't change `code`. The local dev database
+still has the old versions of these six questions; they are updated together with the Stage 3 tags
+(`docs/CONCEPT_GRAPH.md`), by the same dry-run-capable script.
+
 ### autoIndex issue
 
 - **What happened:** the first dry runs loaded the Mongoose models with the default

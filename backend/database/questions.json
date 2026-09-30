@@ -198,24 +198,23 @@
   {
     "id": 10,
     "question": "What will be the output of the following code?",
-    "code": "import sys\nl1 = [1, 2, 3]\nl2 = l1\nl3 = [1, 2, 3]\nprint(sys.getrefcount(l3), sys.getrefcount(l1))\nprint(l1 == l2, l1 == l3, l1 is l2, l1 is l3)\nx = 42\ny = 42\nprint(x == y, x is y)",
+    "code": "l1 = [1, 2, 3]\nl2 = l1\nl3 = [1, 2, 3]\nl4 = l1[:]\nprint(l1 == l2, l1 == l3, l1 is l2, l1 is l3)\nprint(l1 == l4, l1 is l4)",
     "options": [
-      "3 3 True True True False True True",
-      "2 3 True False True False True False",
-      "2 3 True True True False True True",
-      "2 3 True True True True True True",
-      "3 3 True True True True True True",
-      "3 3 True False True False True False",
+      "True True True True True True",
+      "True True True False True False",
+      "True False True False False False",
+      "True True False False True False",
+      "True True True False True True",
       "Nothing",
       "Error"
     ],
-    "answer": "2 3 True True True False True True",
+    "answer": "True True True False True False",
     "difficulty": "medium",
-    "explanation": "📌 `sys.getrefcount(obj)` returns the reference count of an object.\n📌 `l1 = [1, 2, 3]` and `l2 = l1` share the same reference, so `l1` has more references than `l3`.\n📌 `l1 == l2` and `l1 == l3` check equality (same values), while `l1 is l2` and `l1 is l3` check identity (same object).\n📌 `x = 42; y = 42`: Small integers (from -5 to 256) are interned, so `x is y` evaluates to `True`.",
+    "explanation": "📌 `l2 = l1` binds a second name to the same list, so `l1 == l2` and `l1 is l2` are both `True`.\n📌 `l3 = [1, 2, 3]` is a different list with equal contents: `l1 == l3` is `True`, but `l1 is l3` is `False`.\n📌 `l4 = l1[:]` makes a new list (a copy): again equal (`True`) but not the same object (`False`).\n📌 `==` compares values; `is` compares identity (whether two names refer to the same object).\n📌 Final output: `True True True False True False`.",
     "primaryTopic": "mutability",
     "secondaryTopics": [
       "lists",
-      "numbers"
+      "slicing"
     ]
   },
   {
@@ -352,13 +351,13 @@
       "{a : 1}",
       "(1, 2, 3)",
       "(a, b, c)",
-      "'dict_keys' object does not support indexing.",
+      "TypeError (a dict_keys view can't be indexed)",
       "'tuple' object does not support item assignment",
       "Nothing"
     ],
-    "answer": "'dict_keys' object does not support indexing.",
+    "answer": "TypeError (a dict_keys view can't be indexed)",
     "difficulty": "easy",
-    "explanation": "📌 `di = dict(a=1, b=2, c=3)` creates a dictionary `{ 'a': 1, 'b': 2, 'c': 3 }`.\n📌 `diKeys = di.keys()` returns a `dict_keys` view object, which behaves like a set, not a list.\n📌 Attempting `diKeys[0]` raises a TypeError because `dict_keys` does not support indexing.\n📌 To access elements, convert to a list: `list(di.keys())[0]` → `'a'`.",
+    "explanation": "📌 `di = dict(a=1, b=2, c=3)` creates a dictionary `{ 'a': 1, 'b': 2, 'c': 3 }`.\n📌 `diKeys = di.keys()` returns a `dict_keys` view object, which behaves like a set, not a list.\n📌 Attempting `diKeys[0]` raises a `TypeError` because `dict_keys` does not support indexing. (The exact wording of the error message differs between Python versions; the exception is always a `TypeError`.)\n📌 To access elements, convert to a list: `list(di.keys())[0]` → `'a'`.",
     "primaryTopic": "dicts",
     "secondaryTopics": [
       "slicing"
@@ -391,18 +390,18 @@
     "question": "What will be the output of the following code?",
     "code": "text = '~~~Hello___World~~~'\ntext = text.removesuffix('~')\ntext = text.removeprefix('~')\ntext = text.strip('_')\nprint(text)",
     "options": [
-      "Hello_ _ _World",
+      "Hello___World",
       "HelloWorld",
-      "Hello_ _World",
+      "Hello__World",
       "~~HelloWorld~~",
-      "~~Hello_ _ _World~~",
-      "~Hello_ _World~",
+      "~~Hello___World~~",
+      "~Hello__World~",
       "Error",
       "Nothing"
     ],
-    "answer": "~~Hello_ _ _World~~",
+    "answer": "~~Hello___World~~",
     "difficulty": "medium",
-    "explanation": "📌 `text.removesuffix('~')` removes only the trailing tildes, reducing it to `'~~~Hello___World'`.\n📌 `text.removeprefix('~')` removes only the leading tilde, leaving `'~~Hello___World'`.\n📌 `text.strip('_')` removes leading and trailing underscores, but there are none at the edges, so `'~~Hello___World~~'` remains unchanged.",
+    "explanation": "📌 `text.removesuffix('~')` removes the suffix `'~'` once, not every trailing tilde: `'~~~Hello___World~~'`.\n📌 `text.removeprefix('~')` removes the prefix `'~'` once: `'~~Hello___World~~'`.\n📌 `text.strip('_')` removes underscores only from the two ends. Both ends are `'~'`, so nothing changes; the underscores in the middle stay.\n📌 Final output: `~~Hello___World~~`.",
     "primaryTopic": "strings",
     "secondaryTopics": []
   },
@@ -455,7 +454,7 @@
     "question": "What will be the output of the following code?",
     "code": "words = ['Python', 'C++', 'Java', 'JavaScript', 'C#', 'Swift', 'Kotlin']\nprint(words[1::3], end = ' | ')\nprint(words[:-3:-1], end = ' | ')\nprint(words[-1:-5:-3])",
     "options": [
-      "['Python', 'C++', 'Java] | ['C#', 'Swift', 'Kotlin'] | ['Kotlin', 'JavaScript']",
+      "['Python', 'C++', 'Java'] | ['C#', 'Swift', 'Kotlin'] | ['Kotlin', 'JavaScript']",
       "['C++', 'Java'] | ['Kotlin', 'Swift'] | ['Kotlin', 'JavaScript']",
       "['C++', 'C#'] | ['Kotlin', 'Swift'] | ['Kotlin', 'JavaScript']",
       "['C++', 'Java', 'JavaScript'] | ['Kotlin', 'Swift', 'C#'] | ['Kotlin', 'JavaScript']",
@@ -563,7 +562,7 @@
   {
     "id": 27,
     "question": "What will be the output of the following code?",
-    "code": "ls1 = [1, 2]\nls2 = [2]\ns1 = 'Hello'\ns2 = 'Hello'\ns3 = 'Hella'\nset1 = {1, 4, 2, 7, 8}\nset2 = {7, 1, 4, 2}\nx = {}\nprint(ls1 > ls2, s2 is s1, s2 < s3, set1 == set2, isinstance(x, set))",
+    "code": "ls1 = [1, 2]\nls2 = [2]\ns1 = 'Hello'\ns2 = 'Hello'\ns3 = 'Hella'\nset1 = {1, 4, 2, 7}\nset2 = {7, 1, 4, 2}\nx = {}\nprint(ls1 > ls2, s2 is s1, s2 < s3, set1 == set2, isinstance(x, set))",
     "options": [
       "True False False False True",
       "True True False False True",
@@ -577,7 +576,7 @@
     ],
     "answer": "False True False True False",
     "difficulty": "medium",
-    "explanation": "📌 `ls1 > ls2` ➝ `False`: Lists are compared lexicographically, and `[1, 2] > [2]` is `False` since `1 < 2`.\n📌 `s2 is s1` ➝ `True`: String interning in Python makes `s1` and `s2` refer to the same memory location.\n📌 `s2 < s3` ➝ `False`: String comparison is based on ASCII values. `'Hello' > 'Hella'` since `o > a`.\n📌 `set1 == set2` ➝ `True`: Sets ignore order, and `{1, 4, 2, 7, 8}` is equal to `{7, 1, 4, 2}`.\n📌 `isinstance(x, set)` ➝ `False`: `{}` creates an empty dictionary, not a set. An empty set should be created with `set()`.",
+    "explanation": "📌 `ls1 > ls2` ➝ `False`: Lists are compared lexicographically, and `[1, 2] > [2]` is `False` since `1 < 2`.\n📌 `s2 is s1` ➝ `True`: String interning in Python makes `s1` and `s2` refer to the same memory location.\n📌 `s2 < s3` ➝ `False`: String comparison is based on ASCII values. `'Hello' > 'Hella'` since `o > a`.\n📌 `set1 == set2` ➝ `True`: Sets ignore order, and `{1, 4, 2, 7}` is equal to `{7, 1, 4, 2}`.\n📌 `isinstance(x, set)` ➝ `False`: `{}` creates an empty dictionary, not a set. An empty set should be created with `set()`.",
     "primaryTopic": "mutability",
     "secondaryTopics": [
       "types",
@@ -756,7 +755,7 @@
       "0 [1, 2, 3] None | [['a', 'b'], 'c'] d",
       "0 [1, 2, 3] None | [['a', 'b'], 'c', 'd'] None",
       "range(0, 4) range(0, 4) range(0, 4) | [['a', 'b'], 'c'] d",
-      "range(0, 4) range(0, 4) range(0, 4) | [['a', 'b', 'c'] d",
+      "range(0, 4) range(0, 4) range(0, 4) | ['a', 'b', 'c'] d",
       "range(0, 4) range(0, 4) range(0, 4) | [['a', 'b'], 'c', 'd'] None",
       "Error: too many values to unpack.",
       "Error: not enough values to unpack.",
