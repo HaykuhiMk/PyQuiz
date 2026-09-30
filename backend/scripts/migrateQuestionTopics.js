@@ -30,14 +30,16 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+const { resolveMongoUri, MISSING_MONGO_URI_MESSAGE } = require('../config/mongoUri');
 const Question = require('../models/questionModel');
 const seedQuestions = require('../database/questions.json');
 
 async function main() {
   const apply = process.argv.includes('--apply');
 
-  if (!process.env.MONGODB_URI) {
-    console.error('Missing MONGODB_URI in the environment — see backend/env.example.');
+  const mongoUri = resolveMongoUri();
+  if (!mongoUri) {
+    console.error(MISSING_MONGO_URI_MESSAGE);
     process.exitCode = 1;
     return;
   }
@@ -48,7 +50,7 @@ async function main() {
       .map((q) => [q.code, { primaryTopic: q.primaryTopic, secondaryTopics: q.secondaryTopics || [] }])
   );
 
-  await mongoose.connect(process.env.MONGODB_URI);
+  await mongoose.connect(mongoUri);
 
   try {
     const questions = await Question.find({}).select('_id code question').lean();

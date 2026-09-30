@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser');
 const pinoHttp = require('pino-http');
 const logger = require('./config/logger');
 const { configureTrustProxy } = require('./config/trustProxy');
+const { resolveMongoUri, redactMongoUri, MISSING_MONGO_URI_MESSAGE } = require('./config/mongoUri');
 const optionalAuthenticate = require('./middleware/optionalAuth');
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { setupSwagger } = require('./docs/swagger');
@@ -124,8 +125,9 @@ app.use('/api/v1/auth/forgot-password', createAuthLimiter());
 app.use('/api/v1/auth/reset-password', createAuthLimiter());
 app.use('/api/v1/contact', contactLimiter);
 
-if (!process.env.MONGO_URI && process.env.SKIP_DB_CONNECT !== 'true') {
-  console.error('❌ Missing MONGO_URI in .env file');
+const mongoUri = process.env.SKIP_DB_CONNECT === 'true' ? undefined : resolveMongoUri();
+if (!mongoUri && process.env.SKIP_DB_CONNECT !== 'true') {
+  console.error(`❌ ${MISSING_MONGO_URI_MESSAGE}`);
   process.exit(1);
 }
 
@@ -148,9 +150,11 @@ if (!process.env.DAILY_CHALLENGE_SEED_SECRET) {
 
 if (process.env.SKIP_DB_CONNECT !== 'true') {
   mongoose
-    .connect(process.env.MONGO_URI)
+    .connect(mongoUri)
     .then(() => console.log('✅ Connected to MongoDB'))
-    .catch((err) => console.error('❌ MongoDB connection error:', err));
+    .catch((err) =>
+      console.error('❌ MongoDB connection error:', redactMongoUri(err.message))
+    );
 }
 
 setupSwagger(app);

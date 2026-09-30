@@ -33,6 +33,7 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+const { resolveMongoUri, MISSING_MONGO_URI_MESSAGE } = require('../config/mongoUri');
 const User = require('../models/user');
 const UserAnsweredQuestion = require('../models/userAnsweredQuestion');
 
@@ -45,13 +46,14 @@ const POINTS_ACHIEVEMENTS = [
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
 
-  if (!process.env.MONGODB_URI) {
-    console.error('Missing MONGODB_URI in the environment — see backend/env.example.');
+  const mongoUri = resolveMongoUri();
+  if (!mongoUri) {
+    console.error(MISSING_MONGO_URI_MESSAGE);
     process.exitCode = 1;
     return;
   }
 
-  await mongoose.connect(process.env.MONGODB_URI);
+  await mongoose.connect(mongoUri);
 
   try {
     const users = await User.find({}).select('_id username stats achievements').lean();

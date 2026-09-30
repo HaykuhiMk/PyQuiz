@@ -3,9 +3,15 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
 const Question = require('../models/questionModel');
+const { resolveMongoUri, redactMongoUri, MISSING_MONGO_URI_MESSAGE } = require('../config/mongoUri');
 
 async function insertQuestions() {
-  const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/pyquiz';
+  const mongoUri = resolveMongoUri();
+  if (!mongoUri) {
+    console.error(`❌ ${MISSING_MONGO_URI_MESSAGE}`);
+    process.exitCode = 1;
+    return;
+  }
 
   try {
     await mongoose.connect(mongoUri);
@@ -32,7 +38,7 @@ async function insertQuestions() {
     await Question.insertMany(transformedQuestions);
     console.log(`Seeded ${transformedQuestions.length} questions.`);
   } catch (error) {
-    console.error('Error inserting questions:', error);
+    console.error('Error inserting questions:', redactMongoUri(error.message));
     process.exitCode = 1;
   } finally {
     await mongoose.disconnect();

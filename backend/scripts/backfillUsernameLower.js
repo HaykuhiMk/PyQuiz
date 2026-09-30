@@ -18,18 +18,20 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+const { resolveMongoUri, MISSING_MONGO_URI_MESSAGE } = require('../config/mongoUri');
 const User = require('../models/user');
 
 async function main() {
   const apply = process.argv.includes('--apply');
 
-  if (!process.env.MONGODB_URI) {
-    console.error('Missing MONGODB_URI in the environment — see backend/env.example.');
+  const mongoUri = resolveMongoUri();
+  if (!mongoUri) {
+    console.error(MISSING_MONGO_URI_MESSAGE);
     process.exitCode = 1;
     return;
   }
 
-  await mongoose.connect(process.env.MONGODB_URI);
+  await mongoose.connect(mongoUri);
 
   try {
     const missing = await User.find({

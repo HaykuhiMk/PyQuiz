@@ -47,12 +47,29 @@ cd ../frontend && npm install
 Create `backend/.env` (see `backend/env.example`):
 
 ```env
-MONGO_URI=your_mongodb_uri
+MONGODB_URI=your_mongodb_uri
 JWT_SECRET=your_jwt_secret
 CLIENT_URI=http://localhost:3000
 EMAIL_USER=your_email
 EMAIL_PASS=your_email_password
 ```
+
+`MONGODB_URI` is the single setting that controls which database the backend
+connects to — there is nothing else to change in code to switch databases:
+
+- **Local development:** point it at a local MongoDB instance, e.g.
+  `mongodb://127.0.0.1:27017/pyquiz`.
+- **Production:** point it at your hosted database, e.g. a MongoDB Atlas
+  connection string such as
+  `mongodb+srv://<username>:<password>@<cluster-host>/<database>`.
+
+The previous name, `MONGO_URI`, is still accepted as a fallback (the
+backend logs a deprecation warning at startup), so an existing deployment
+that still sets `MONGO_URI` keeps working until it is renamed.
+
+Enter the real value only in your local `backend/.env` file (which is
+git-ignored and never committed) — `backend/env.example` must keep only a
+placeholder, never real credentials.
 
 `frontend/.env` is optional:
 
@@ -68,7 +85,7 @@ cd backend && npm start
 cd ../frontend && npm start
 ```
 
-`npm start` in `backend/` runs the development server on port 7498 (or `PORT`). If `MONGO_URI` can't be reached it falls back to an in-memory MongoDB, and it seeds the questions from `database/questions.json` into an empty database.
+`npm start` in `backend/` runs the development server on port 7498 (or `PORT`). If `MONGODB_URI` can't be reached it falls back to an in-memory MongoDB, and it seeds the questions from `database/questions.json` into an empty database.
 
 5. Open [http://localhost:3000](http://localhost:3000).
 
