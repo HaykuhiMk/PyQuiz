@@ -19,6 +19,10 @@ const answerEventSchema = new mongoose.Schema({
   // docs/CONCEPT_GRAPH.md Stage 2), or null. Stored as it was when answered,
   // so later retagging doesn't rewrite history. Not an enum for that reason.
   misconceptionId: { type: String, default: null },
+  // True when a Blitz question timed out: either a late answer (its
+  // selectedIndex and misconceptionId are still recorded) or no answer at
+  // all. Lets analysis separate considered answers from timed-out ones.
+  timedOut: { type: Boolean, default: false },
   correct: { type: Boolean, required: true },
   attemptNumber: { type: Number, required: true },
   timeTakenMs: { type: Number, required: true },

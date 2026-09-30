@@ -51,6 +51,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                 alert("Correct answer must be one of the options!");
                 return;
             }
+            if (new Set(options).size !== options.length) {
+                alert("Options must all be different!");
+                return;
+            }
+            if (!distractorFields.confirmDroppedTags()) return;
 
             const questionData = {
                 question,

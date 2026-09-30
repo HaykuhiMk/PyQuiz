@@ -109,7 +109,7 @@ async function serveNextQuestion(session) {
   };
 }
 
-async function recordAttempt({ session, question, selectedIndex, isCorrect, attemptNumber, timeTakenMs }) {
+async function recordAttempt({ session, question, selectedIndex, isCorrect, attemptNumber, timeTakenMs, timedOut = false }) {
   if (!session.userId) return; // guests: no durable identity, nothing to attribute the event to
   await answerEventRepository.createEvent({
     userId: session.userId,
@@ -118,6 +118,7 @@ async function recordAttempt({ session, question, selectedIndex, isCorrect, atte
     mode: session.mode,
     selectedIndex: selectedIndex === undefined || selectedIndex === null ? null : Number(selectedIndex),
     misconceptionId: chosenMisconceptionId(question, selectedIndex),
+    timedOut: Boolean(timedOut),
     correct: isCorrect,
     attemptNumber,
     timeTakenMs: Math.max(0, Math.round(timeTakenMs)),
@@ -170,6 +171,7 @@ async function resolveBlitzTimeout(session) {
       isCorrect: false,
       attemptNumber: current.attempts,
       timeTakenMs: now - current.servedAt,
+      timedOut: true,
     });
     await userService.applyAnswerOutcome(session.userId, question, {
       isCorrect: false,
@@ -266,6 +268,7 @@ async function submitAnswer(sessionToken, requester, { questionId, selectedIndex
     isCorrect,
     attemptNumber,
     timeTakenMs,
+    timedOut,
   });
 
   let outcomeResult = null;

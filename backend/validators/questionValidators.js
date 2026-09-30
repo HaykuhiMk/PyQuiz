@@ -22,6 +22,15 @@ const distractorSchema = z
 
 const distractorsSchema = z.array(distractorSchema).max(50);
 
+// Option texts must be distinct: the answer and distractor tags are matched
+// to an option by its exact text, which is ambiguous for a repeated option.
+const optionsSchema = z
+  .array(z.string().min(1))
+  .min(2)
+  .refine((options) => new Set(options).size === options.length, {
+    message: 'Options must all be different',
+  });
+
 function csvToArray(value) {
   if (Array.isArray(value)) {
     return value;
@@ -40,7 +49,7 @@ const addQuestionSchema = z
   .object({
     question: z.string().min(5),
     code: z.string().optional().default(''),
-    options: z.array(z.string().min(1)).min(2),
+    options: optionsSchema,
     answer: z.string().min(1),
     difficulty: difficultyEnum,
     primaryTopic: topicEnum,
@@ -65,7 +74,7 @@ const updateQuestionSchema = z
   .object({
     question: z.string().min(5).optional(),
     code: z.string().optional(),
-    options: z.array(z.string().min(1)).min(2).optional(),
+    options: optionsSchema.optional(),
     answer: z.string().min(1).optional(),
     difficulty: difficultyEnum.optional(),
     primaryTopic: topicEnum.optional(),

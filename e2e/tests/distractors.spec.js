@@ -1,7 +1,8 @@
 // @ts-check
 // Admin question forms: each wrong option can be tagged with a misconception
 // from the concept graph and short feedback (docs/CONCEPT_GRAPH.md Stage 2).
-// The add form saves the tags, and the edit form loads and changes them.
+// The add form saves the tags, and the edit form loads and changes them,
+// warning before an edit to an option's text would drop its tag.
 const { test, expect, adminLogIn } = require('./fixtures');
 
 const QUESTION = `E2E distractor question ${Date.now()}`;
@@ -48,6 +49,27 @@ test('the add form saves misconception tags, and the edit form loads and changes
   const editCopyRow = page.locator('#edit-distractor-fields .distractor-row[data-option="[1, 2]"]');
   await expect(editCopyRow.locator('select')).toHaveValue('mutability.assignment-copies');
   await expect(editCopyRow.locator('input')).toHaveValue('b = a does not copy the list.');
+
+  // Editing a tagged option's text warns that saving would drop its tag, and
+  // saving asks first; restoring the text brings the tag back.
+  await page.fill('#edit-options', '[2, 1]\n[1, 2, 3]\nError');
+  await expect(page.locator('#edit-distractor-fields .distractor-warning')).toContainText('"[1, 2]"');
+  let dialogMessage = '';
+  page.once('dialog', (dialog) => {
+    dialogMessage = dialog.message();
+    dialog.dismiss();
+  });
+  let patched = false;
+  page.on('request', (req) => {
+    if (req.method() === 'PATCH') patched = true;
+  });
+  await page.click('#edit-question-form button[type="submit"]');
+  await expect.poll(() => dialogMessage).toContain('"[1, 2]"');
+  expect(patched).toBe(false);
+
+  await page.fill('#edit-options', '[1, 2]\n[1, 2, 3]\nError');
+  await expect(page.locator('#edit-distractor-fields .distractor-warning')).toHaveCount(0);
+  await expect(editCopyRow.locator('select')).toHaveValue('mutability.assignment-copies');
 
   // Tag the other wrong option too, and clear the first one's misconception.
   await page

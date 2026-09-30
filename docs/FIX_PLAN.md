@@ -361,7 +361,12 @@ db.users.aggregate([
 Proposed fixes go into `tmp/prodcopy/content-fixes.md` (not written yet) for the owner's review,
 then are applied by a script so the same fixes can run on production.
 - **Answer not among its options:** `67c45ba322943ce7acd24d29`.
-- **Duplicated option text:** `67e2f3bff5addb214fc6a82d` (`'Box Magic'` twice).
+- **Duplicated option text:** `67e2f3bff5addb214fc6a82d` (`'Box Magic'` twice). **Must be fixed
+  before the migration.** The question validators now reject duplicate option texts on create and
+  update (the answer and misconception tags are matched to an option by its exact text), so this
+  question couldn't be edited in the admin panel, and its answer matching is ambiguous. It is the
+  only one the earlier survey of the copy listed; the migration's dry run should check all
+  questions for duplicate options again.
 - **Stated answer wrong:** `67dd83578e2ddadc28e387f6` prints `foo` then `main`, but the answer is
   `main` and no option matches.
 - **Ambiguous:** `67e2b4aef5addb214fc6a7e1`: output printed before an error; the dataset is

@@ -252,7 +252,8 @@ const spec = swaggerJsdoc({
         NewQuestion: {
           type: 'object',
           description:
-            '`answer` must be one of `options`; `primaryTopic` must not also appear in `secondaryTopics`.',
+            '`options` must all be different; `answer` must be one of them; `primaryTopic` must not also ' +
+            'appear in `secondaryTopics`.',
           required: [
             'question',
             'options',
@@ -290,7 +291,8 @@ const spec = swaggerJsdoc({
           type: 'object',
           minProperties: 1,
           description:
-            'At least one field. After merging with the stored question, `answer` must be one of ' +
+            'At least one field. `options`, if sent, must all be different. After merging with the ' +
+            'stored question, `answer` must be one of ' +
             '`options` and `primaryTopic` must not appear in `secondaryTopics`.',
           properties: {
             question: { type: 'string', minLength: 5 },

@@ -14,6 +14,7 @@ const Question = require('../models/questionModel');
 const User = require('../models/user');
 const AnswerEvent = require('../models/answerEvent');
 const DailyChallengeSet = require('../models/dailyChallengeSet');
+const QuizSession = require('../models/quizSession');
 const dailyChallengeService = require('../services/dailyChallengeService');
 const { chosenMisconceptionId } = require('../utils/distractors');
 
@@ -113,6 +114,25 @@ describe('admin: distractors on wrong options', () => {
     expect((await Question.findById(q._id).lean()).distractors).toEqual([TAG]);
   });
 
+  it('rejects duplicate option texts on create (they make answer and tag matching ambiguous)', async () => {
+    const res = await addQuestion(await adminHeaders(), { ...payload, options: ['[1, 2]', '[1, 2, 3]', '[1, 2]'] });
+    expect(res.statusCode).toBe(400);
+    expect(JSON.stringify(res.body.error)).toContain('Options must all be different');
+    expect(await Question.countDocuments()).toBe(0);
+  });
+
+  it('rejects duplicate option texts on update', async () => {
+    const headers = await adminHeaders();
+    const q = await createQuestion();
+    const res = await request(app)
+      .patch(`/api/v1/admin/questions/${q._id}`)
+      .set(headers)
+      .send({ options: ['[1, 2]', '[1, 2, 3]', '[1, 2, 3]'], distractors: [TAG] });
+    expect(res.statusCode).toBe(400);
+    expect(JSON.stringify(res.body.error)).toContain('Options must all be different');
+    expect((await Question.findById(q._id).lean()).options).toEqual(payload.options);
+  });
+
   it('GET /validation-rules serves the feedback limit the server enforces', async () => {
     const res = await request(app).get('/api/v1/validation-rules');
     expect(res.body.data.distractor).toEqual({ feedbackMaxLength: 300 });
@@ -192,6 +212,41 @@ describe('AnswerEvent.misconceptionId records the chosen option\'s tag', () => {
     ]);
   });
 
+  it('in Blitz, marks timed-out answers: a late answer keeps its tag, a skipped question has none', async () => {
+    const q = await createQuestion();
+    const other = await createQuestion({ code: 'second question', distractors: [] });
+    const { cookieHeader, csrfToken } = await registerAndLogin('blitzevents@example.com');
+    const post = (path, body) =>
+      request(app).post(path).set('Cookie', cookieHeader).set('X-CSRF-Token', csrfToken).send(body);
+    const pastDeadline = (token) =>
+      QuizSession.updateOne({ token }, { $set: { 'currentQuestion.deadlineAt': new Date(Date.now() - 1000) } });
+
+    // 1. A considered (in-time) wrong answer.
+    const first = await post('/api/v1/quiz/sessions', { mode: 'blitz', topics: [] });
+    const firstId = first.body.data.question._id;
+    await post(`/api/v1/quiz/sessions/${first.body.data.sessionId}/answer`, { questionId: firstId, selectedIndex: 0 });
+
+    // 2. A late answer: the tagged wrong option, chosen after the deadline.
+    const second = await post('/api/v1/quiz/sessions', { mode: 'blitz', topics: [] });
+    const secondId = second.body.data.question._id;
+    await pastDeadline(second.body.data.sessionId);
+    const late = await post(`/api/v1/quiz/sessions/${second.body.data.sessionId}/answer`, { questionId: secondId, selectedIndex: 0 });
+    expect(late.body.data.outcome).toBe('timeout');
+
+    // 3. No answer at all: the client moves on.
+    const third = await post('/api/v1/quiz/sessions', { mode: 'blitz', topics: [] });
+    await pastDeadline(third.body.data.sessionId);
+    expect((await post(`/api/v1/quiz/sessions/${third.body.data.sessionId}/next`, {})).statusCode).toBe(200);
+
+    const tagFor = (id) => (String(id) === String(q._id) ? 'mutability.assignment-copies' : null);
+    const events = await AnswerEvent.find({ questionId: { $in: [q._id, other._id] } }).sort({ createdAt: 1, _id: 1 }).lean();
+    expect(events.map((e) => [e.selectedIndex, e.timedOut, e.misconceptionId])).toEqual([
+      [0, false, tagFor(firstId)],
+      [0, true, tagFor(secondId)],
+      [null, true, null],
+    ]);
+  });
+
   it('in the Daily Challenge', async () => {
     const q = await createQuestion();
     const { cookieHeader, csrfToken } = await registerAndLogin('dailyevents@example.com');
@@ -203,7 +258,7 @@ describe('AnswerEvent.misconceptionId records the chosen option\'s tag', () => {
       .send({ answers: [{ questionId: String(q._id), selectedIndex: 0 }] });
     expect(res.statusCode).toBe(200);
     const [event] = await AnswerEvent.find({ questionId: q._id }).lean();
-    expect(event).toMatchObject({ mode: 'daily', correct: false, misconceptionId: 'mutability.assignment-copies' });
+    expect(event).toMatchObject({ mode: 'daily', correct: false, misconceptionId: 'mutability.assignment-copies', timedOut: false });
   });
 
   it('is null for no answer, an out-of-range index and a question without distractors', () => {

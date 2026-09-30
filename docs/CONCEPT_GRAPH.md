@@ -401,12 +401,19 @@ here, pending your decision.
     option at most once. On update, the rules are checked against the merged question, so changing
     the options or the answer without resending matching distractors is rejected instead of
     leaving a stale tag.
+  - A question's option texts must all be different (create and update), since both the answer
+    and the tags are matched by exact text.
   - Both admin forms (add and edit) have one row per wrong option: a misconception list grouped
-    by topic, and a feedback field.
+    by topic, and a feedback field. Editing an option's text, removing it or making it the answer
+    would drop its tag. The form shows a warning when that happens and asks before saving, and
+    restoring the text brings the tag back.
 - **Answer events.** Each `AnswerEvent` has `misconceptionId`: the tag of the option chosen, or
   `null` for the correct option, an untagged option or no answer. It is recorded in quiz sessions
   and the Daily Challenge (guests record no events, as before). The id is stored as it was when
   answered, so retagging a question later doesn't rewrite history.
+  - `timedOut` is true for a timed-out Blitz question. A late answer still records its selected
+    option and misconception; a question skipped without an answer records neither. Analysis can
+    use it to separate considered answers from timed-out ones.
 - **Not shown to learners.** No learner-facing response includes `distractors`: the question list,
   random question, Study mode, quiz sessions and the Daily Challenge all build their responses
   from an explicit field list, and `backend/tests/distractors.test.js` checks each of them. A

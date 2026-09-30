@@ -38,12 +38,35 @@ export async function createDistractorFields({ container, optionsInput, answerIn
         [graph, rules] = await Promise.all([api.getConceptGraph(), getValidationRules()]);
     } catch (error) {
         container.innerHTML = `<p class="distractor-hint">Couldn't load the misconception list: ${escapeHTML(error.message)}</p>`;
-        return { getValue: () => undefined, setValue: () => {} };
+        return { getValue: () => undefined, setValue: () => {}, confirmDroppedTags: () => true };
     }
     const maxLength = rules?.distractor?.feedbackMaxLength;
     const choicesHTML = misconceptionOptionsHTML(graph);
-    // Current values by option text, kept across re-renders while typing.
+    const misconceptionById = new Map(graph.misconceptions.map((m) => [m.id, m]));
+    // Current values by option text, kept across re-renders while typing, so
+    // restoring an option's text brings its tag back.
     let state = new Map();
+
+    function wrongOptions() {
+        const answer = answerInput.value.trim();
+        return parseOptions(optionsInput.value).filter((option) => option !== answer);
+    }
+
+    // Tags whose option no longer exists as a wrong option (its text was
+    // edited or removed, or it became the answer). Saving drops them.
+    function orphanedTags() {
+        const wrong = new Set(wrongOptions());
+        return Array.from(state, ([option, value]) => ({ option, ...value })).filter(
+            (tag) => !wrong.has(tag.option) && (tag.misconceptionId || (tag.feedback || "").trim())
+        );
+    }
+
+    function describeTag(tag) {
+        const parts = [];
+        if (tag.misconceptionId) parts.push(misconceptionById.get(tag.misconceptionId)?.id || tag.misconceptionId);
+        if ((tag.feedback || "").trim()) parts.push("feedback");
+        return `"${tag.option}" (${parts.join(", ")})`;
+    }
 
     function capture() {
         container.querySelectorAll(".distractor-row").forEach((row) => {
@@ -54,15 +77,22 @@ export async function createDistractorFields({ container, optionsInput, answerIn
         });
     }
 
+    function warningHTML() {
+        const orphans = orphanedTags();
+        if (!orphans.length) return "";
+        return `<p class="distractor-warning" role="status">Saving will remove the tag on ${escapeHTML(
+            orphans.map(describeTag).join(", ")
+        )}: that option is no longer a wrong option. Restore its text to keep the tag.</p>`;
+    }
+
     function render() {
         capture();
-        const answer = answerInput.value.trim();
-        const wrong = parseOptions(optionsInput.value).filter((option) => option !== answer);
+        const wrong = wrongOptions();
         if (!wrong.length) {
-            container.innerHTML = `<p class="distractor-hint">Enter the options and the correct answer to tag the wrong options.</p>`;
+            container.innerHTML = `${warningHTML()}<p class="distractor-hint">Enter the options and the correct answer to tag the wrong options.</p>`;
             return;
         }
-        container.innerHTML = wrong
+        container.innerHTML = warningHTML() + wrong
             .map((option, index) => `
                 <div class="distractor-row" data-option="${escapeHTML(option)}">
                     <code class="distractor-option">${escapeHTML(option)}</code>
@@ -89,9 +119,7 @@ export async function createDistractorFields({ container, optionsInput, answerIn
         // entries with neither.
         getValue() {
             capture();
-            const answer = answerInput.value.trim();
-            return parseOptions(optionsInput.value)
-                .filter((option) => option !== answer)
+            return wrongOptions()
                 .map((option) => {
                     const { misconceptionId = "", feedback = "" } = state.get(option) || {};
                     const entry = { option };
@@ -100,6 +128,15 @@ export async function createDistractorFields({ container, optionsInput, answerIn
                     return entry;
                 })
                 .filter((entry) => entry.misconceptionId || entry.feedback);
+        },
+        // Asks before saving would drop tags (see orphanedTags); true to go ahead.
+        confirmDroppedTags() {
+            capture();
+            const orphans = orphanedTags();
+            if (!orphans.length) return true;
+            return confirm(`Saving will remove ${orphans.length === 1 ? "this tag" : "these tags"}: ${orphans
+                .map(describeTag)
+                .join(", ")}. That option is no longer a wrong option. Save anyway?`);
         },
         // Replaces all values (after the options and answer inputs are set).
         setValue(distractors = []) {

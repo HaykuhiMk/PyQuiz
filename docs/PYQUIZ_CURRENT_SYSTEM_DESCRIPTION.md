@@ -668,8 +668,8 @@ MongoDB is the only data store. It holds eight collections:
     time, and Blitz/Survival bests.
   - `achievements`, and the most recent `dailyChallenge` result.
   - An index on points and best streak serves the leaderboard.
-- **`Question`**: prompt, optional code, options, answer (stored as text and matched against the
-  options), difficulty, `primaryTopic`, `secondaryTopics` and explanation, plus optional
+- **`Question`**: prompt, optional code, options (all different), answer (stored as text and
+  matched against the options), difficulty, `primaryTopic`, `secondaryTopics` and explanation, plus optional
   admin-only `distractors`: tags on wrong options, each naming a misconception id from the concept
   graph and/or short feedback (`docs/CONCEPT_GRAPH.md` §6; never sent to learners). It has indexes
   on difficulty and the topic fields.
@@ -677,7 +677,7 @@ MongoDB is the only data store. It holds eight collections:
   deletes it 24 hours after creation.
 - **`AnswerEvent`**: one immutable document per answer attempt by a logged-in user: user, session,
   question, mode (including `daily`), selected index, the chosen option's `misconceptionId` (or
-  null), correctness, attempt number and time taken.
+  null), whether it was a Blitz timeout, correctness, attempt number and time taken.
   It is the source of accuracy (Section 5.8). It is kept when its question is deleted, and deleted
   with the user's account (Section 5.11).
 - **`UserAnsweredQuestion`**: one document per (user, question) pair, unique on the pair, with
@@ -750,6 +750,7 @@ erDiagram
     string mode "classic|blitz|survival|daily"
     number selectedIndex
     string misconceptionId "null if untagged"
+    boolean timedOut
     boolean correct
     number attemptNumber
     number timeTakenMs
