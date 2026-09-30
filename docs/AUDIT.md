@@ -1362,3 +1362,40 @@ The first five were confirmed directly against the code:
    - Quiz routes run `optionalAuthenticate` twice (once globally, once per route).
    - Contact and Daily Challenge submit validation live outside `validators/`.
    - Leaderboard `limit` has no Zod schema (the service clamps it).
+
+---
+
+## Phase 5 follow-ups (implemented, one commit each)
+
+These are the owner's decisions on the first five items of the Phase 5 "Found while annotating"
+list.
+
+1. **Public answer leak — endpoint removed (`c71a7d4`).** `POST /api/v1/questions/:id/check` was
+   public and returned the correct answer and explanation for any question, including today's
+   Daily Challenge. Nothing in the frontend had called it since Phase 1; `api.checkAnswer` was
+   defined but unused. So the route, controller, service, Zod schema and frontend helper are all
+   removed. **Breaking API change.** The three old tests encoded the answer-revealing behaviour and
+   were replaced by tests that the endpoint is gone for guests and logged-in users, and that no
+   public question endpoint returns answers or explanations.
+2. **`reveal: "false"` parsed as true: resolved by removal.** That schema was the endpoint above,
+   and it was the only `z.coerce.boolean()` in the codebase, so no separate change was needed.
+3. **Avatar body limit (`93dafed`).**
+   - `PATCH /users/settings/profile` gets its own `express.json({ limit: '1mb' })`, mounted before
+     the global parser; every other route keeps the 100 kB default.
+   - The avatar length is enforced once, in `userService.validateAvatar`, so an oversized image
+     returns 400 "Image is too large…" instead of a bare 413 or a generic "Validation failed".
+   - Bodies over 1 MB still get 413.
+   - Tests cover a 300,000-character image (accepted), 600,000 characters (the "too large" error),
+     1.2 MB (413) and another route (100 kB default still applies).
+4. **One password rule (`c6eb877`).** Change-password now uses `authValidators.passwordRule`, the
+   same rule as registration and reset. The service's second, stricter regex is gone; the service
+   keeps its readable message but checks the same rule. A password like `Passw0rd!#` can now be set
+   in Settings (it previously could be registered but never set again). The frontend
+   register/reset pages still apply the stricter whitelist client-side, which is unchanged.
+5. **Generic admin login error (`576b69b`).** An unknown username, a non-admin account and a wrong
+   password all return the identical 401 "Invalid credentials" with no cookie. An unknown username
+   now also runs bcrypt against a dummy hash, so it can't be told apart by response time. Two
+   existing tests asserted the old 404 and were updated as deliberately changed behaviour.
+
+Suite after these: **201 tests across 25 suites**, all passing, with 89.50% line and 75.00% branch
+coverage. `npm run lint` and `npm run typecheck` are clean, and the Playwright suite passes 7/7.

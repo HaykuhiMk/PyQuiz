@@ -1,15 +1,15 @@
 # Fix plan — resumption document
 
-Written before a Claude Code restart (update in progress) so the remaining work on the
-`fix/review-weaknesses` audit/remediation task can be picked up with no loss of instructions.
-Branch: `fix/review-weaknesses`. Current HEAD as of writing: `732d281`.
+Resumption document for the `fix/review-weaknesses` audit/remediation task, written so a fresh
+session can do the remaining work (Phase 6) without the conversation that produced Phases 0–5.
+Branch: `fix/review-weaknesses`. Last updated after commit `576b69b` (2026-09-30).
 
 ## Status so far
 
-**Phases 0–3 are complete and committed.** Full detail, evidence, and reasoning for every item
-live in `docs/AUDIT.md` — this document does not repeat that content, only indexes it. Baseline
-was 89 tests across 9 suites before Phase 1; the suite is now at **128 tests across 15 suites, all
-passing**, `npm run lint` and `npm run typecheck` both clean.
+**Phases 0–5 are complete and committed. Next up: Phase 6 (update the system description),
+verbatim instructions below. Nothing in Phase 6 has been started.** Full detail, evidence and
+reasoning for every item live in `docs/AUDIT.md` (one addendum per phase). This document only
+indexes it, plus the facts Phase 6 needs (see "Facts for Phase 6" below).
 
 Commit history for this task, oldest first:
 - `d8ad91e` — Phase 0: audit (16 items, `docs/AUDIT.md` created)
@@ -21,12 +21,18 @@ Commit history for this task, oldest first:
 - `120e5ae` — Phase 3 follow-ups + revised taxonomy proposal (awaiting approval at the time)
 - `39aa508` — Phase 3: canonical topic taxonomy migration and admin form restriction
 - `732d281` — Phase 3 follow-up: production migration safety, dashboard mastery cap removed
-
-**Phases 4 and 5 are complete** — see the "Phase 4 addendum" and "Phase 5 addendum" in
-`docs/AUDIT.md`. Suite is now **187 tests across 23 suites** (coverage 89.37% lines / 74.66%
-branches), plus a 7-test Playwright suite in `e2e/`; lint and typecheck clean. **Next up: Phase 6
-(system description)**, verbatim instructions below. Nothing in Phase 6 has been started. The
-consolidated production deployment checklist is at the end of `docs/AUDIT.md`.
+- `739dc83` — this resumption document
+- `0f38505` — permanent `CLAUDE.md` project guide
+- `98b06d7` — Phase 4: security hardening
+- `13fce23` — Phase 4 follow-up: `MONGODB_URI` everywhere, `MONGO_URI` fallback with a warning
+- `efe859c` — Phase 4 follow-up: CORS allow-list tests
+- `1d379b4` — Phase 4 follow-up: public `GET /questions/stats` for the About page (Phase 2 regression)
+- `e84506e` — consolidated production deployment checklist in `docs/AUDIT.md`
+- `6a29b92` — Phase 5: testing and tooling
+- `c71a7d4` — Phase 5 follow-up: removed public `POST /questions/:id/check` (leaked Daily answers)
+- `93dafed` — Phase 5 follow-up: avatar route 1 MB body limit, readable "image too large" error
+- `c6eb877` — Phase 5 follow-up: change-password uses the registration password rule
+- `576b69b` — Phase 5 follow-up: admin login returns one generic error
 
 ## Every decision made so far (index — see docs/AUDIT.md for full reasoning and evidence)
 
@@ -54,30 +60,6 @@ consolidated production deployment checklist is at the end of `docs/AUDIT.md`.
   quiz sessions (decision made and implemented consistently) — but the flat 20-point daily bonus is
   awarded separately from, and in addition to, the ordinary first-correct-ever points rule.
 
-**Phase 4 — security (decisions made in advance by the owner):**
-- Admin auth: separate httpOnly cookie (`adminToken` / `__Host-adminToken`) with its own HMAC-bound
-  CSRF token; Bearer header no longer accepted; all `localStorage` admin-token use removed.
-  Breaking: admin login no longer returns `data.token`.
-- CSRF: `__Host-` prefix on session and CSRF cookies in production only (unprefixed, non-Secure
-  over plain http in development); CSRF token = HMAC(JWT_SECRET, session JWT). Login and `/me`
-  also return `csrfToken` in the body because the API is on a different host from the frontend.
-- New `GET /api/v1/auth/me`; frontend login state comes from it, not from cookie presence.
-- Contact auto-reply dropped entirely (message still saved, admin still notified).
-- `/metrics`: bearer token (`METRICS_TOKEN`) in production, 404 if unset. `/api-docs`: off in
-  production unless `ENABLE_API_DOCS=true`.
-- Frontend CSP with no `'unsafe-inline'` scripts: inline scripts/handlers moved to external files.
-
-**Phase 5 — testing and tooling (decisions made in advance by the owner):**
-- Coverage measured over all runtime code; before/after both measured with the same config.
-- Playwright: minimal `e2e/` suite (7 tests) incl. About page, login/logout, and CSRF-after-reload.
-- Swagger: every endpoint annotated; `tests/swagger.test.js` keeps spec and routes in sync.
-- BullMQ email queue: skipped, documented as future work.
-- `scripts/benchmark.js`: localhost by default, other targets only via explicit `--url`; one local
-  run recorded with machine and dataset. `BENCHMARK_DISABLE_RATE_LIMITS` (ignored in production)
-  added so the benchmark measures endpoints rather than 429s.
-- Open finding for the owner: `POST /questions/:id/check` exposes Daily Challenge answers publicly
-  (see Phase 5 addendum, "Found while annotating").
-
 **Pre-Phase-3 / Phase 3:**
 - `TRUST_PROXY` is a required env var read at startup (hop count, or `"true"` — logs a warning if
   `"true"` is set, since it lets a client spoof `req.ip`). The general `/api` limiter and the quiz
@@ -103,12 +85,121 @@ consolidated production deployment checklist is at the end of `docs/AUDIT.md`.
   zero-question topics, add the "not enough questions yet" state, dual-mode filtering as above, and
   a "Content gaps" section in `docs/AUDIT.md` (Numbers & Arithmetic, Tuples, Indexing & Slicing —
   target ≥3 primary questions each). Migration has still only ever run against the **local dev
-  database** — never production; see the deployment checklist in `docs/AUDIT.md`'s "Phase 3
-  follow-up" section before ever running `--apply` against production.
+  database** — never production; see the consolidated "Production deployment checklist (all
+  phases)" at the end of `docs/AUDIT.md` before ever running `--apply` against production.
 - `MIN_ACCURACY_EVENTS`/`MIN_QUESTIONS_FOR_MASTERY` = 3 (named constants,
   `backend/config/masteryConfig.js`); a "measuring" mastery state was added for topics with
   coverage but too few recorded attempts, separate from "unavailable" (too few questions to ever
   measure).
+
+**Phase 4 — security (all decisions made in advance by the owner; `docs/AUDIT.md` "Phase 4
+addendum"):**
+- Session invalidation: `User.tokenVersion` in every user/admin JWT, checked on every
+  authenticated request; incremented on ban (not unban), password change and password reset.
+  Banned users are rejected per request and at login. Tokens issued before this field existed count
+  as version 0, so deploying didn't force a logout by itself.
+- Admin auth: moved from a `localStorage` Bearer token to a **separate** httpOnly cookie
+  (`adminToken`, `__Host-adminToken` in production) with its own HMAC-bound CSRF token, enforced
+  on every state-changing admin route. `verifyAdmin` accepts only that cookie (no Authorization
+  header, never the user cookie) and re-checks `role === 'admin'` in the database. New
+  `POST /admin/logout` and `GET /admin/me`. **Breaking:** admin login no longer returns
+  `data.token`.
+- CSRF: `__Host-` prefix on session and CSRF cookies **in production only**. Development over plain
+  http uses unprefixed, non-Secure names, since browsers refuse `__Host-` over http; documented in
+  `backend/env.example`. The CSRF token is `HMAC-SHA256(JWT_SECRET, "csrf:" + session JWT)`,
+  compared with `timingSafeEqual`.
+- Cross-host frontend (the API is on `api-pyquiz.picsartacademy.am`, a different host): login and
+  both `/me` endpoints also return `csrfToken` in the body. The frontend keeps it in memory only
+  and re-fetches it from `/me` after every page load. CORS reflects only allow-listed origins
+  (tested, `efe859c`).
+- Login-state detection: new `GET /api/v1/auth/me`. The frontend derives logged-in state from it,
+  not from cookie presence, and on any 401 clears state and redirects to login.
+- Contact form: auto-reply **dropped entirely**. The message is still saved and the admin still
+  notified.
+- Reset tokens: only a SHA-256 hash is stored, compared with `crypto.timingSafeEqual`.
+- `/metrics`: requires `Authorization: Bearer $METRICS_TOKEN` in production, 404 if unset.
+  `/api-docs`: off in production unless `ENABLE_API_DOCS=true`.
+- CSP: the backend has `script-src 'self'`. The frontend has Helmet, whose CSP allows Prism.js
+  (jsDelivr), Font Awesome (cdnjs), Google Fonts and the two API origins, with **no
+  `'unsafe-inline'` for scripts**. The inline theme bootstrap, the `admin.html` redirect and all
+  inline `onclick=` handlers were moved to external files. `style-src` keeps `'unsafe-inline'`, a
+  documented exception.
+- Follow-ups:
+  - `MONGODB_URI` is canonical, with `MONGO_URI` still read as a fallback plus a startup warning
+    (`backend/config/mongoUri.js`).
+  - The About page's question count had been broken since Phase 2 (it read the login-only Study
+    endpoint). It now uses the new public, aggregate-only `GET /api/v1/questions/stats`.
+
+**Phase 5 — testing and tooling (all decisions made in advance by the owner; `docs/AUDIT.md`
+"Phase 5 addendum"):**
+- Coverage: real line **and** branch coverage over all runtime code (`npm run test:coverage`).
+  "Before" was measured by checking out `d8ad91e` and running the same config, so both figures
+  cover the same file set.
+- Playwright: minimal `e2e/` suite (7 tests): guest quiz, login/logout, Classic quiz, Daily
+  Challenge, theme toggle, About page counts, and CSRF re-fetch after a reload. It uses its own
+  servers and a local `pyquiz_e2e` database that it drops and re-seeds, and fails on any CSP
+  violation or page error.
+- Swagger: every endpoint annotated. `tests/swagger.test.js` walks the Express router and fails if
+  the spec and the routes diverge.
+- BullMQ email queue: **skipped**, documented as future work.
+- `scripts/benchmark.js` (autocannon):
+  - Targets localhost by default; the target is never read from env, and anything else needs an
+    explicit `--url`.
+  - One local run is recorded in AUDIT.md with the machine and dataset.
+  - `BENCHMARK_DISABLE_RATE_LIMITS` was added (ignored in production, re-checked per request) so
+    the benchmark measures endpoints rather than 429s.
+- Webpack / `tsc` justifications: stated plainly that `tsc --noEmit` runs with `checkJs: false`, so
+  it is a syntax check, not JSDoc type checking (enabling `checkJs` reports 1,564 errors today).
+- Follow-ups (owner's decisions, 2026-09-30):
+  - **Removed** `POST /api/v1/questions/:id/check`. It was public and returned answers and
+    explanations for any question, including today's Daily Challenge. Nothing in the frontend had
+    called it since Phase 1. **Breaking API change.**
+  - The `reveal: "false"` parsing bug disappeared with that endpoint (it was the only
+    `z.coerce.boolean()`).
+  - The avatar route gets its own 1 MB body limit, so an oversized image returns
+    "Image is too large" rather than 413.
+  - Change-password uses exactly the registration password rule.
+  - Admin login returns one generic 401 "Invalid credentials" for an unknown username, a non-admin
+    account and a wrong password, with equal bcrypt work in each case.
+
+## Facts for Phase 6 (all measured, as of `576b69b`)
+
+- **Tests.** Backend: **201 tests across 25 suites**, all passing (`cd backend && npm test`).
+  Frontend: the 7-test Playwright suite in `e2e/`, passing. The baseline before Phase 1 was 89
+  tests across 9 suites.
+- **Coverage** (`npm run test:coverage`, same config both times):
+  - now: **89.50% lines, 75.00% branches** (89.21% statements, 89.64% functions);
+  - before (`d8ad91e`): 77.69% lines, 50.39% branches.
+  - The Phase 5 addendum records 187 tests / 89.37% / 74.66%. That was at `6a29b92`, before the
+    follow-ups; use the numbers above.
+- **Content.** 47 questions. 11 canonical topics, of which 10 have questions and are therefore
+  visible, as returned by `GET /api/v1/questions/stats` on the seed data. Content gaps are listed
+  in `docs/AUDIT.md`.
+- **API surface.** 39 documented operations on 36 paths: the 40 in the Phase 5 addendum minus the removed
+  `POST /questions/:id/check`. Swagger annotations live in `backend/routes/v1/*.js`, and
+  `tests/swagger.test.js` guarantees they match the real routes. Generate the Phase 6 endpoint
+  table from those route files.
+- **Breaking API changes across all phases:**
+  - Phase 1: removed `POST /users/user-progress`.
+  - Phase 3: `topics` became `primaryTopic`/`secondaryTopics`.
+  - Phase 4: admin login no longer returns `data.token` (cookie instead), and the admin
+    Authorization header is no longer accepted.
+  - Phase 5 follow-up: removed `POST /questions/:id/check`.
+  - Admin login now returns 401 instead of 404 for an unknown username.
+  - The frontend was updated in the same commit each time.
+- **Performance.** The only real measurements are the single local benchmark run in the Phase 5
+  addendum (machine and dataset listed there). Don't present them as production capacity.
+- **Deployment.** The consolidated production deployment checklist is at the end of
+  `docs/AUDIT.md`.
+- **Open items noticed but not changed** (candidates for "Current Limitations"):
+  - The frontend register/reset pages still apply a stricter client-side password whitelist than
+    the server rule.
+  - The avatar picker allows files up to 500 KB, but the server limit is 500,000 data-URL
+    characters (about 375 KB of image).
+  - The regular-user login returns before bcrypt for an unknown email, a timing difference.
+  - Items in the Phase 5 addendum's "Found while annotating" list marked as not re-verified.
+  - `tsc` doesn't type-check (`checkJs` off).
+  - BullMQ email queue not wired up.
 
 ## Rule: scratch files go in `tmp/` inside the repo
 
