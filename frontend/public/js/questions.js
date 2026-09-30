@@ -14,6 +14,7 @@ document.addEventListener("click", (event) => {
 });
 import { celebrateQuizComplete, initRipples, countUp } from "./ui.js";
 import { mountIcons } from "./icons.js";
+import { getTopicNamer } from "./topics.js";
 
 const BLITZ_SECONDS = 45;
 
@@ -160,14 +161,15 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             topicsList.innerHTML = '<div class="loading-spinner"></div>';
             
-            const topics = await api.getTopics();
-            allTopics = topics.filter(topic => topic.trim()).sort();
+            // [{ id, name }] sorted by name: the checkbox value is the stable
+            // id sent to the API; the label is the display name.
+            allTopics = await api.getTopics();
 
             let delay = 0;
             const topicsHtml = allTopics.map(topic => `
                 <div class="topic-item" style="animation-delay: ${delay}s">
-                    <input type="checkbox" id="topic-${escapeHTML(topic)}" class="topic-checkbox" value="${escapeHTML(topic)}">
-                    <label for="topic-${escapeHTML(topic)}" class="topic-label">${escapeHTML(topic)}</label>
+                    <input type="checkbox" id="topic-${escapeHTML(topic.id)}" class="topic-checkbox" value="${escapeHTML(topic.id)}">
+                    <label for="topic-${escapeHTML(topic.id)}" class="topic-label">${escapeHTML(topic.name)}</label>
                 </div>
             `).join('');
             
@@ -242,8 +244,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function showNoMoreQuestions(data) {
+        const nameById = new Map(allTopics.map((topic) => [topic.id, topic.name]));
         const selectedTopicsText = selectedTopics.length > 0
-            ? selectedTopics.join(', ')
+            ? selectedTopics.map((id) => nameById.get(id) || id).join(', ')
             : 'all topics';
 
         const progressText = data.totalAnswered
@@ -315,8 +318,16 @@ document.addEventListener("DOMContentLoaded", () => {
     function displayQuestion(question) {
         questionContainer.innerText = question.question;
         difficultyContainer.querySelector("span").textContent = question.difficulty || "Unknown";
-        topicsContainer.querySelector("span").textContent =
-            [question.primaryTopic, ...(question.secondaryTopics || [])].filter(Boolean).join(", ") || "None";
+        // Topic ids -> display names; filled in when the taxonomy has loaded
+        // (cached after the first question), without delaying the rest.
+        const topicIds = [question.primaryTopic, ...(question.secondaryTopics || [])].filter(Boolean);
+        const topicsSpan = topicsContainer.querySelector("span");
+        topicsSpan.textContent = topicIds.length ? "…" : "None";
+        getTopicNamer().then((topicName) => {
+            if (currentQuestion === question) {
+                topicsSpan.textContent = topicIds.map(topicName).join(", ") || "None";
+            }
+        });
 
         if (question.code) {
             questionCode.textContent = question.code.trim();

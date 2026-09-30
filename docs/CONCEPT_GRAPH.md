@@ -1,14 +1,15 @@
 # PyQuiz concept graph and misconception taxonomy
 
-**Status: design proposal (Stage 1), not implemented.** Nothing in the code or the databases has
-changed. This turns the flat topic taxonomy into a curated graph of **concepts** (topic nodes),
+**Status: design proposal (Stage 1), not implemented**, apart from the stable topic ids of §5,
+which are decided and implemented as a separate change. This turns the flat topic taxonomy into a curated graph of **concepts** (topic nodes),
 **prerequisite edges** and **misconceptions**. The future adaptive engine and AI interviewer can
 then reason about *what a learner should learn next* and *which wrong belief a wrong answer
 reveals*.
 
 - Stage 2 stores the graph in one config module.
 - Stage 3 tags the 47 seed questions' wrong options with misconception ids.
-- Topic ids below are **proposed** (see §5); the code stores display names today.
+- The ids of the 11 existing topics are **in use** (see §5). The five new topics' ids are
+  proposed; they are added to the taxonomy with the new topics.
 
 ## 1. Nodes
 
@@ -264,7 +265,23 @@ flowchart TD
 
 ## 5. DECISION: display names vs stable topic ids
 
-### How topics are stored today
+**Decided by the owner: Option A, stable ids, now, with no backwards compatibility. Implemented.**
+- The proposed ids are used unchanged.
+- **Rule:** an id never changes once set; a display name can change freely.
+- Ids are stored and passed everywhere topics are stored or passed: questions, quiz sessions, API
+  parameters and responses, and the frontend. Display names live only in
+  `backend/config/topicTaxonomy.js`, served by the new `GET /api/v1/topics`.
+- Display names are **not** accepted on input any more: they get 400. The breaking API changes are
+  listed in `docs/FINAL_REPORT.md` §3 (row 15).
+- The local dev database was converted with `backend/scripts/migrateTopicIds.js` (dry run by
+  default, idempotent, native driver, `autoIndex` off). The paused production migration now writes
+  ids directly (`docs/FIX_PLAN.md`, "Deployment preparation (paused)").
+- The comma bug below is fixed, and `backend/tests/topicIds.test.js` and
+  `e2e/tests/topics.spec.js` guard it.
+
+The rest of this section is the analysis as written before the decision.
+
+### How topics were stored before the decision
 
 **By display name, everywhere:**
 - **Questions:** `Question.primaryTopic` and `secondaryTopics` hold the literal strings from
@@ -325,7 +342,7 @@ here, pending your decision.
 
 ## Open points for review
 
-1. **Topic ids:** accept the proposed ids (`mutability`, `loops`, …), or choose others.
+1. **Topic ids:** *resolved*: the proposed ids were accepted and implemented (§5).
 2. **Edges:** confirm the 14 edges, especially the judgement calls `lists → slicing` (vs strings)
    and `mutability → classes`.
 3. **Misconception ownership:** some beliefs sit between topics.
@@ -333,4 +350,4 @@ here, pending your decision.
    - `loops.loop-variable-discarded` could sit under `scope`.
 
    They are placed by the concept that corrects them; say if you'd assign any differently.
-4. **§5 decision:** stable ids now (recommended) or later.
+4. **§5 decision:** *resolved*: stable ids now, implemented (§5).

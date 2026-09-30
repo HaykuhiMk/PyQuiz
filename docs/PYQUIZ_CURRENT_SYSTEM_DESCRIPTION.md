@@ -182,6 +182,12 @@ The browser sends only the question id and the index of the chosen option.
 - Tuples
 - Numbers & Arithmetic
 
+**Stable ids.** Each topic has a short, stable id (`mutability`, `loops`, `dicts`, `types`,
+`strings`, `functions`, `sets`, `lists`, `slicing`, `tuples`, `numbers`). Questions, quiz sessions,
+API parameters and API responses store and pass only ids. The display names above live only in
+`backend/config/topicTaxonomy.js`, and the frontend reads them from `GET /api/v1/topics`. An id
+never changes once set, but a display name can change freely without a data migration.
+
 **Tagging.** Every question has exactly one required **primary topic**: the concept a learner must
 understand to answer it. A question may also have optional **secondary topics** for filtering. Quiz
 and Study topic filters match a question by its primary *or* any secondary topic.
@@ -523,7 +529,7 @@ frontend server — communicating only over HTTP.
 Rules that must be identical in several places live in `backend/config/`:
 - quiz timing and points (`quizConfig.js`);
 - mastery thresholds (`masteryConfig.js`);
-- the topic taxonomy (`topicTaxonomy.js`);
+- the topic taxonomy, stable ids and display names (`topicTaxonomy.js`);
 - client-facing validation rules (`validationRules.js`).
 
 Every error response, including authentication failures and rate limits, goes through one
@@ -779,7 +785,7 @@ relation to other collections.
 The table was generated from the Express router stacks of the route files in
 `backend/routes/v1/` (the purpose column comes from each route's OpenAPI summary). Full request and
 response schemas are served at `/api-docs` outside production, and `backend/tests/swagger.test.js`
-fails if the documentation and the real routes diverge. There are **40 operations on 37 paths**: 37
+fails if the documentation and the real routes diverge. There are **41 operations on 38 paths**: 38
 under `/api/v1` plus 3 operational endpoints.
 
 **Columns:**
@@ -812,7 +818,7 @@ under `/api/v1` plus 3 operational endpoints.
 | PATCH | `/api/v1/users/settings/profile` | User | Yes | — | Update username and/or avatar |
 | PATCH | `/api/v1/users/settings/password` | User | Yes | — | Change the current user's password |
 | DELETE | `/api/v1/users/me` | User | Yes | — | Delete the current user's account |
-| GET | `/api/v1/questions/topics` | Public | No | — | List topics that have at least one question |
+| GET | `/api/v1/questions/topics` | Public | No | — | Topics that have at least one question, as `{ id, name }` |
 | GET | `/api/v1/questions/stats` | Public | No | — | Public aggregate question counts (About page) |
 | GET | `/api/v1/questions/study` | User | No | — | Study mode — questions with answers and explanations |
 | GET | `/api/v1/questions/random` | Public | No | — | Get one random question (answer stripped) |
@@ -826,6 +832,7 @@ under `/api/v1` plus 3 operational endpoints.
 | POST | `/api/v1/quiz/sessions/:sessionId/reveal` | Guest or user | If logged in | — | Reveal the answer to an exhausted question |
 | POST | `/api/v1/contact` | Public | No | 5 / 15 min per IP | Send a contact-form message |
 | GET | `/api/v1/validation-rules` | Public | No | — | Validation rules the frontend applies client-side |
+| GET | `/api/v1/topics` | Public | No | — | The full topic taxonomy: every topic's stable id and display name |
 | POST | `/api/v1/admin/login` | Public | No | 20 / 15 min per IP | Log in as an admin |
 | POST | `/api/v1/admin/logout` | Public | No | — | Log out (clear the admin session cookies) |
 | GET | `/api/v1/admin/me` | Admin | No | — | Confirm the admin session and get a CSRF token |

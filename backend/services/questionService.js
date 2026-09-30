@@ -2,6 +2,7 @@ const questionRepository = require('../repositories/questionRepository');
 const userAnsweredQuestionRepository = require('../repositories/userAnsweredQuestionRepository');
 const AppError = require('../core/AppError');
 const mongoose = require('mongoose');
+const { topicName } = require('../config/topicTaxonomy');
 
 function sanitizeQuestion(question) {
   if (!question) return question;
@@ -42,9 +43,14 @@ function buildQuestionQuery({ topics = [], difficulty, excludeIds = [] }) {
   return query;
 }
 
+// Topics that have at least one question, as { id, name } (the id is what
+// filters and questions use; the name is only for display), by name.
 async function getTopics() {
-  const topics = await questionRepository.findDistinctTopics();
-  return topics.filter(Boolean).sort();
+  const ids = await questionRepository.findDistinctTopics();
+  return ids
+    .filter(Boolean)
+    .map((id) => ({ id, name: topicName(id) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // Public aggregate counts for the About page (GET /api/v1/questions/stats):

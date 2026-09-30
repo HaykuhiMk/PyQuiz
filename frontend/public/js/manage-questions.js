@@ -1,8 +1,15 @@
 import { api } from "./api.js";
-import { CANONICAL_TOPICS } from "./topicTaxonomy.js";
+import { getTopicTaxonomy, getTopicNamer } from "./topics.js";
 
-function populateTopicOptions(select) {
-    select.innerHTML += CANONICAL_TOPICS.map((topic) => `<option value="${topic}">${topic}</option>`).join("");
+// Option values are stable topic ids; the visible text is the display name.
+function populateTopicOptions(select, topics) {
+    select.innerHTML += topics
+        .map((topic) => `<option value="${escapeTopicText(topic.id)}">${escapeTopicText(topic.name)}</option>`)
+        .join("");
+}
+
+function escapeTopicText(value) {
+    return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -32,9 +39,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const editPrimaryTopicSelect = document.getElementById("edit-primary-topic");
     const editSecondaryTopicsSelect = document.getElementById("edit-secondary-topics");
 
-    populateTopicOptions(filterTopic);
-    populateTopicOptions(editPrimaryTopicSelect);
-    populateTopicOptions(editSecondaryTopicsSelect);
+    const taxonomy = await getTopicTaxonomy();
+    const topicName = await getTopicNamer();
+    populateTopicOptions(filterTopic, taxonomy);
+    populateTopicOptions(editPrimaryTopicSelect, taxonomy);
+    populateTopicOptions(editSecondaryTopicsSelect, taxonomy);
 
     function escapeHTML(str = "") {
         return String(str).replace(/[&<>"']/g, (match) => ({
@@ -72,8 +81,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <tr>
                     <td>${escapeHTML(q.question)}</td>
                     <td>${escapeHTML(q.difficulty)}</td>
-                    <td>${escapeHTML(q.primaryTopic || "")}</td>
-                    <td>${escapeHTML((q.secondaryTopics || []).join(", "))}</td>
+                    <td>${escapeHTML(q.primaryTopic ? topicName(q.primaryTopic) : "")}</td>
+                    <td>${escapeHTML((q.secondaryTopics || []).map(topicName).join(", "))}</td>
                     <td>
                         <button type="button" class="secondary-btn edit-btn" data-id="${q._id}">
                             <i class="fas fa-pen"></i> Edit

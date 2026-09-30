@@ -27,7 +27,7 @@ function createQuestion(overrides = {}) {
     options: ['a', 'b', 'c', 'd'],
     answer: 'b',
     difficulty: 'easy',
-    primaryTopic: 'Lists',
+    primaryTopic: 'lists',
     secondaryTopics: [],
     explanation: 'SECRET-EXPLANATION',
     ...overrides,
@@ -37,8 +37,8 @@ function createQuestion(overrides = {}) {
 describe('GET /api/v1/questions/stats', () => {
   it('is public and returns only aggregate counts', async () => {
     await createQuestion();
-    await createQuestion({ primaryTopic: 'Strings' });
-    await createQuestion({ primaryTopic: 'Strings' });
+    await createQuestion({ primaryTopic: 'strings' });
+    await createQuestion({ primaryTopic: 'strings' });
 
     const res = await request(app).get('/api/v1/questions/stats');
 

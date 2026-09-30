@@ -273,7 +273,7 @@ committed. Only counts, question ids and question content were used.
 | # | Collection | Change | Migration | Decision |
 |---|---|---|---|---|
 | M1 | questions | `correctAnswer` → `answer` | **new script**, with dry run | approved |
-| M2 | questions | `topics` → `primaryTopic` + `secondaryTopics` | existing `migrateQuestionTopics.js`, plus mappings for the 98 unmatched questions and the new topics | approved (see below) |
+| M2 | questions | `topics` → `primaryTopic` + `secondaryTopics`, **written as stable topic ids** | existing `migrateQuestionTopics.js`, plus mappings for the 98 unmatched questions and the new topics | approved (see below) |
 | M3 | questions | extra `createdBy`, `createdAt`, `updatedAt` | none needed; the schema ignores them | open: keep or remove |
 | M4 | questions | content problems and the duplicated question (see below) | content-fix script, reusable on production | approved once the owner has reviewed `content-fixes.md` |
 | M5 | users | backfill `usernameLower` (all 60 users) | existing `backfillUsernameLower.js` | ready |
@@ -315,6 +315,22 @@ required).
   - map the 31 as proposed;
   - still to do: recompute primary-topic counts for all 146 questions and flag any topic above
     about a third.
+- **Stable topic ids (decided after the pause, `docs/CONCEPT_GRAPH.md` §5).** Topics are now
+  stored as ids, never display names, so the production migration must **write ids directly**:
+  - `migrateQuestionTopics.js` copies `primaryTopic`/`secondaryTopics` from
+    `backend/database/questions.json`, which now holds ids, so the 48 matched questions get ids
+    with no change to the script;
+  - the mappings for the 98 unmatched questions must use ids. `tmp/prodcopy/topic-proposals.md`
+    uses display names; convert them when writing the mapping (`mutability`, `loops`, `dicts`,
+    `types`, `strings`, `functions`, `sets`, `lists`, `slicing`, `tuples`, `numbers`);
+  - the five new topics get the ids proposed in `docs/CONCEPT_GRAPH.md`: `classes` (Classes &
+    Objects), `inheritance` (Inheritance & MRO), `scope` (Scope & Namespaces), `generators`
+    (Generators & Iterators) and `exceptions` (Exceptions). Add them to
+    `backend/config/topicTaxonomy.js` before running M2;
+  - `scripts/migrateTopicIds.js` (names → ids) is **not** part of the production runbook.
+    Production has never stored `primaryTopic` names; the script exists for databases that were
+    migrated with names, i.e. the local dev database, where it has been applied. The old
+    `quizsessions` it would also convert are dropped by M9.
 
 ### Old `quizsessions` collection (M9)
 
@@ -367,7 +383,8 @@ then are applied by a script so the same fixes can run on production.
   after.
 - **Consequence:** the same scripts would do this on production.
 - **Fix, applied only to the scratch guard so far:** `tmp/prodcopy/guard.js` forces
-  `autoIndex: false` and `autoCreate: false`. The repository's scripts don't do this yet.
+  `autoIndex: false` and `autoCreate: false`. Of the repository's scripts, only the new
+  `migrateTopicIds.js` does this; the migration scripts used in production don't do it yet.
 
 ### Requirements for every migration script (owner's decisions)
 
@@ -387,7 +404,8 @@ and database printed before each run. Then:
    diffs.
 2. Decide M3, M8 and M10.
 3. Recompute the taxonomy counts for all 146 questions.
-4. Write the scripts (M1, M2 mappings, M4, M7, M9, and M8/M10 if approved).
+4. Add the five new topic ids to the taxonomy, then write the scripts (M1, M2 mappings in ids,
+   M4, M7, M9, and M8/M10 if approved).
 5. Write `content-fixes.md` for review.
 6. Build the runbook, update the AUDIT.md checklist, and rehearse.
 

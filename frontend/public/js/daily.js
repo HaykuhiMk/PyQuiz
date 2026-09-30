@@ -1,6 +1,10 @@
 import { api, requireAuth } from './api.js';
 import { countUp } from './ui.js';
 import { icon } from './icons.js';
+import { getTopicNamer } from './topics.js';
+
+// Stored topic ids -> display names (loaded before the first question renders).
+let topicName = (id) => id;
 
 let challenge = null;
 let currentIndex = 0;
@@ -124,7 +128,7 @@ function renderQuestion() {
         <div class="pq-question__meta">
           ${question.difficulty ? `<span class="badge">${escapeHTML(capitalize(question.difficulty))}</span>` : ''}
           ${(() => {
-            const topics = [question.primaryTopic, ...(question.secondaryTopics || [])].filter(Boolean);
+            const topics = [question.primaryTopic, ...(question.secondaryTopics || [])].filter(Boolean).map(topicName);
             return topics.length ? `<span>${escapeHTML(topics.join(', '))}</span>` : '';
           })()}
         </div>
@@ -257,7 +261,7 @@ async function submitChallenge() {
 async function loadChallenge() {
   renderLoading();
   try {
-    challenge = await api.getDailyChallenge();
+    [challenge, topicName] = await Promise.all([api.getDailyChallenge(), getTopicNamer()]);
 
     const dateLabel = formatChallengeDate(challenge.date);
     const dateBadge = document.getElementById('daily-date');

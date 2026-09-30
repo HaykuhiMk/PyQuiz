@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { CANONICAL_TOPICS } = require("../config/topicTaxonomy");
+const { TOPIC_IDS } = require("../config/topicTaxonomy");
 
 const questionSchema = new mongoose.Schema({
     question: { type: String, required: true },
@@ -10,10 +10,10 @@ const questionSchema = new mongoose.Schema({
     // The concept a learner must understand to answer correctly (docs/
     // AUDIT.md Phase 3 taxonomy revision) — not the data type in the code.
     // Mastery/weak-topic detection use this field only.
-    primaryTopic: { type: String, enum: CANONICAL_TOPICS, required: true },
+    primaryTopic: { type: String, enum: TOPIC_IDS, required: true },
     // Optional, used only for filtering/search (a quiz/study topic filter
     // matches a question via primaryTopic OR secondaryTopics).
-    secondaryTopics: { type: [{ type: String, enum: CANONICAL_TOPICS }], default: [] },
+    secondaryTopics: { type: [{ type: String, enum: TOPIC_IDS }], default: [] },
     explanation: { type: String, required: true }
 });
 

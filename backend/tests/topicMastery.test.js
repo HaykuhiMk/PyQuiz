@@ -44,7 +44,7 @@ function createQuestion(overrides = {}) {
     options: ['a', 'b'],
     answer: 'a',
     difficulty: 'easy',
-    primaryTopic: 'Loops & Control Flow',
+    primaryTopic: 'loops',
     secondaryTopics: [],
     explanation: 'e',
     ...overrides,
@@ -80,7 +80,7 @@ describe('Topic mastery: "measuring" state (Phase 3 follow-up)', () => {
     });
 
     const mastery = await request(app).get('/api/v1/users/topic-mastery').set('Cookie', cookieHeader);
-    const loops = mastery.body.data.mastery.find((t) => t.topic === 'Loops & Control Flow');
+    const loops = mastery.body.data.mastery.find((t) => t.topic === 'loops');
 
     expect(loops.total).toBe(3);
     expect(loops.answered).toBe(1);
@@ -105,7 +105,7 @@ describe('Topic mastery: "measuring" state (Phase 3 follow-up)', () => {
     }
 
     const mastery = await request(app).get('/api/v1/users/topic-mastery').set('Cookie', cookieHeader);
-    const loops = mastery.body.data.mastery.find((t) => t.topic === 'Loops & Control Flow');
+    const loops = mastery.body.data.mastery.find((t) => t.topic === 'loops');
 
     expect(loops.attempted).toBe(3);
     expect(loops.level).not.toBe('measuring');
@@ -115,15 +115,15 @@ describe('Topic mastery: "measuring" state (Phase 3 follow-up)', () => {
 
 describe('Topic mastery: "not enough questions" state (Phase 3 taxonomy revision)', () => {
   it('shows unavailable for a topic with fewer than MIN_QUESTIONS_FOR_MASTERY questions', async () => {
-    await createQuestion({ primaryTopic: 'Tuples' });
-    await createQuestion({ primaryTopic: 'Tuples' }); // only 2, below the minimum of 3
+    await createQuestion({ primaryTopic: 'tuples' });
+    await createQuestion({ primaryTopic: 'tuples' }); // only 2, below the minimum of 3
     const { cookieHeader, csrfToken } = await registerAndLogin('raretopic@example.com');
 
     const start = await startSession(cookieHeader, csrfToken, { mode: 'classic', topics: [] });
     await answerCorrectly(cookieHeader, csrfToken, start.body.data.sessionId, start.body.data.question);
 
     const mastery = await request(app).get('/api/v1/users/topic-mastery').set('Cookie', cookieHeader);
-    const rare = mastery.body.data.mastery.find((t) => t.topic === 'Tuples');
+    const rare = mastery.body.data.mastery.find((t) => t.topic === 'tuples');
 
     expect(rare.total).toBe(2);
     expect(rare.level).toBe('unavailable');
@@ -133,10 +133,10 @@ describe('Topic mastery: "not enough questions" state (Phase 3 taxonomy revision
 describe('Topic mastery ignores AnswerEvent rows for deleted questions (Phase 3 follow-up)', () => {
   it('drops a deleted question from coverage/accuracy while keeping its AnswerEvent as history', async () => {
     await Promise.all([
-      createQuestion({ primaryTopic: 'Sets' }),
-      createQuestion({ primaryTopic: 'Sets' }),
-      createQuestion({ primaryTopic: 'Sets' }),
-      createQuestion({ primaryTopic: 'Sets' }),
+      createQuestion({ primaryTopic: 'sets' }),
+      createQuestion({ primaryTopic: 'sets' }),
+      createQuestion({ primaryTopic: 'sets' }),
+      createQuestion({ primaryTopic: 'sets' }),
     ]);
     const { cookieHeader, csrfToken } = await registerAndLogin('doomed@example.com');
 
@@ -157,7 +157,7 @@ describe('Topic mastery ignores AnswerEvent rows for deleted questions (Phase 3 
     }
 
     const before = await request(app).get('/api/v1/users/topic-mastery').set('Cookie', cookieHeader);
-    const doomedBefore = before.body.data.mastery.find((t) => t.topic === 'Sets');
+    const doomedBefore = before.body.data.mastery.find((t) => t.topic === 'sets');
     // 3/4 answered (75% coverage) with 100% accuracy — 'intermediate', not
     // 'master' (which needs >=80% coverage too); the level itself isn't
     // what this test is about, just that the raw counts are right.
@@ -178,7 +178,7 @@ describe('Topic mastery ignores AnswerEvent rows for deleted questions (Phase 3 
     // ...but live mastery no longer counts it: one fewer question overall,
     // and one fewer answered/attempted/correct, not stuck at the old totals.
     const after = await request(app).get('/api/v1/users/topic-mastery').set('Cookie', cookieHeader);
-    const doomedAfter = after.body.data.mastery.find((t) => t.topic === 'Sets');
+    const doomedAfter = after.body.data.mastery.find((t) => t.topic === 'sets');
     expect(doomedAfter).toMatchObject({ total: 3, answered: 2, attempted: 2, correct: 2 });
   });
 });

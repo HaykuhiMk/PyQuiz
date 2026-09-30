@@ -71,7 +71,10 @@ test('dashboard labels per-question and per-attempt accuracy separately, each wi
   await expect(page.locator('#accuracy-value')).toHaveText(`${perQuestion}%`);
 
   await expect(page.locator('#attempts-correct-help')).toContainText('counts every try');
-  const card = page.locator('#weak-topics-grid .fold-card', { hasText: weakest.topic });
+  // Mastery rows carry stable topic ids; the card shows the display name.
+  const taxonomy = (await (await api.get(`${API}/api/v1/topics`)).json()).data;
+  const weakestName = taxonomy.find((t) => t.id === weakest.topic).name;
+  const card = page.locator('#weak-topics-grid .fold-card', { hasText: weakestName });
   await expect(card).toContainText(`Attempts correct: ${weakest.accuracy}%`);
   await expect(page.getByText(/Accuracy so far/)).toHaveCount(0);
 });

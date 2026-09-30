@@ -55,7 +55,7 @@ describe('a Bearer header alone is rejected', () => {
 
   it('on the quiz routes: grants no identity (guest session; cannot drive the user\'s own session)', async () => {
     await Question.create({
-      question: 'Q', options: ['a', 'b'], answer: 'b', difficulty: 'easy', primaryTopic: 'Lists', explanation: 'e',
+      question: 'Q', options: ['a', 'b'], answer: 'b', difficulty: 'easy', primaryTopic: 'lists', explanation: 'e',
     });
     const user = await registerAndLogin('bearer-quiz@example.com', { username: 'bearerquiz' });
 

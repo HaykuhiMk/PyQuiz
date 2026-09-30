@@ -115,7 +115,7 @@ router.get('/leaderboard', validate(leaderboardQuerySchema, 'query'), userContro
  *       - userCookie: []
  *     responses:
  *       200:
- *         description: Topic mastery.
+ *         description: Topic mastery. Each item's `topic` is a stable topic id (display names come from GET /topics).
  *         content:
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ApiSuccess' }

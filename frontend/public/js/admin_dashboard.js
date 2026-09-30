@@ -1,8 +1,15 @@
 import { api } from "./api.js";
-import { CANONICAL_TOPICS } from "./topicTaxonomy.js";
+import { getTopicTaxonomy } from "./topics.js";
 
-function populateTopicOptions(select) {
-    select.innerHTML = CANONICAL_TOPICS.map((topic) => `<option value="${topic}">${topic}</option>`).join("");
+// Option values are stable topic ids; the visible text is the display name.
+function populateTopicOptions(select, topics) {
+    select.innerHTML = topics
+        .map((topic) => `<option value="${escapeTopicText(topic.id)}">${escapeTopicText(topic.name)}</option>`)
+        .join("");
+}
+
+function escapeTopicText(value) {
+    return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -16,8 +23,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const questionForm = document.getElementById("question-form");
     const primaryTopicSelect = document.getElementById("primary-topic");
     const secondaryTopicsSelect = document.getElementById("secondary-topics");
-    if (primaryTopicSelect) populateTopicOptions(primaryTopicSelect);
-    if (secondaryTopicsSelect) populateTopicOptions(secondaryTopicsSelect);
+    const taxonomy = await getTopicTaxonomy();
+    if (primaryTopicSelect) populateTopicOptions(primaryTopicSelect, taxonomy);
+    if (secondaryTopicsSelect) populateTopicOptions(secondaryTopicsSelect, taxonomy);
 
     if (questionForm) {
         questionForm.addEventListener("submit", async (event) => {

@@ -1,7 +1,7 @@
 const path = require('path');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-const { CANONICAL_TOPICS } = require('../config/topicTaxonomy');
+const { TOPIC_IDS } = require('../config/topicTaxonomy');
 const { QUIZ_MODES } = require('../config/quizConfig');
 
 // The per-endpoint docs live as `@openapi` JSDoc blocks directly above each
@@ -167,7 +167,18 @@ const spec = swaggerJsdoc({
           ],
         },
         Difficulty: { type: 'string', enum: ['easy', 'medium', 'hard'] },
-        Topic: { type: 'string', enum: CANONICAL_TOPICS },
+        Topic: {
+          type: 'string',
+          enum: TOPIC_IDS,
+          description: 'Stable topic id (never changes). Display names come from GET /topics.',
+        },
+        TopicEntry: {
+          type: 'object',
+          properties: {
+            id: { $ref: '#/components/schemas/Topic' },
+            name: { type: 'string', description: 'Display name (may change).' },
+          },
+        },
         QuizMode: { type: 'string', enum: QUIZ_MODES },
         ObjectId: {
           type: 'string',

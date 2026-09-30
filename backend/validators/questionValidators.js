@@ -1,8 +1,9 @@
 const { z } = require('zod');
-const { CANONICAL_TOPICS } = require('../config/topicTaxonomy');
+const { TOPIC_IDS } = require('../config/topicTaxonomy');
 
 const difficultyEnum = z.enum(['easy', 'medium', 'hard']);
-const topicEnum = z.enum(CANONICAL_TOPICS);
+// Stable topic ids (config/topicTaxonomy.js), never display names.
+const topicEnum = z.enum(TOPIC_IDS);
 
 function csvToArray(value) {
   if (Array.isArray(value)) {

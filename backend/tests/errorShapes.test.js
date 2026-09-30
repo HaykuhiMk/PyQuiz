@@ -85,7 +85,7 @@ describe('central error envelope', () => {
 
   it('quiz-session start rate limiter (429)', async () => {
     await Question.create({
-      question: 'Q', options: ['a', 'b'], answer: 'b', difficulty: 'easy', primaryTopic: 'Lists', explanation: 'e',
+      question: 'Q', options: ['a', 'b'], answer: 'b', difficulty: 'easy', primaryTopic: 'lists', explanation: 'e',
     });
     const user = await registerAndLogin('shapesessions@example.com', { username: 'shapesessions' });
     const res = await hitUntil429(

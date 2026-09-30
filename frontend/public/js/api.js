@@ -157,6 +157,7 @@ export const api = {
   deleteAccount: (body) =>
     request('/api/v1/users/me', { method: 'DELETE', body: JSON.stringify(body) }),
   getTopics: () => request('/api/v1/questions/topics'),
+  getTopicTaxonomy: () => request('/api/v1/topics'),
   getValidationRules: () => request('/api/v1/validation-rules'),
   getRandomQuestion: ({ topics = [], difficulty = '', excludeIds = [] } = {}) => {
     const params = new URLSearchParams();
