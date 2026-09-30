@@ -14,4 +14,9 @@ const setBannedSchema = z.object({
   banned: z.boolean(),
 });
 
-module.exports = { adminLoginSchema, paginationQuerySchema, setBannedSchema };
+// Path parameter for the admin routes addressing one user or question.
+const objectIdParamSchema = z.object({
+  id: z.string().regex(/^[a-f\d]{24}$/i, 'Must be a 24-character hexadecimal id'),
+});
+
+module.exports = { adminLoginSchema, paginationQuerySchema, setBannedSchema, objectIdParamSchema };

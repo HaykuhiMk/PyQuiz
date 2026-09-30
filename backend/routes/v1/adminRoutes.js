@@ -10,6 +10,7 @@ const {
   adminLoginSchema,
   paginationQuerySchema,
   setBannedSchema,
+  objectIdParamSchema,
 } = require('../../validators/adminValidators');
 const { questionFilterSchema, updateQuestionSchema } = require('../../validators/questionValidators');
 
@@ -190,6 +191,7 @@ router.patch(
   '/users/:id/ban',
   verifyAdmin,
   verifyAdminCsrf,
+  validate(objectIdParamSchema, 'params'),
   validate(setBannedSchema),
   adminUserController.setBanned
 );
@@ -281,7 +283,7 @@ router.get(
  *             schema: { $ref: '#/components/schemas/ApiError' }
  *       429: { $ref: '#/components/responses/TooManyRequests' }
  */
-router.get('/questions/:id', verifyAdmin, adminQuestionController.getOne);
+router.get('/questions/:id', verifyAdmin, validate(objectIdParamSchema, 'params'), adminQuestionController.getOne);
 /**
  * @openapi
  * /admin/questions/{id}:
@@ -319,6 +321,7 @@ router.patch(
   '/questions/:id',
   verifyAdmin,
   verifyAdminCsrf,
+  validate(objectIdParamSchema, 'params'),
   validate(updateQuestionSchema),
   adminQuestionController.update
 );
@@ -350,6 +353,12 @@ router.patch(
  *             schema: { $ref: '#/components/schemas/ApiError' }
  *       429: { $ref: '#/components/responses/TooManyRequests' }
  */
-router.delete('/questions/:id', verifyAdmin, verifyAdminCsrf, adminQuestionController.remove);
+router.delete(
+  '/questions/:id',
+  verifyAdmin,
+  verifyAdminCsrf,
+  validate(objectIdParamSchema, 'params'),
+  adminQuestionController.remove
+);
 
 module.exports = router;

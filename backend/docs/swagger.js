@@ -283,8 +283,8 @@ const spec = swaggerJsdoc({
           name: 'id',
           in: 'path',
           required: true,
-          schema: { type: 'string' },
-          description: 'MongoDB ObjectId.',
+          schema: { type: 'string', pattern: '^[a-fA-F0-9]{24}$' },
+          description: 'MongoDB ObjectId (24 hexadecimal characters); anything else is rejected with 400.',
         },
         SessionIdPath: {
           name: 'sessionId',

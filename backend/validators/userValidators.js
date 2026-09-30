@@ -18,7 +18,14 @@ const deleteAccountSchema = z.object({
   password: z.string().min(1),
 });
 
+// GET /api/v1/users/leaderboard. Same rules as the admin endpoints'
+// paginationQuerySchema limit: an integer from 1 to 100, else 400.
+const leaderboardQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
 module.exports = {
+  leaderboardQuerySchema,
   updateProfileSchema,
   changePasswordSchema,
   deleteAccountSchema,

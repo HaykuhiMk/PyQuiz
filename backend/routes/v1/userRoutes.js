@@ -7,6 +7,7 @@ const {
   updateProfileSchema,
   changePasswordSchema,
   deleteAccountSchema,
+  leaderboardQuerySchema,
 } = require('../../validators/userValidators');
 
 const router = express.Router();
@@ -66,8 +67,8 @@ router.get('/user-progress', authenticateToken, userController.getProgress);
  *     summary: Global leaderboard
  *     description: >
  *       Public. When a valid session cookie is present, the viewer's own row has
- *       `isCurrentUser: true`. The `limit` query is not Zod-validated: non-numeric values fall
- *       back to 50 and the result is clamped to 1..100.
+ *       `isCurrentUser: true`. `limit` must be an integer from 1 to 100 (default 50);
+ *       anything else is rejected with 400.
  *     operationId: usersGetLeaderboard
  *     security:
  *       - {}
@@ -78,6 +79,7 @@ router.get('/user-progress', authenticateToken, userController.getProgress);
  *         required: false
  *         schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
  *     responses:
+ *       400: { $ref: '#/components/responses/ValidationError' }
  *       200:
  *         description: Leaderboard rows.
  *         content:
@@ -101,7 +103,7 @@ router.get('/user-progress', authenticateToken, userController.getProgress);
  *                           achievements: { type: array, items: { type: string } }
  *       429: { $ref: '#/components/responses/TooManyRequests' }
  */
-router.get('/leaderboard', userController.getLeaderboard);
+router.get('/leaderboard', validate(leaderboardQuerySchema, 'query'), userController.getLeaderboard);
 /**
  * @openapi
  * /users/topic-mastery:
