@@ -132,29 +132,36 @@ describe('GET /api/v1/questions/study', () => {
   });
 });
 
-describe('POST /api/v1/questions/:id/check', () => {
-  it('reports a wrong guess without revealing the answer', async () => {
+// POST /api/v1/questions/:id/check was removed (Phase 5 follow-up): it was
+// public and returned the correct answer and explanation for any question
+// id (reveal: true, or by trying each index), including today's Daily
+// Challenge questions, and nothing in the frontend had called it since the
+// quiz moved to server-side sessions in Phase 1. These tests replace the old
+// ones that encoded its answer-revealing behaviour.
+describe('POST /api/v1/questions/:id/check (removed)', () => {
+  it('no longer exists, for guests or logged-in users', async () => {
     const q = await createQuestion();
-    const res = await request(app).post(`/api/v1/questions/${q._id}/check`).send({ selectedIndex: 0 });
+    const guest = await request(app).post(`/api/v1/questions/${q._id}/check`).send({ reveal: true });
+    expect(guest.statusCode).toBe(404);
+    expect(JSON.stringify(guest.body)).not.toContain('2 + 2 = 4');
 
-    expect(res.body.data.isCorrect).toBe(false);
-    expect(res.body.data.correctAnswer).toBeUndefined();
+    const { cookieHeader, csrfToken } = await registerAndLogin('checkgone@example.com', { username: 'checkgone' });
+    const user = await request(app)
+      .post(`/api/v1/questions/${q._id}/check`)
+      .set('Cookie', cookieHeader)
+      .set('X-CSRF-Token', csrfToken)
+      .send({ selectedIndex: 1 });
+    expect(user.statusCode).toBe(404);
+    expect(user.body.data?.isCorrect).toBeUndefined();
   });
 
-  it('reveals the answer once the guess is correct', async () => {
-    const q = await createQuestion();
-    const res = await request(app).post(`/api/v1/questions/${q._id}/check`).send({ selectedIndex: 1 });
-
-    expect(res.body.data.isCorrect).toBe(true);
-    expect(res.body.data.correctAnswer).toBe('4');
-  });
-
-  it('reveals the answer on request regardless of correctness', async () => {
-    const q = await createQuestion();
-    const res = await request(app).post(`/api/v1/questions/${q._id}/check`).send({ reveal: true });
-
-    expect(res.body.data.correctAnswer).toBe('4');
-    expect(res.body.data.explanation).toBe('2 + 2 = 4');
+  it('no public question endpoint returns answers or explanations', async () => {
+    await createQuestion();
+    for (const path of ['/api/v1/questions', '/api/v1/questions/random', '/api/v1/questions/stats']) {
+      const res = await request(app).get(path);
+      expect(res.statusCode).toBe(200);
+      expect(JSON.stringify(res.body)).not.toMatch(/"answer"|"explanation"|"correctAnswer"|2 \+ 2 = 4/);
+    }
   });
 });
 

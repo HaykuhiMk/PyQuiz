@@ -171,11 +171,6 @@ export const api = {
     if (difficulty) params.set('difficulty', difficulty);
     return request(`/api/v1/questions/study?${params}`);
   },
-  checkAnswer: (questionId, { selectedIndex, reveal = false } = {}) =>
-    request(`/api/v1/questions/${questionId}/check`, {
-      method: 'POST',
-      body: JSON.stringify({ selectedIndex, reveal }),
-    }),
   startQuizSession: ({ mode, topics = [], difficulty = '', practiceMode = false } = {}) =>
     request('/api/v1/quiz/sessions', {
       method: 'POST',

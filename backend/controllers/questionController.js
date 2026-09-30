@@ -45,16 +45,6 @@ async function addQuestion(req, res, next) {
   }
 }
 
-async function checkAnswer(req, res, next) {
-  try {
-    const { selectedIndex, reveal } = req.body;
-    const result = await questionService.checkAnswer(req.params.id, { selectedIndex, reveal });
-    return res.json(successResponse(result));
-  } catch (error) {
-    return next(error);
-  }
-}
-
 async function getStudyQuestions(req, res, next) {
   try {
     const { topics = [], difficulty, page, limit } = req.query;
@@ -85,6 +75,5 @@ module.exports = {
   getAllQuestions,
   getRandomQuestion,
   addQuestion,
-  checkAnswer,
   getStudyQuestions,
 };

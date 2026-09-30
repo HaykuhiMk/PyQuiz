@@ -71,15 +71,9 @@ const randomQuestionFilterSchema = z.object({
   excludeIds: z.preprocess(csvToArray, z.array(z.string().regex(/^[a-f\d]{24}$/i)).max(500)).default([]),
 });
 
-const checkAnswerSchema = z.object({
-  selectedIndex: z.coerce.number().int().min(0).optional(),
-  reveal: z.coerce.boolean().optional().default(false),
-});
-
 module.exports = {
   addQuestionSchema,
   updateQuestionSchema,
   questionFilterSchema,
   randomQuestionFilterSchema,
-  checkAnswerSchema,
 };

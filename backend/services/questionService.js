@@ -162,30 +162,6 @@ async function deleteQuestion(id) {
   await userAnsweredQuestionRepository.deleteAllForQuestion(id);
 }
 
-async function checkAnswer(questionId, { selectedIndex, reveal = false } = {}) {
-  if (!mongoose.Types.ObjectId.isValid(questionId)) {
-    throw new AppError('Question not found', 404);
-  }
-
-  const question = await questionRepository.findQuestionById(questionId);
-  if (!question) {
-    throw new AppError('Question not found', 404);
-  }
-
-  const correctIndex = question.options.indexOf(question.answer);
-  const isCorrect =
-    selectedIndex !== undefined && selectedIndex !== null && Number(selectedIndex) === correctIndex;
-
-  const result = { isCorrect };
-  if (isCorrect || reveal) {
-    result.correctIndex = correctIndex;
-    result.correctAnswer = question.answer;
-    result.explanation = question.explanation;
-  }
-
-  return result;
-}
-
 module.exports = {
   getTopics,
   getPublicStats,
@@ -197,5 +173,4 @@ module.exports = {
   deleteQuestion,
   getRandomQuestion,
   addQuestion,
-  checkAnswer,
 };

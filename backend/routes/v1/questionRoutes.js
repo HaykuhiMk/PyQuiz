@@ -9,7 +9,6 @@ const {
   addQuestionSchema,
   questionFilterSchema,
   randomQuestionFilterSchema,
-  checkAnswerSchema,
 } = require('../../validators/questionValidators');
 
 const router = express.Router();
@@ -185,55 +184,5 @@ router.get('/', validate(questionFilterSchema, 'query'), questionController.getA
  *       429: { $ref: '#/components/responses/TooManyRequests' }
  */
 router.post('/add', verifyAdmin, verifyAdminCsrf, validate(addQuestionSchema), questionController.addQuestion);
-/**
- * @openapi
- * /questions/{id}/check:
- *   post:
- *     tags: [Questions]
- *     summary: Check an answer to a question
- *     description: >
- *       Public (no authentication or CSRF). Returns `{ isCorrect }`; when the answer is correct or
- *       `reveal` is true, also `correctIndex`, `correctAnswer` and `explanation`.
- *     operationId: questionsCheckAnswer
- *     security: []
- *     parameters:
- *       - $ref: '#/components/parameters/IdPath'
- *     requestBody:
- *       required: false
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               selectedIndex:
- *                 type: integer
- *                 minimum: 0
- *                 description: Coerced to a number (numeric strings are accepted).
- *               reveal:
- *                 type: boolean
- *                 default: false
- *                 description: Coerced with JavaScript truthiness, so any non-empty string (even "false") counts as true.
- *     responses:
- *       200:
- *         description: Result.
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/ApiSuccess'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         isCorrect: { type: boolean }
- *                         correctIndex: { type: integer }
- *                         correctAnswer: { type: string }
- *                         explanation: { type: string }
- *       400: { $ref: '#/components/responses/ValidationError' }
- *       404: { $ref: '#/components/responses/NotFound' }
- *       429: { $ref: '#/components/responses/TooManyRequests' }
- */
-router.post('/:id/check', validate(checkAnswerSchema), questionController.checkAnswer);
 
 module.exports = router;
