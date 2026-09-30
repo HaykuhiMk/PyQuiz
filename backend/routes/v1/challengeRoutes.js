@@ -3,20 +3,9 @@ const challengeController = require('../../controllers/challengeController');
 const authenticateToken = require('../../middleware/authenticateToken');
 const verifyCsrf = require('../../middleware/csrf');
 const validate = require('../../middleware/validate');
-const { z } = require('zod');
+const { submitDailySchema } = require('../../validators/challengeValidators');
 
 const router = express.Router();
-
-const submitDailySchema = z.object({
-  answers: z
-    .array(
-      z.object({
-        questionId: z.string().min(1),
-        selectedIndex: z.number().int().min(0),
-      })
-    )
-    .min(1),
-});
 
 /**
  * @openapi

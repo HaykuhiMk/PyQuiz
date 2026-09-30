@@ -300,3 +300,34 @@ describe('Daily Challenge without DAILY_CHALLENGE_SEED_SECRET configured', () =>
     }
   });
 });
+
+// The submission schema lives in validators/ with the others (it used to be
+// inline in challengeRoutes.js); behaviour is unchanged.
+describe('POST /api/v1/challenges/daily/submit validation', () => {
+  const { submitDailySchema } = require('../validators/challengeValidators');
+
+  it('is the schema exported from validators/challengeValidators.js', () => {
+    expect(submitDailySchema.safeParse({ answers: [{ questionId: 'a', selectedIndex: 0 }] }).success).toBe(true);
+    for (const bad of [{}, { answers: [] }, { answers: [{ questionId: '', selectedIndex: 0 }] }, { answers: [{ questionId: 'a', selectedIndex: -1 }] }, { answers: [{ questionId: 'a', selectedIndex: 1.5 }] }]) {
+      expect(submitDailySchema.safeParse(bad).success).toBe(false);
+    }
+  });
+
+  it.each([
+    ['missing answers', {}],
+    ['a negative selectedIndex', { answers: [{ questionId: '507f1f77bcf86cd799439011', selectedIndex: -1 }] }],
+    ['a non-integer selectedIndex', { answers: [{ questionId: '507f1f77bcf86cd799439011', selectedIndex: 0.5 }] }],
+  ])('rejects %s with a 400 validation error', async (_label, body) => {
+    const { cookieHeader, csrfToken } = await registerAndLogin(`dailyval${Math.random().toString(36).slice(2, 8)}@example.com`, {
+      username: `dv${Math.random().toString(36).slice(2, 8)}`,
+    });
+    const res = await request(app)
+      .post('/api/v1/challenges/daily/submit')
+      .set('Cookie', cookieHeader)
+      .set('X-CSRF-Token', csrfToken)
+      .send(body);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error.message).toBe('Validation failed');
+  });
+});
