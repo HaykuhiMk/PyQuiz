@@ -116,13 +116,13 @@ Backend test files live in `backend/tests/`, and browser tests in `e2e/tests/`.
 | ID | Requirement | Where | Verified by |
 |---|---|---|---|
 | NFR-1 | **Integrity:** quiz scoring cannot be forged from the browser, and no public endpoint returns correct answers or explanations. | §6.4 | `quizSessions.test.js`, `progress.test.js` |
-| NFR-2 | **Session security:** sessions live in httpOnly cookies, are invalidated on ban, password change and password reset, and state changes require an HMAC-bound CSRF token. | §12 | `sessionSecurity.test.js`, `adminSession.test.js`, `cors.test.js` |
+| NFR-2 | **Session security:** sessions live in httpOnly cookies, are invalidated on ban, password change and password reset, and state changes require an HMAC-bound CSRF token. | §12 | `sessionSecurity.test.js`, `adminSession.test.js`, `bearerRejected.test.js`, `cors.test.js`, `admin.spec.js` |
 | NFR-3 | **Credential protection:** passwords are hashed, reset tokens are stored only as hashes, and login responses reveal neither whether an account exists nor, through timing, whether it does. | §12 | `passwordReset.test.js`, `loginTiming.test.js`, `adminQuestions.test.js` |
-| NFR-4 | **Input validation:** every endpoint that accepts input validates it with a Zod schema; client-side password and avatar checks are derived from the server's rules. | §12 | `validationRules.test.js`, `validation.spec.js` |
+| NFR-4 | **Input validation:** every endpoint that accepts input validates it with a Zod schema; client-side password and avatar checks are derived from the server's rules. | §12 | `validationRules.test.js`, `queryValidation.test.js`, `validation.spec.js` |
 | NFR-5 | **Abuse resistance:** rate limits on all API traffic and stricter limits on authentication, contact and session-start endpoints. | §12 | `trustProxy.test.js`, `rateLimitBypass.test.js` |
 | NFR-6 | **Operational exposure:** in production, `/metrics` requires a bearer token and `/api-docs` is off unless explicitly enabled. | §12 | `productionExposure.test.js` |
 | NFR-7 | **Browser hardening:** a Content-Security-Policy without inline scripts; no page produces CSP violations. | §12 | `productionExposure.test.js`, all Playwright tests (fixture) |
-| NFR-8 | **Maintainability:** layered backend (routes → controllers → services → repositories → models), and API documentation kept in sync with the real routes. | §8, §11 | `swagger.test.js` |
+| NFR-8 | **Maintainability and consistency:** layered backend (routes → controllers → services → repositories → models); API documentation kept in sync with the real routes; one error shape for every error response; one user lookup per request. | §8, §11, §12 | `swagger.test.js`, `errorShapes.test.js`, `singleLookup.test.js`, `errors.spec.js` |
 | NFR-9 | **Usability and accessibility:** responsive layout, light/dark themes, keyboard operability, and reduced-motion support. | §14 | `smoke.spec.js` (theme); TODO(author): no automated accessibility test exists |
 | NFR-10 | **Performance:** measured on one local machine only (Section 18.1); no production capacity target has been defined. | §18.1 | `backend/scripts/benchmark.js`; TODO(author): define a target if the thesis needs one |
 
@@ -333,7 +333,8 @@ best streak is stored separately.
 ### 5.10 Leaderboard
 
 The leaderboard is public. It ranks users by total points, then best streak, then username, and
-shows 50 rows by default (the API accepts 1–100). For a logged-in viewer, the server marks the viewer's own row
+shows 50 rows by default. The API accepts a `limit` from 1 to 100 and rejects anything else with a
+400. For a logged-in viewer, the server marks the viewer's own row
 (`isCurrentUser`). Avatars are never included in the leaderboard response.
 
 ### 5.11 Settings and Account Management
@@ -525,7 +526,8 @@ Rules that must be identical in several places live in `backend/config/`:
 - the topic taxonomy (`topicTaxonomy.js`);
 - client-facing validation rules (`validationRules.js`).
 
-A centralised error handler returns a consistent JSON error shape (Section 12).
+Every error response, including authentication failures and rate limits, goes through one
+centralised error handler and has the same JSON shape (Section 12).
 
 **The frontend** has no framework and no build step:
 - **Pages:** static HTML pages, each with a small vanilla-JavaScript ES module.
@@ -788,6 +790,13 @@ under `/api/v1` plus 3 operational endpoints.
   minutes per logged-in user and 1000 per 15 minutes per guest IP. Additional limits are listed per
   row.
 
+**Errors on every route** use the one JSON error shape (Section 12):
+- **400:** invalid input.
+- **401:** a *User* or *Admin* route without a valid session.
+- **403:** a valid session that isn't allowed (a non-admin on an *Admin* route, or a missing or
+  invalid CSRF token).
+- **429:** a rate limit was hit.
+
 | Method | Path | Auth | CSRF | Additional rate limit | Purpose |
 |---|---|---|---|---|---|
 | POST | `/api/v1/auth/register` | Public | No | 20 / 15 min per IP | Register a new user account |
@@ -837,11 +846,21 @@ All of PyQuiz's security mechanisms are described in this section; other section
 
 **Sessions.**
 - **User sessions:** the JWT is stored in an httpOnly cookie, readable by no script, with a one-hour
-  lifetime and `SameSite=Lax`.
+  lifetime and `SameSite=Lax`. This cookie is the **only** way to authenticate as a user: an
+  `Authorization` header is ignored, and it is not an allowed CORS request header.
+- **One check per request:** the session is resolved once per request, on every `/api` route
+  (before the rate limiters, which key on the user), and the result is reused by routes that
+  require login. So each request does one user lookup at most.
 - **Admin sessions:** use a **separate** httpOnly cookie, so the two sessions are independent. The
   admin cookie is accepted only by admin routes, which ignore both the user cookie and any
   `Authorization` header. Admin routes also re-check in the database that the account is still an
   admin.
+- **Status codes, for both users and admins:**
+  - **401** means there is no valid session: the cookie is missing, malformed or expired, the
+    session was revoked, or the account is banned or deleted. The frontend then returns to the
+    matching login page, including mid-page.
+  - **403** means the session is valid but not allowed: a non-admin (or a demoted admin) on an admin
+    route, or a missing or invalid CSRF token.
 - **Production cookie names:** with `NODE_ENV=production`, all session and CSRF cookies use the
   `__Host-` prefix (`Secure`, `Path=/`, no `Domain`). A sibling subdomain of picsartacademy.am
   therefore cannot set or overwrite them.
@@ -866,6 +885,8 @@ also refused at login.
   cannot read the API's CSRF cookie. The token is therefore also returned in the body of login and
   `/me` responses, held in memory only, and re-fetched after every page load.
 - **Guest-capable quiz routes:** they check CSRF only when a session cookie is present.
+- **No token without a session:** a CSRF token is only ever computed from a real session token; the
+  server refuses to derive one from an empty or missing session.
 
 **CORS.** The API allows credentialed requests only from an explicit allow-list of origins, and
 never answers with a wildcard. Because login and `/me` return the CSRF token in the body, tests pin
@@ -881,8 +902,13 @@ that no other origin — including sibling subdomains — is ever granted read a
   so response time does not reveal which it was.
 - **Password-reset requests:** answered identically for registered and unregistered emails.
 
-**Input validation.** Every endpoint that accepts input validates it with a Zod schema before
-business logic runs. The body parser allows 100 kB per request, except the profile route, which
+**Input validation.** Every endpoint that accepts input validates it with a Zod schema, kept in
+`backend/validators/`, before business logic runs. Invalid values are rejected with a 400 rather
+than silently corrected; for example, a leaderboard `limit` outside 1–100 and a malformed admin
+`:id` are both rejected. Two deliberate exceptions:
+- The contact form's schema is applied inside its service, so the honeypot check runs first.
+- A malformed quiz-session token gets the same 404 as an unknown or foreign one, so the response
+  does not reveal which it was. The body parser allows 100 kB per request, except the profile route, which
 allows 1 MB so that an oversized photo gets a readable "Image is too large" error.
 
 **Rate limiting.**
@@ -908,23 +934,30 @@ allows 1 MB so that an oversized photo gets a readable "Image is too large" erro
   token is configured. `/api-docs` is disabled unless `ENABLE_API_DOCS=true`.
 
 **Errors, logging and operations.**
-- A central error handler returns intentional application errors with their message. Anything else
-  becomes a generic "Internal server error", so internal details never reach the client.
+- **One error shape.** Every error response has the same JSON shape:
+  `{ success: false, data: null, error: { message, details }, meta }`. That includes validation,
+  authentication (401/403), CSRF and all four rate limiters (429), as well as the `/metrics` and
+  `/readyz` failures. The frontend therefore always shows the server's own message, e.g. "Too many
+  requests. Please try again later."
+- **Error messages:** intentional application errors keep their message. Anything else becomes a
+  generic "Internal server error", so internal details never reach the client.
 - Logs are structured (Pino), with credentials, cookies and CSRF headers redacted. MongoDB
   connection strings are redacted in startup and error messages.
 - `/healthz` and `/readyz` support process managers and orchestrators.
 
 ## 13. Testing
 
-**Backend.** The backend has **224 automated tests in 29 test suites** (Jest and Supertest against a
+**Backend.** The backend has **265 automated tests in 33 test suites** (Jest and Supertest against a
 real MongoDB, via `mongodb-memory-server` or a local test database), all passing. Before this
 remediation work began, it had 89 tests in 9 suites.
 
-**Frontend.** A Playwright suite in `e2e/` has **13 browser tests**, all passing:
+**Frontend.** A Playwright suite in `e2e/` has **16 browser tests**, all passing:
 - **7 smoke tests:** guest quiz, login and logout, a Classic quiz, the Daily Challenge, the theme
   toggle, the About page, and CSRF recovery after a reload;
 - **5 tests** that the frontend's validation matches the server's;
-- **1 test** that the dashboard's two accuracy measures are labelled and filled separately.
+- **1 test** that the dashboard's two accuracy measures are labelled and filled separately;
+- **1 test** that an admin page returns to the admin login when the session ends mid-page;
+- **2 tests** that rate-limit errors reach the page with their real message.
 
 It runs against its own backend, frontend and a disposable local database, and fails on any
 Content-Security-Policy violation or page error.
@@ -932,12 +965,12 @@ Content-Security-Policy violation or page error.
 **Coverage** (`npm run test:coverage`, measured over all runtime backend code: everything except
 the one-off `scripts/` and `database/` tools):
 
-| | Before (commit `d8ad91e`, 89 tests) | Now (224 tests) |
+| | Before (commit `d8ad91e`, 89 tests) | Now (265 tests) |
 |---|---|---|
-| Lines | 77.69% | 89.72% |
-| Branches | 50.39% | 74.92% |
-| Statements | 77.19% | 89.42% |
-| Functions | 72.57% | 89.88% |
+| Lines | 77.69% | 90.17% |
+| Branches | 50.39% | 76.15% |
+| Statements | 77.19% | 89.87% |
+| Functions | 72.57% | 90.80% |
 
 Both columns use the same coverage configuration, so they measure the same set of files. The
 least-covered code is the unused BullMQ email queue (0%) and the Redis-only caching code, which the
@@ -1115,17 +1148,6 @@ No study has been run yet, and no results exist.
 - **The typecheck step does not type-check.** `npm run typecheck` runs `tsc --noEmit` with
   `checkJs` disabled, so it only parses the JavaScript for syntax errors. It does not type-check
   the code. Enabling `checkJs` currently reports 1,564 errors.
-- **Unverified findings from the API annotation pass.** The review that annotated every endpoint
-  reported the following inconsistencies. They were recorded in `docs/AUDIT.md` but have not been
-  independently re-verified or fixed:
-  - `verifyAdmin` answers 403 when there is no cookie but 401 for an invalid token.
-  - Authentication middleware and the per-route rate limiters return `{ error }` rather than the
-    standard response envelope.
-  - User authentication still accepts an `Authorization: Bearer` header, which the CSRF checks do
-    not account for.
-  - Quiz routes run the optional-authentication middleware twice per request.
-  - Contact-form and Daily Challenge submission validation live outside `backend/validators/`.
-  - The leaderboard `limit` parameter has no Zod schema (the service clamps it instead).
 - **No email verification, no two-factor authentication, and fixed one-hour sessions** with no
   silent renewal.
 - **No automated accessibility testing**, and browser tests cover only the flows in Section 13.
@@ -1143,7 +1165,6 @@ These are proposals; none exists in the codebase today.
   when `REDIS_URL` is set, falling back to synchronous sending otherwise.
 - **Real type checking.** Enable `checkJs` and fix the reported errors, or add JSDoc types
   gradually.
-- **Consistency fixes** for the unverified findings in Section 19, after re-verifying them.
 - **Account security.** Email verification, optional two-factor authentication, and session
   renewal.
 - **Accessibility testing** in the Playwright suite, and broader browser-test coverage.
@@ -1165,8 +1186,8 @@ provides:
 - a leaderboard;
 - account management and an admin panel.
 
-Its security measures are described in Section 12. Its behaviour is covered by 224 backend tests
-(89.72% line and 74.92% branch coverage) and 13 browser tests.
+Its security measures are described in Section 12. Its behaviour is covered by 265 backend tests
+(90.17% line and 76.15% branch coverage) and 16 browser tests.
 
 Its main limitations are the small question bank, answers being readable in Study mode, a typecheck
 step that does not type-check, and an email queue that is not yet wired up (Section 19). The

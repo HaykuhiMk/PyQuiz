@@ -196,13 +196,16 @@ addendum"):**
 
 ## Facts for Phase 6 (all measured, as of the password-trimming fix)
 
-- **Tests.** Backend: **224 tests across 29 suites**, all passing (`cd backend && npm test`).
-  Frontend: the Playwright suite in `e2e/` has **13 tests**, all passing: 7 smoke tests in
-  `smoke.spec.js`, 5 client/server validation tests in `validation.spec.js` and 1 dashboard-label
-  test in `dashboard.spec.js`. The baseline before Phase 1 was 89
+- **Tests.** Backend: **265 tests across 33 suites**, all passing (`cd backend && npm test`).
+  Frontend: the Playwright suite in `e2e/` has **16 tests**, all passing:
+  - 7 smoke tests in `smoke.spec.js`;
+  - 5 client/server validation tests in `validation.spec.js`;
+  - 1 dashboard-label test in `dashboard.spec.js`;
+  - 1 admin-session test in `admin.spec.js`;
+  - 2 error-message tests in `errors.spec.js`. The baseline before Phase 1 was 89
   tests across 9 suites.
 - **Coverage** (`npm run test:coverage`, same config both times):
-  - now: **89.72% lines, 74.92% branches** (89.42% statements, 89.88% functions);
+  - now: **90.17% lines, 76.15% branches** (89.87% statements, 90.80% functions);
   - before (`d8ad91e`): 77.69% lines, 50.39% branches.
   - The Phase 5 addendum records 187 tests / 89.37% / 74.66%. That was at `6a29b92`, before the
     follow-ups; use the numbers above.
@@ -227,8 +230,6 @@ addendum"):**
 - **Deployment.** The consolidated production deployment checklist is at the end of
   `docs/AUDIT.md`.
 - **Open items noticed but not changed** (candidates for "Current Limitations"):
-  - Items in the Phase 5 addendum's "Found while annotating" list that are marked as not
-    re-verified.
   - `tsc` doesn't type-check (`checkJs` off).
   - BullMQ email queue not wired up.
 

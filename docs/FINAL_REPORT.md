@@ -1,7 +1,7 @@
 # PyQuiz audit and remediation — Final report
 
-Branch `fix/review-weaknesses`: 31 commits from `d8ad91e` (Phase 0 audit) to `d16e14d`, plus the
-commit adding this report. The branch has **not** been merged, and nothing has been deployed. All
+Branch `fix/review-weaknesses`: 39 commits from `d8ad91e` (Phase 0 audit) to `3f0ec00`, plus the
+documentation commit that brings this report up to date. The branch has **not** been merged, and nothing has been deployed. All
 migrations and scripts have been run only against the local development database, never against
 production.
 
@@ -53,25 +53,45 @@ review, and fixed on the same branch.
 | Account deletion left `AnswerEvent`, `QuizSession` and reset-key records behind | `c12a630` |
 | Dashboard used "Accuracy" for two different measures | `d16e14d` |
 
+The findings reported (unverified) by the Phase 5 annotation pass were re-verified against the code
+with live requests. Five were confirmed and fixed; the contact-form half of the fifth was not an
+issue.
+
+| Verified finding | Result | Commit |
+|---|---|---|
+| `verifyAdmin` answered a missing cookie with 403 but an invalid token with 401, so an admin whose session ended mid-page wasn't redirected | **Fixed**: 401 for no valid session, 403 only for a valid non-admin session; admin pages redirect on 401 mid-page | `bf930af` |
+| Three error shapes (the central envelope, `{ error }` from the auth middleware and route limiters, plain text from the general limiter), so the page showed "Request failed (429)" | **Fixed**: every error response, including all four limiters and `/metrics`/`/readyz`, uses the central envelope; the page shows the real message | `3c09044` |
+| User auth also accepted `Authorization: Bearer`, which the CSRF checks ignored; `/auth/me` issued the same CSRF token (from an empty string) to every Bearer-only caller | **Fixed**: cookie-only authentication; no CSRF token can be computed without a real session; `Authorization` is no longer a CORS-allowed header | `1994baf` |
+| Double user lookup: quiz routes and the leaderboard mounted `optionalAuthenticate` again, and authenticated routes added a second check | **Fixed** (it was broader than reported): the session is resolved once per request and reused; exactly one lookup per request, tested | `8432a3d` |
+| Validation outside `validators/` | Daily Challenge submission schema **moved** into `validators/`. Contact form: **not an issue** (its schema is already there; it is applied in the service on purpose so the honeypot runs first) | `4fa9563` |
+| Leaderboard `limit` had no Zod schema (clamped or silently replaced) | **Fixed**: Zod, 1–100, else 400, like `paginationQuerySchema`; the unvalidated admin `:id` path parameters are validated too | `3f0ec00` |
+
 ## 2. Test counts and coverage, before and after
 
 "Before" is the Phase 0 commit `d8ad91e`, before any fix. Coverage for both columns was measured
 with the same configuration, covering all runtime backend code except the one-off `scripts/` and
 `database/` tools.
 
-| | Before (`d8ad91e`) | After (`d16e14d`) |
+| | Before (`d8ad91e`) | After (`3f0ec00`) |
 |---|---|---|
-| Backend tests (Jest + Supertest) | 89 tests, 9 suites | **224 tests, 29 suites**, all passing |
-| Browser tests (Playwright, `e2e/`) | none | **13 tests**, all passing (7 smoke, 5 validation, 1 dashboard) |
-| Line coverage | 77.69% (763/982) | **89.72%** (1318/1469) |
-| Branch coverage | 50.39% (191/379) | **74.92%** (487/650) |
-| Statement coverage | 77.19% (775/1004) | **89.42%** (1345/1504) |
-| Function coverage | 72.57% (127/175) | **89.88%** (231/257) |
+| Backend tests (Jest + Supertest) | 89 tests, 9 suites | **265 tests, 33 suites**, all passing |
+| Browser tests (Playwright, `e2e/`) | none | **16 tests**, all passing (7 smoke, 5 validation, 1 dashboard, 1 admin session, 2 error messages) |
+| Line coverage | 77.69% (763/982) | **90.17%** (1340/1486) |
+| Branch coverage | 50.39% (191/379) | **76.15%** (495/650) |
+| Statement coverage | 77.19% (775/1004) | **89.87%** (1367/1521) |
+| Function coverage | 72.57% (127/175) | **90.80%** (237/261) |
 | `npm run lint` | — | clean |
 | `npm run typecheck` | — | passes, but it is a syntax check only (`checkJs` off), not type checking |
 
 The before/after numbers were measured by this work. `npm run test:coverage` reproduces the
 "after" column.
+
+**One unexplained intermittent failure.** It was observed once, during the verified-findings round:
+a single full-suite run failed one test ("Scoring by attempt … awards no points and does not extend
+the streak for a correct answer after a wrong attempt", `quizSessions.test.js`). It did not
+reproduce in 8 runs of that file or in 4 more full-suite runs. The error output of the failing run
+wasn't captured, so no cause has been established. If it recurs, capture the output before
+re-running.
 
 ## 3. Breaking API changes and how the frontend was updated
 
@@ -89,6 +109,10 @@ In every case, the frontend was updated in the same commit.
 | 8 | Production only: `/metrics` needs `Authorization: Bearer $METRICS_TOKEN` (404 if unset), and `/api-docs` is off unless `ENABLE_API_DOCS=true` | `98b06d7` | none (not used by the frontend) |
 | 9 | `POST /api/v1/questions/:id/check` removed (404) | `c71a7d4` | the unused `api.checkAnswer` helper removed |
 | 10 | `POST /admin/login` answers an unknown or non-admin username with 401 "Invalid credentials" (previously 404 "Admin not found") | `576b69b` | none needed (the admin login page already shows the returned message) |
+| 11 | Admin routes answer a missing, malformed, expired or revoked admin session with **401** (a missing cookie was 403); 403 now means a valid session that isn't an admin, including a demoted admin (was 401) | `bf930af` | none needed: `api.js` already sends any admin-scope 401 to the admin login, which now also happens mid-page (Playwright `admin.spec.js`) |
+| 12 | Authentication and rate-limit errors now use the central envelope `{ success: false, data: null, error: { message, details }, meta }` instead of `{ error: "…" }` or, for the general limiter, plain text. Message texts changed (e.g. "Unauthorized. No token provided." → "Authentication required."). `/metrics` 401/404 now have a JSON body, and the `/readyz` 503 body moved into `error.details` | `3c09044` | none needed: `api.js` already read `error.message`, so pages now show the real message for 429s (Playwright `errors.spec.js`) |
+| 13 | User authentication no longer accepts `Authorization: Bearer`, and `Authorization` is no longer a CORS-allowed request header | `1994baf` | none needed (the frontend never sent it) |
+| 14 | `GET /users/leaderboard?limit=` outside 1–100, or non-integer, now gets **400** (was silently clamped or replaced by 50). A malformed admin `:id` now gets 400 "Validation failed" (was 400 "Invalid identifier.") | `3f0ec00` | none needed (the leaderboard page always sends `limit=50`; admin pages send real ids) |
 
 **Additive changes (not breaking):**
 - `canPracticeAgain` / `practiceMode`, and `isCurrentUser` on leaderboard rows (`442ca04`);
@@ -174,10 +198,26 @@ wasn't specified in the instructions.
 | Dashboard accuracy labels | "Questions answered correctly" and "Attempts correct", with visible help text rather than hover-only tooltips | Owner (visible help text: implementation) |
 | System description | Title unchanged, with a TODO(author) note; design decisions, test-caught bugs and honest limitations added | Owner |
 
+### Verified-findings round
+
+| Decision | Chosen | By |
+|---|---|---|
+| Admin auth status codes | 401 for no valid session (missing, malformed, expired, revoked, banned or deleted); 403 only for a valid non-admin session | Owner |
+| Error shape | One central envelope for every error, including all rate limiters and the auth middleware | Owner |
+| `/metrics` and `/readyz` errors | Also moved to the envelope; the `/readyz` 200 body is unchanged | Implementation |
+| User Bearer tokens | Removed entirely; cookie-only authentication; no CSRF token without a real session | Owner |
+| `Authorization` CORS header | Removed from the allowed request headers | Implementation |
+| Duplicate user lookups | One memoized session check per request, shared by `optionalAuthenticate` and `authenticateToken` (rather than only deleting the duplicate mounts) | Owner (memoization: implementation) |
+| Daily Challenge submission schema | Moved into `validators/challengeValidators.js` | Owner |
+| Leaderboard `limit` and admin `:id` | Zod-validated, 400 on invalid input | Owner |
+| Quiz `:sessionId` | Left as a uniform 404 for malformed, unknown or foreign tokens (a deliberate Phase 1 design), not changed to 400 | Implementation |
+| e2e harness | Seeds one admin account; sets `EMAIL_USER`/`EMAIL_PASS` empty so a run never sends real email | Implementation |
+
 ## 5. Remaining TODO(author) items
 
 These are every `TODO(author)` marker in the repository, excluding the rule text in `CLAUDE.md` and
-the instructions in `FIX_PLAN.md`. Line numbers are as of `d16e14d`.
+the instructions in `FIX_PLAN.md`. Line numbers are as of the commit that brings this report up
+to date.
 
 **`docs/PYQUIZ_CURRENT_SYSTEM_DESCRIPTION.md`**
 
@@ -186,18 +226,18 @@ the instructions in `FIX_PLAN.md`. Line numbers are as of `d16e14d`.
 | 3 | Final thesis title (the document title was deliberately not changed) |
 | 126 | NFR-9: no automated accessibility test exists; add one or qualify the requirement |
 | 127 | NFR-10: define a performance target, if the thesis needs one |
-| 581 | Deployment diagram: the reverse proxy / TLS product and hop count |
-| 585 | Deployment diagram: MongoDB hosting and region |
-| 593 | §8.1: the actual hosting environment (provider, server or container setup, reverse proxy, process manager, whether Redis is used in production) |
-| 992 | §14: no automated accessibility audit (axe or Lighthouse); add one if the thesis makes claims beyond the listed practices |
-| 1000 | §15 Related Work: write the section |
-| 1006–1015 | §15 comparison table: every cell for Kahoot, Quizlet, W3Schools/Real Python quizzes, LeetCode and HackerRank, plus PyQuiz's "Free to use" |
-| 1019 | §16 Pedagogical Background: write it with cited sources |
-| 1024 | §16.1: retrieval practice and the testing effect, with citations |
-| 1029 | §16.2: gamification in education, with citations |
-| 1046 | §17: any learning-outcome claim needs the user study |
-| 1078 | §18.1: production-like benchmark numbers, if needed |
-| 1083 | §18.2 User study: participants, procedure, questionnaire as administered, results (SUS score), discussion |
+| 583 | Deployment diagram: the reverse proxy / TLS product and hop count |
+| 587 | Deployment diagram: MongoDB hosting and region |
+| 595 | §8.1: the actual hosting environment (provider, server or container setup, reverse proxy, process manager, whether Redis is used in production) |
+| 1025 | §14: no automated accessibility audit (axe or Lighthouse); add one if the thesis makes claims beyond the listed practices |
+| 1033 | §15 Related Work: write the section |
+| 1039–1048 | §15 comparison table: every cell for Kahoot, Quizlet, W3Schools/Real Python quizzes, LeetCode and HackerRank, plus PyQuiz's "Free to use" |
+| 1052 | §16 Pedagogical Background: write it with cited sources |
+| 1057 | §16.1: retrieval practice and the testing effect, with citations |
+| 1062 | §16.2: gamification in education, with citations |
+| 1079 | §17: any learning-outcome claim needs the user study |
+| 1111 | §18.1: production-like benchmark numbers, if needed |
+| 1116 | §18.2 User study: participants, procedure, questionnaire as administered, results (SUS score), discussion |
 
 **`docs/evaluation/questionnaire.md`**
 
@@ -216,10 +256,6 @@ the instructions in `FIX_PLAN.md`. Line numbers are as of `d16e14d`.
   topic-migration dry run and apply; deploying backend and frontend together with cache-busting;
   and the smoke test. None of these has been run against production.
 - **`resetFarmedPoints.js`.** Decide whether to run it (DECISION 3 left it unrun).
-- **Unverified findings.** These are listed in §19 of the system description and the Phase 5
-  addendum of `docs/AUDIT.md`: `verifyAdmin` 403 vs 401, error-envelope consistency, the user
-  Bearer header versus CSRF, the double optional-auth pass, validators outside `validators/`, and
-  the unvalidated leaderboard `limit`. They need re-verifying and, if confirmed, fixing.
 - **Known limitations kept deliberately.** `tsc` with `checkJs` off (1,564 errors if enabled), and
   the unwired BullMQ email queue.
 - **Content gaps.** Add questions for Numbers & Arithmetic (0), Tuples (1) and Indexing & Slicing

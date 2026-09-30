@@ -1435,3 +1435,59 @@ coverage. `npm run lint` and `npm run typecheck` are clean, and the Playwright s
 
 After these fixes the backend suite has **220 tests across 27 suites**, with 89.67% line and
 74.92% branch coverage. Lint and typecheck are clean, and Playwright passes 11/11.
+
+---
+
+## Verified-findings round (implemented, one commit each)
+
+The six findings the Phase 5 annotation pass had reported without re-verification were checked
+against the code with live requests on a throwaway local database. Five were confirmed; the
+contact-form half of the fifth was not an issue.
+
+1. **Admin status codes (`bf930af`).** `verifyAdmin` answered a missing cookie with 403 but an
+   invalid token with 401, and the frontend only redirects on 401. Now:
+   - **401** for no valid session: missing, malformed or expired cookie, revoked `tokenVersion`, or
+     a banned or deleted account;
+   - **403** only for a valid session that isn't an admin, including a demoted admin.
+
+   Seven "no token" tests and two "no admin cookie" tests were updated as deliberately changed
+   behaviour. A Playwright test shows an admin page returning to the admin login when the session
+   ends mid-page.
+2. **One error shape (`3c09044`).** Previously there were three shapes: the central envelope, bare
+   `{ error }` from the auth middleware and route limiters, and plain text from the general `/api`
+   limiter, which the page showed as "Request failed (429)". Now every error response uses the
+   central envelope:
+   - `authenticateToken`/`verifyAdmin` pass an `AppError` to `next()`;
+   - all four limiters share `middleware/rateLimitHandler.js`;
+   - `/metrics` 401/404 and the `/readyz` 503 use the envelope too.
+
+   Tested per source (`errorShapes.test.js`). Playwright shows the real 429 message on the page.
+3. **Cookie-only user auth (`1994baf`).** The user `Authorization: Bearer` path was removed. It
+   was unused and inconsistent with CSRF: Bearer-only requests were refused on CSRF routes but
+   acted as the user on quiz routes, and `/auth/me` returned a CSRF token computed from an empty
+   string, identical for every such caller. Now:
+   - `computeCsrfToken` refuses an empty or missing session token;
+   - `Authorization` is no longer a CORS-allowed header;
+   - tests show a Bearer header alone is rejected on `/auth/me`, a settings route and the quiz
+     routes.
+4. **One user lookup per request (`8432a3d`).** This was broader than reported. Every route with
+   its own auth middleware, not just the quiz routes, looked the user up twice. `resolveSession`
+   now memoizes the session check on the request, shared by `optionalAuthenticate` and
+   `authenticateToken`. The duplicate route-level mounts (the quiz routes and the leaderboard) are
+   removed. A test asserts exactly one lookup across public, guest-capable, authenticated,
+   state-changing and admin requests.
+5. **Validators (`4fa9563`).** The Daily Challenge submission schema moved from
+   `challengeRoutes.js` to `validators/challengeValidators.js`. The contact form was not an issue:
+   its schema is already in `validators/`, and it is applied in the service deliberately, so the
+   honeypot runs first.
+6. **Query and path validation (`3f0ec00`).** The leaderboard `limit` uses
+   `leaderboardQuerySchema` (1–100, default 50, else 400), matching `paginationQuerySchema`. The
+   admin `:id` parameters use `objectIdParamSchema`. The quiz `:sessionId` is deliberately
+   unchanged: malformed, unknown and foreign tokens all return the same 404.
+
+Suite after this round: **265 tests across 33 suites**, with 90.17% line and 76.15% branch
+coverage. Playwright passes 16/16, and lint and typecheck are clean.
+
+One full-suite run in this round failed a single `quizSessions.test.js` test ("Scoring by attempt").
+It did not reproduce in 12 further runs (8 of the file, 4 of the full suite). Its output wasn't
+captured, so the cause is unknown.
