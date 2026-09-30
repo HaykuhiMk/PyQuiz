@@ -957,25 +957,9 @@ removed — the real 47 questions were otherwise unaffected throughout.
 
 ### Deployment checklist (production migration)
 
-This taxonomy migration has only ever been run against the local development database. Before it
-is ever run against production:
-
-1. **Back up production** (a full database snapshot/export) — this migration performs an `$unset`
-   that is not trivially reversible without one.
-2. **Run the dry run** (`node backend/scripts/migrateQuestionTopics.js`, no `--apply`) against
-   production and read its output in full.
-3. **Resolve every unmatched question** it lists — assign each a `primaryTopic` (and optional
-   `secondaryTopics`) by hand via the admin edit form — until a fresh dry run reports zero
-   unmatched.
-4. **Apply the migration** (`--apply`) only once step 3 shows zero unmatched; it will refuse to run
-   otherwise.
-5. **Deploy the new backend and frontend together**, not separately — the old frontend sends/reads
-   `topics`, which the new schema no longer has, and the new frontend's admin forms and topic
-   displays expect `primaryTopic`/`secondaryTopics` to already exist on every document. Include
-   cache-busting (a query-string version or filename hash) on every changed frontend JS file
-   (`admin_dashboard.js`, `manage-questions.js`, `questions.js`, `study.js`, `daily.js`,
-   `account.js`, and the new `topicTaxonomy.js`) so returning users don't run stale cached JS
-   against the new API shape.
+Superseded by the consolidated **"Production deployment checklist (all phases)"** at the end of
+this document, which includes these migration steps in order alongside everything else a
+production deploy needs.
 
 **Dashboard mastery list no longer caps itself at 8 topics.** `account.js`'s `renderTopicMastery`
 previously did `(attempted.length ? attempted : mastery).slice(0, 8)` — a leftover limit from when
@@ -1110,3 +1094,105 @@ no hash stored; they expire after 1h anyway.
 **Noticed, not changed (out of Phase 4 scope):** `frontend/public/js/about.js` fetches
 `/api/v1/questions/study?limit=1` without credentials, presumably to show a count. That endpoint
 has required auth since Phase 2, so the request always gets a 401.
+
+---
+
+## Production deployment checklist (all phases)
+
+The single ordered list for deploying the work in this branch (Phases 1–4 and the follow-ups) to
+production. It supersedes the migration-only checklist in the Phase 3 follow-up section. So far
+everything here has only been run against the local development database. Nothing in this branch
+has been run against production.
+
+**Before the deploy**
+
+1. **HTTPS end to end.** Both the frontend and the API must be served over HTTPS. In production
+   the session and CSRF cookies are `__Host-`-prefixed and `Secure`, and browsers silently refuse
+   them over plain http, so login would fail with no error.
+2. **Set the backend environment** (`backend/env.example` documents each variable):
+   - `NODE_ENV=production`. `npm run prod` sets this; set it yourself if the process is started
+     any other way.
+   - `MONGODB_URI`: the production connection string. `MONGO_URI` is still read as a fallback, with
+     a startup warning; rename it when you can.
+   - `JWT_SECRET`: required, and the app exits without it. Changing it also invalidates every
+     session and CSRF token.
+   - `DAILY_CHALLENGE_SEED_SECRET`: required for the Daily Challenge (503 without it). Keep it
+     stable, because changing it changes the question set of every day not yet frozen.
+   - `TRUST_PROXY`: the **exact number** of reverse-proxy hops in front of the API (e.g. `1` for
+     one load balancer or nginx). Never `true`, which lets clients spoof their IP and bypass every
+     rate limiter. Leave it unset only if nothing sits in front of the app.
+   - `METRICS_TOKEN`: a long random value. Without it `/metrics` returns 404 in production. Give it
+     to whatever scrapes metrics as `Authorization: Bearer <token>`.
+   - `CLIENT_URI`: the exact frontend origin, e.g. `https://pyquiz.picsartacademy.am`. It is the
+     CORS allow-list entry, and the base of password-reset links.
+   - `EMAIL_USER` / `EMAIL_PASS`: needed for password-reset and contact emails.
+   - Optional: `ENABLE_API_DOCS` (leave unset to keep `/api-docs` off), `REDIS_URL` (response
+     caching), `LOG_LEVEL`, `PORT`, `API_URI`.
+3. **Set the frontend environment:** `NODE_ENV=production` (enables HSTS and
+   `upgrade-insecure-requests` in its CSP). Set `PRODUCTION_API_URL` only if the API is not at
+   `https://api-pyquiz.picsartacademy.am`. That origin is also the CSP `connect-src`.
+4. **Back up the production database** with a full snapshot or export, and confirm it can be
+   restored. The topic migration below performs an `$unset` that can't be undone without it.
+
+**Database steps (in this order, against production, each dry run first)**
+
+5. **Username backfill:** `node backend/scripts/backfillUsernameLower.js`, read the output, then
+   `--apply`. It is idempotent and renames nothing.
+6. **Username collisions:** `node backend/scripts/reportDuplicateUsernames.js` (report-only).
+   If it lists case-insensitive duplicates, decide whether `--apply` (rename all but the oldest
+   account in each group) is acceptable, or resolve them by hand. Repeat until it reports none.
+7. **Topic migration dry run:** `node backend/scripts/migrateQuestionTopics.js`, and read the
+   output in full.
+8. **Resolve every unmatched question** it lists (e.g. questions added through the admin panel)
+   by setting a `primaryTopic` by hand, until a fresh dry run reports zero unmatched.
+9. **Apply the topic migration:** `--apply`. It refuses to run while anything is unmatched.
+   - Not part of the deploy: `backend/scripts/resetFarmedPoints.js`. By the owner's Phase 1
+     decision, existing points are left untouched.
+
+**The deploy**
+
+10. **Deploy backend and frontend together**, not one after the other. Several API shapes
+    changed:
+    - `POST /users/user-progress` was removed.
+    - Topics moved from `topics` to `primaryTopic`/`secondaryTopics`.
+    - Admin login no longer returns a token.
+    - Login now uses the `/auth/me` session check.
+    - Every page uses `/js/theme-init.js`.
+11. **Cache-bust every changed frontend file.** There is no build step, so add a version query
+    string (e.g. `api.js?v=<commit>`) to each `<script src>`/`<link href>` whose file changed.
+    `git diff --name-only <deployed-commit> HEAD -- frontend/public frontend/views` lists them.
+    Returning users must not run cached old JS against the new API.
+
+**Expected effects to communicate**
+
+12. **Every user and admin is logged out once.** In production the cookie names change from
+    `token`/`csrfToken` to their `__Host-` versions, and the admin session moves from localStorage
+    to a cookie, so existing sessions are not recognised. Everyone just logs in again.
+13. **Outstanding password-reset links stop working.** Only hashes are stored now, and links sent
+    before the deploy have no stored hash. They would have expired within 1h anyway, and users
+    can request a new link.
+14. Topic accuracy history starts at the Phase 1 deployment (`AnswerEvent` didn't exist before),
+    and a user who finished a Daily Challenge in the 20:00–23:59 UTC window on deploy day may
+    complete one more that day (see Pre-Phase-3 note 3).
+
+**After the deploy (smoke test)**
+
+15. From outside the network, check each of the following:
+    - `GET https://<api>/api/v1/questions/stats` returns counts.
+    - `GET /metrics` returns 401 without the token and 200 with it.
+    - `GET /api-docs/` returns 404.
+    - A response from the frontend carries the `Content-Security-Policy` header.
+    - `Origin: https://evil.example` on `GET /api/v1/auth/me` gets no
+      `Access-Control-Allow-Origin` back.
+16. In a browser with a normal account:
+    - Register (or use a test account), log in, and confirm the cookies are `__Host-token` and
+      `__Host-csrfToken`.
+    - Change something in Settings, and play one Classic quiz and the Daily Challenge.
+    - Check that the About page shows the question and topic counts.
+    - Log out, then confirm a protected page redirects to login.
+17. Admin: log in and confirm the `__Host-adminToken` cookie and nothing in localStorage. Edit a
+    question, ban and unban a test account, then log out.
+18. Request a password reset for a test account and confirm the email arrives and the link works.
+    Submit the contact form, and confirm only the admin receives an email.
+19. Watch the backend logs for `MONGO_URI is deprecated`, `TRUST_PROXY=true`, and 4xx/5xx spikes
+    during the first hour.
