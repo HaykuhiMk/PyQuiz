@@ -1,0 +1,69 @@
+// @ts-check
+// Client-side checks are derived from the server's rules
+// (GET /api/v1/validation-rules), so the pages accept and reject exactly
+// what the server does.
+const { test, expect, API, PASSWORD, registerUser, logIn } = require('./fixtures');
+
+async function serverRules(request) {
+  return (await (await request.get(`${API}/api/v1/validation-rules`)).json()).data;
+}
+
+async function fillRegistration(page, password) {
+  const suffix = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
+  await page.fill('#username', `reg${suffix}`);
+  await page.fill('#email', `reg${suffix}@example.com`);
+  await page.fill('#password', password);
+  await page.fill('#repeat-password', password);
+}
+
+test('registration shows the server rule and accepts a password the old client check rejected', async ({
+  page,
+  request,
+}) => {
+  const { password } = await serverRules(request);
+  await page.goto('/registration.html');
+  await expect(page.locator('#password-help')).toHaveText(password.requirements);
+
+  // "#" plus a required special character: valid on the server, but the old
+  // client-side whitelist refused it.
+  await fillRegistration(page, 'Passw0rd!#');
+  const registered = page.waitForResponse((res) => res.url().endsWith('/api/v1/auth/register'));
+  await page.click('#registration-form button[type="submit"]');
+  expect((await registered).status()).toBe(201);
+  await expect(page).toHaveURL(/\/login\.html$/);
+});
+
+test('registration rejects a weak password client-side with the server wording, without calling the API', async ({
+  page,
+  request,
+}) => {
+  const { password } = await serverRules(request);
+  let registerCalls = 0;
+  page.on('request', (req) => {
+    if (req.url().endsWith('/api/v1/auth/register')) registerCalls += 1;
+  });
+
+  await page.goto('/registration.html');
+  await fillRegistration(page, 'password1');
+  await page.click('#registration-form button[type="submit"]');
+
+  await expect(page.locator('#helper-text')).toContainText(password.requirements);
+  expect(registerCalls).toBe(0);
+});
+
+test('settings change-password accepts a password allowed at registration', async ({ page, request }) => {
+  const user = await registerUser(request);
+  await logIn(page, user);
+  await page.goto('/settings.html');
+
+  const { password } = await serverRules(request);
+  await expect(page.locator('#new-password-help')).toHaveText(password.requirements);
+
+  await page.fill('#current-password', PASSWORD);
+  await page.fill('#new-password', 'N3wPassw0rd!#');
+  await page.fill('#confirm-password', 'N3wPassw0rd!#');
+  const changed = page.waitForResponse((res) => res.url().endsWith('/api/v1/users/settings/password'));
+  await page.click('#password-form button[type="submit"]');
+  expect((await changed).status()).toBe(200);
+  await expect(page).toHaveURL(/\/login\.html\?passwordChanged=1$/);
+});

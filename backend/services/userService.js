@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const AppError = require('../core/AppError');
 const { passwordRule } = require('../validators/authValidators');
+const { PASSWORD_REQUIREMENTS } = require('../config/validationRules');
 const userRepository = require('../repositories/userRepository');
 const userAnsweredQuestionRepository = require('../repositories/userAnsweredQuestionRepository');
 const { getTotalQuestionCount } = require('../utils/questionCount');
@@ -269,10 +270,7 @@ async function changePassword(userId, { currentPassword, newPassword }) {
   // route validates it too, this keeps a readable message for the Settings
   // form instead of the generic "Validation failed".
   if (!passwordRule.safeParse(newPassword).success) {
-    throw new AppError(
-      'Password must be at least 8 characters long and contain a lowercase letter, an uppercase letter, a number, and one of @ $ ! % * ? & _.',
-      400
-    );
+    throw new AppError(`Password requirements: ${PASSWORD_REQUIREMENTS}`, 400);
   }
 
   user.password = await bcrypt.hash(newPassword, 10);

@@ -1,4 +1,5 @@
 import { api } from "./api.js";
+import { getPasswordRule, showPasswordRequirements } from "./validationRules.js";
 
 document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById('registration-form');
@@ -13,10 +14,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return emailRegex.test(email);
     }
 
-    function isValidPassword(password) {
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]{8,}$/;
-        return passwordRegex.test(password);
-    }
+    showPasswordRequirements(document.getElementById('password-help'));
 
     const submitBtn = form.querySelector('button[type="submit"]');
 
@@ -36,7 +34,7 @@ document.addEventListener("DOMContentLoaded", function () {
         else submitBtn.removeAttribute('aria-busy');
     }
 
-    form.addEventListener('submit', function (event) {
+    form.addEventListener('submit', async function (event) {
         event.preventDefault();
 
         const username = usernameInput.value.trim();
@@ -54,8 +52,11 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        if (!isValidPassword(password)) {
-            showError('Password must be at least 8 characters long, contain at least one uppercase letter, one number, and one special character (@, $, !, %, *, ?, &, _).');
+        // The server's own rule (see validationRules.js); if it couldn't be
+        // loaded, the server still validates on submit.
+        const passwordRule = await getPasswordRule();
+        if (passwordRule && !passwordRule.test(password)) {
+            showError(`Password requirements: ${passwordRule.requirements}`);
             return;
         }
 

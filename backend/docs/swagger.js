@@ -77,6 +77,7 @@ const spec = swaggerJsdoc({
       },
       { name: 'Challenges', description: 'Daily Challenge' },
       { name: 'Contact', description: 'Contact form' },
+      { name: 'Config', description: 'Rules shared with the frontend' },
       {
         name: 'Admin',
         description: 'Admin session, users, contacts and question management',
