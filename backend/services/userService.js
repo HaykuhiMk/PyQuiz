@@ -8,6 +8,9 @@ const {
 } = require('../config/validationRules');
 const userRepository = require('../repositories/userRepository');
 const userAnsweredQuestionRepository = require('../repositories/userAnsweredQuestionRepository');
+const answerEventRepository = require('../repositories/answerEventRepository');
+const quizSessionRepository = require('../repositories/quizSessionRepository');
+const resetPasswordRepository = require('../repositories/resetPasswordRepository');
 const { getTotalQuestionCount } = require('../utils/questionCount');
 const {
   BASE_POINTS_BY_MODE,
@@ -301,8 +304,19 @@ async function deleteAccount(userId, { password }) {
     throw new AppError('Password is incorrect', 400);
   }
 
+  // The account goes first, so its sessions stop authenticating at once
+  // (every request re-checks the user), then everything linked to it: the
+  // answered-question records, the per-attempt AnswerEvent log, any quiz
+  // sessions, and any pending password-reset key for its email. Nothing
+  // keyed to this user remains afterwards. Contact-form messages are not
+  // account data (anyone can send one without an account) and are kept.
   await userRepository.deleteById(userId);
-  await userAnsweredQuestionRepository.deleteAllForUser(userId);
+  await Promise.all([
+    userAnsweredQuestionRepository.deleteAllForUser(userId),
+    answerEventRepository.deleteAllForUser(userId),
+    quizSessionRepository.deleteAllForUser(userId),
+    resetPasswordRepository.deleteByEmail(user.email),
+  ]);
   return { message: 'Account deleted successfully.' };
 }
 

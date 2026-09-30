@@ -13,4 +13,8 @@ async function save(session) {
   return session.save();
 }
 
-module.exports = { create, findByToken, save };
+async function deleteAllForUser(userId) {
+  return QuizSession.deleteMany({ userId });
+}
+
+module.exports = { create, findByToken, save, deleteAllForUser };

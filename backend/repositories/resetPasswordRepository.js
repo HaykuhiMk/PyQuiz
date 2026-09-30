@@ -16,7 +16,12 @@ async function deleteByResetKeyHash(resetKeyHash) {
   return ResetPassword.deleteOne({ resetKeyHash });
 }
 
+async function deleteByEmail(email) {
+  return ResetPassword.deleteMany({ email });
+}
+
 module.exports = {
+  deleteByEmail,
   upsertResetKeyHash,
   findByResetKeyHash,
   deleteByResetKeyHash,

@@ -104,7 +104,7 @@ Backend test files live in `backend/tests/`, and browser tests in `e2e/tests/`.
 | FR-10 | A logged-in user sees per-topic coverage, accuracy and mastery level, and a list of weak topics. | §5.8 | `topicMastery.test.js` |
 | FR-11 | The system awards achievements, points and streaks according to fixed rules. | §5.9 | `quizSessions.test.js` |
 | FR-12 | Anyone can view the leaderboard; a logged-in viewer's own row is marked by the server. | §5.10 | `leaderboard.test.js` |
-| FR-13 | A user can change username, avatar and password, choose a theme, and delete their account. | §5.11 | `auth.test.js`, `avatarUpload.test.js`, `passwordPolicy.test.js`, `passwordWhitespace.test.js`, `validation.spec.js`, `smoke.spec.js` |
+| FR-13 | A user can change username, avatar and password, choose a theme, and delete their account together with all data linked to it. | §5.11 | `accountDeletion.test.js`, `auth.test.js`, `avatarUpload.test.js`, `passwordPolicy.test.js`, `passwordWhitespace.test.js`, `validation.spec.js`, `smoke.spec.js` |
 | FR-14 | An admin can list, view, add, edit and delete questions, restricted to the canonical topic taxonomy. | §5.12 | `adminQuestions.test.js`, `adminQuestionTopics.test.js` |
 | FR-15 | An admin can list users and ban or unban non-admin accounts. | §5.12 | `adminUsers.test.js` |
 | FR-16 | An admin can read contact-form messages. | §5.12 | `adminContacts.test.js` |
@@ -344,6 +344,17 @@ a larger file before any upload, and the server applies the same limit with the 
 
 **After a password change,** every existing session is signed out, including the current one, and
 the user logs in again.
+
+**Deleting an account** removes the user record and everything linked to it:
+- the answered-question records (`UserAnsweredQuestion`);
+- the per-attempt log (`AnswerEvent`);
+- quiz sessions (`QuizSession`);
+- any pending password-reset key for the account's email (`ResetPassword`).
+
+The account's sessions stop working immediately. Contact-form messages sent from the same email are
+kept, because they are messages to the administrator rather than account data (they can be sent
+without an account). A test checks every collection with a `userId` field after deletion (Section
+13).
 
 ### 5.12 Administrative Functionality
 
@@ -648,7 +659,8 @@ MongoDB is the only data store. It holds eight collections:
   deletes it 24 hours after creation.
 - **`AnswerEvent`**: one immutable document per answer attempt by a logged-in user: user, session,
   question, mode (including `daily`), selected index, correctness, attempt number and time taken.
-  It is the source of accuracy (Section 5.8), and it is kept when its question is deleted.
+  It is the source of accuracy (Section 5.8). It is kept when its question is deleted, and deleted
+  with the user's account (Section 5.11).
 - **`UserAnsweredQuestion`**: one document per (user, question) pair, unique on the pair, with
   `everCorrect` set on a first-attempt correct answer. It is the source of coverage, the Classic
   exclusion and the points rule.
@@ -1083,9 +1095,6 @@ No study has been run yet, and no results exist.
   a quiz (Section 6.4).
 - **Accuracy history starts at the server-side sessions change.** Attempt records (`AnswerEvent`)
   exist only from then on, so an older account's topic accuracy reflects only activity after it.
-- **Account deletion leaves the attempt log.** Deleting an account removes the user and their
-  answered-question records, but not their `AnswerEvent` attempt records. Quiz sessions expire on
-  their own after 24 hours.
 - **No adaptive selection.** Mastery and weak topics are shown to the user but do not yet steer
   which questions are served.
 - **No artificial intelligence or machine learning component.** Every mechanism in this document —
@@ -1129,7 +1138,6 @@ These are proposals; none exists in the codebase today.
 - **Consistency fixes** for the unverified findings in Section 19, after re-verifying them.
 - **Account security.** Email verification, optional two-factor authentication, and session
   renewal.
-- **Privacy.** Delete or anonymise a user's `AnswerEvent` records when the account is deleted.
 - **Accessibility testing** in the Playwright suite, and broader browser-test coverage.
 - **Social features,** such as class groups with their own leaderboards.
 - **Progress export.**

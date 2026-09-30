@@ -14,4 +14,8 @@ async function findByQuestion(questionId, { limit = 50 } = {}) {
   return AnswerEvent.find({ questionId }).sort({ createdAt: -1 }).limit(limit).lean();
 }
 
-module.exports = { createEvent, findByUser, findByQuestion };
+async function deleteAllForUser(userId) {
+  return AnswerEvent.deleteMany({ userId });
+}
+
+module.exports = { createEvent, findByUser, findByQuestion, deleteAllForUser };
