@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const AppError = require('../core/AppError');
 const userRepository = require('../repositories/userRepository');
+const { passwordMatchesAccount } = require('../utils/passwordCheck');
 const resetPasswordRepository = require('../repositories/resetPasswordRepository');
 const { sendPasswordResetEmail } = require('../utils/emailUtils');
 
@@ -33,12 +34,11 @@ async function registerUser({ username, email, password }) {
 
 async function loginUser({ email, password }) {
   const user = await userRepository.findByEmail(email);
-  if (!user) {
-    throw new AppError('Invalid credentials', 401);
-  }
 
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
+  // An unknown email used to return before any bcrypt work, so it answered
+  // measurably faster than a wrong password. Now both do one comparison and
+  // get the same generic error.
+  if (!(await passwordMatchesAccount(password, user))) {
     throw new AppError('Invalid credentials', 401);
   }
 
