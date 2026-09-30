@@ -67,3 +67,34 @@ test('settings change-password accepts a password allowed at registration', asyn
   expect((await changed).status()).toBe(200);
   await expect(page).toHaveURL(/\/login\.html\?passwordChanged=1$/);
 });
+
+test('avatar picker refuses a file over the server limit before uploading, and accepts one at the limit', async ({
+  page,
+  request,
+}) => {
+  const { avatar } = await serverRules(request);
+  await logIn(page, await registerUser(request));
+  await page.goto('/settings.html');
+  await expect(page.locator('#avatar-help')).toHaveText(`JPG, PNG or WebP, up to ${Math.floor(avatar.maxFileBytes / 1024)} KB.`);
+
+  let profilePatches = 0;
+  page.on('request', (req) => {
+    if (req.method() === 'PATCH' && req.url().endsWith('/api/v1/users/settings/profile')) profilePatches += 1;
+  });
+
+  await page.setInputFiles('#avatar-input', {
+    name: 'too-big.png',
+    mimeType: 'image/png',
+    buffer: Buffer.alloc(avatar.maxFileBytes + 1, 1),
+  });
+  await expect(page.locator('#avatar-status')).toHaveText(avatar.tooLargeMessage);
+  expect(profilePatches).toBe(0);
+
+  await page.setInputFiles('#avatar-input', {
+    name: 'just-fits.png',
+    mimeType: 'image/png',
+    buffer: Buffer.alloc(avatar.maxFileBytes, 1),
+  });
+  await expect(page.locator('#avatar-status')).toHaveText('Photo updated.');
+  expect(profilePatches).toBe(1);
+});

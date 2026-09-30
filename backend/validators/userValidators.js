@@ -3,9 +3,9 @@ const { passwordRule } = require('./authValidators');
 
 const updateProfileSchema = z.object({
   username: z.string().trim().min(2).max(50).optional(),
-  // Length is enforced by userService.validateAvatar (500,000 chars, with
-  // the user-facing "Image is too large" message) and bounded by the route's
-  // 1 MB body limit (app.js).
+  // Length is enforced by userService.validateAvatar (config/validationRules.js
+  // AVATAR_MAX_DATA_URL_LENGTH, with the user-facing "Image is too large"
+  // message) and bounded by the route's 1 MB body limit (app.js).
   avatar: z.union([z.string(), z.null()]).optional(),
 });
 

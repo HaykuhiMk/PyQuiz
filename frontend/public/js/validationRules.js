@@ -27,6 +27,12 @@ export async function getPasswordRule() {
   };
 }
 
+// Resolves to { maxFileBytes, maxDataUrlLength, tooLargeMessage }, or null.
+export async function getAvatarRule() {
+  const rules = await getValidationRules();
+  return rules?.avatar || null;
+}
+
 // Replaces a static help text with the server's wording of the rule.
 export async function showPasswordRequirements(helpElement) {
   const rule = await getPasswordRule();

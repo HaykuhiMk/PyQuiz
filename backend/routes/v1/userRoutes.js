@@ -147,7 +147,8 @@ router.get('/topic-mastery', authenticateToken, userController.getTopicMastery);
  *                 maxLength: 500000
  *                 description: >
  *                   A `data:image/...` URL, or null / empty string to remove the avatar. Longer
- *                   than 500,000 characters returns 400 "Image is too large"; this route accepts
+ *                   than 500,000 characters (a file over 374,982 bytes) returns 400 "Image is too
+ *                   large" (limits served by GET /validation-rules); this route accepts
  *                   request bodies up to 1 MB (413 beyond that).
  *     responses:
  *       200:

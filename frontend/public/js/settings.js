@@ -1,5 +1,5 @@
 import { api, requireAuth } from './api.js';
-import { getPasswordRule, showPasswordRequirements } from './validationRules.js';
+import { getPasswordRule, showPasswordRequirements, getAvatarRule } from './validationRules.js';
 import { showToast } from './ui.js';
 import { icon, mountIcons } from './icons.js';
 import { setTheme, getActiveTheme } from './theme.js';
@@ -69,6 +69,10 @@ function setStatus(elementId, message, isError = false) {
 
 function bindSettings() {
   showPasswordRequirements(document.getElementById('new-password-help'));
+  getAvatarRule().then((rule) => {
+    const help = document.getElementById('avatar-help');
+    if (rule && help) help.textContent = `JPG, PNG or WebP, up to ${Math.floor(rule.maxFileBytes / 1024)} KB.`;
+  });
   const avatarInput = document.getElementById('avatar-input');
   const uploadBtn = document.getElementById('upload-avatar-btn');
   const removeBtn = document.getElementById('remove-avatar-btn');
@@ -79,13 +83,22 @@ function bindSettings() {
     const file = avatarInput.files?.[0];
     if (!file) return;
 
-    if (file.size > 500 * 1024) {
-      setStatus('avatar-status', 'File must be under 500KB.', true);
+    // The server's real limit (GET /validation-rules): checked before the
+    // file is even read, and again on the encoded data URL, so an oversized
+    // image never gets uploaded.
+    const avatarRule = await getAvatarRule();
+    if (avatarRule && file.size > avatarRule.maxFileBytes) {
+      setStatus('avatar-status', avatarRule.tooLargeMessage, true);
+      avatarInput.value = '';
       return;
     }
 
     try {
       const dataUrl = await readFileAsDataUrl(file);
+      if (avatarRule && dataUrl.length > avatarRule.maxDataUrlLength) {
+        setStatus('avatar-status', avatarRule.tooLargeMessage, true);
+        return;
+      }
       await api.updateProfile({ avatar: dataUrl });
       renderAvatar(dataUrl);
       setStatus('avatar-status', 'Photo updated.');

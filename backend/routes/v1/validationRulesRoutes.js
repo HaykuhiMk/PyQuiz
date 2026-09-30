@@ -34,6 +34,12 @@ const router = express.Router();
  *                             minLength: { type: integer }
  *                             pattern: { type: string }
  *                             requirements: { type: string }
+ *                         avatar:
+ *                           type: object
+ *                           properties:
+ *                             maxDataUrlLength: { type: integer, description: Longest accepted data URL. }
+ *                             maxFileBytes: { type: integer, description: Largest JPEG/PNG/WebP file that fits after base64 encoding. }
+ *                             tooLargeMessage: { type: string }
  *       429: { $ref: '#/components/responses/TooManyRequests' }
  */
 router.get('/', validationRulesController.getValidationRules);

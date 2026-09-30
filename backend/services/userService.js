@@ -1,7 +1,11 @@
 const bcrypt = require('bcryptjs');
 const AppError = require('../core/AppError');
 const { passwordRule } = require('../validators/authValidators');
-const { PASSWORD_REQUIREMENTS } = require('../config/validationRules');
+const {
+  PASSWORD_REQUIREMENTS,
+  AVATAR_MAX_DATA_URL_LENGTH,
+  AVATAR_TOO_LARGE_MESSAGE,
+} = require('../config/validationRules');
 const userRepository = require('../repositories/userRepository');
 const userAnsweredQuestionRepository = require('../repositories/userAnsweredQuestionRepository');
 const { getTotalQuestionCount } = require('../utils/questionCount');
@@ -12,7 +16,6 @@ const {
 } = require('../config/quizConfig');
 const { RANK_THRESHOLDS } = require('../config/masteryConfig');
 
-const MAX_AVATAR_LENGTH = 500_000;
 const ACHIEVEMENTS = [
   { key: 'first_correct', predicate: (s) => s.totalCorrect >= 1 },
   { key: 'streak_5', predicate: (s) => s.bestStreak >= 5 },
@@ -217,8 +220,8 @@ function validateAvatar(avatar) {
   if (typeof avatar !== 'string' || !avatar.startsWith('data:image/')) {
     throw new AppError('Avatar must be a valid image file', 400);
   }
-  if (avatar.length > MAX_AVATAR_LENGTH) {
-    throw new AppError('Image is too large. Please use a file under 500KB.', 400);
+  if (avatar.length > AVATAR_MAX_DATA_URL_LENGTH) {
+    throw new AppError(AVATAR_TOO_LARGE_MESSAGE, 400);
   }
   return avatar;
 }

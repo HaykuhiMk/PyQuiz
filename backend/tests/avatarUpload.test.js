@@ -10,6 +10,7 @@ const app = require('../app');
 const db = require('./testUtils/db');
 const { registerAndLogin } = require('./testUtils/authHelpers');
 const User = require('../models/user');
+const { AVATAR_MAX_FILE_BYTES } = require('../config/validationRules');
 
 beforeAll(async () => {
   await db.connect();
@@ -64,5 +65,29 @@ describe('avatar upload body limit', () => {
       .post('/api/v1/auth/register')
       .send({ username: 'bigbody', email: 'bigbody@example.com', password: 'Passw0rd!', padding: 'x'.repeat(200_000) });
     expect(res.statusCode).toBe(413);
+  });
+
+  it.each(['image/jpeg', 'image/png', 'image/webp'])(
+    'accepts a %s file of exactly the advertised maximum and rejects one byte more',
+    async (mime) => {
+      const session = await registerAndLogin(`edge${mime.split('/')[1]}@example.com`, { username: `edge${mime.split('/')[1]}` });
+      const encode = (bytes) => `data:${mime};base64,${Buffer.alloc(bytes, 1).toString('base64')}`;
+
+      const atLimit = await uploadAvatar(session, encode(AVATAR_MAX_FILE_BYTES));
+      expect(atLimit.statusCode).toBe(200);
+
+      const overLimit = await uploadAvatar(session, encode(AVATAR_MAX_FILE_BYTES + 1));
+      expect(overLimit.statusCode).toBe(400);
+      expect(overLimit.body.error.message).toBe('Image is too large. The maximum is 366 KB.');
+    }
+  );
+
+  it('GET /validation-rules advertises the same avatar limits the server enforces', async () => {
+    const res = await request(app).get('/api/v1/validation-rules');
+    expect(res.body.data.avatar).toEqual({
+      maxDataUrlLength: 500_000,
+      maxFileBytes: AVATAR_MAX_FILE_BYTES,
+      tooLargeMessage: 'Image is too large. The maximum is 366 KB.',
+    });
   });
 });
