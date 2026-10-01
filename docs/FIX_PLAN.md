@@ -258,8 +258,26 @@ runs the runbook only against local rehearsal databases.
 - **Stage 1 done:** the migration list was confirmed from the data and the server patch (below).
 - **Stage 2 done:** `backend/scripts/productionMigration.js`, one ordered runbook covering the
   whole list, with tests in `backend/tests/productionMigration.test.js`.
-- **Next:** Stage 3, the rehearsal in a fresh `pyquiz_rehearsal`; then Stage 4,
-  `docs/DEPLOY_RUNBOOK.md`.
+- **Stage 3 done (2026-10-01): the rehearsal.**
+  - The backup was restored into a fresh `pyquiz_rehearsal` (453 documents), mapping the archive's
+    database `pyquiz` to the new name, so the dev database wasn't touched.
+  - Dry run, `--apply` (exit 2: migrated, not ready because of the 8 collisions), and a second
+    `--apply` that changed nothing.
+  - v2 started against it; a browser smoke test passed for the quiz on a new topic, Study, the
+    Daily Challenge, the dashboard, the leaderboard and the admin panel.
+  - A migrated user's progress and mastery endpoints answered from the migrated history (75
+    answered of 145).
+  - The test accounts and their data were removed afterwards.
+- **Stage 4 done: `docs/DEPLOY_RUNBOOK.md`**, the owner's exact steps: tunnel, fresh backup and
+  check, dry run with expected numbers, apply, verification queries, resolving the collisions, the
+  "Before reopening" checklist and rollback.
+- **Owner's decisions (2026-10-01):** the Stage 2 defaults are confirmed (Q25, M3, M8, M10,
+  collisions skipped).
+  - Production-only content fixes are deferred to the admin panel, listed in the runbook's
+    checklist.
+  - CORS is narrowed to `CLIENT_URI` in production.
+  - No extra MongoDB packages are needed (the URI uses only `authSource=admin`).
+  - The verifier accepts `Error: <message>` and `Nothing`.
 
 ### Server patch review (2026-10-01)
 
@@ -364,7 +382,7 @@ nothing.
 - It uses native-driver writes, with `autoIndex` and `autoCreate` off.
 - It prints counts and ids only.
 
-**Implemented with Claude's recommended defaults; the owner hasn't confirmed them yet:**
+**Implemented with Claude's recommended defaults, confirmed by the owner on 2026-10-01:**
 1. **Q25:** keep `67dd1ccbe41a42083801b230` (step 2).
 2. **M3:** keep `createdBy`, `createdAt` and `updatedAt`.
 3. **M8:** backfill the defaults (step 6).
