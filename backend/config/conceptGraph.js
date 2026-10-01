@@ -14,6 +14,9 @@
 // - A misconception id is `<topic id>.<wrong belief>`. It belongs to the one
 //   topic whose correct mental model fixes it. Like topic ids, a misconception
 //   id never changes once questions or answer events store it.
+//   A misconception that is a confusion between two concepts covers both
+//   directions and its id ends in `-confusion`; which direction an option
+//   shows is captured by that option's feedback text.
 //
 // Served read-only by GET /api/v1/concept-graph. Misconception data is
 // recorded on answer events; it is not shown to learners yet (feedback could
@@ -65,10 +68,10 @@ const MISCONCEPTIONS = [
     correctModel: 'Assignment binds another name to the same object. Copy explicitly (`a.copy()`, `list(a)`, `a[:]`).',
   },
   {
-    id: 'mutability.is-means-equal',
+    id: 'mutability.identity-equality-confusion',
     topic: 'mutability',
-    belief: '`is` compares values, like `==`.',
-    correctModel: '`is` tests identity (same object); `==` tests equality of value.',
+    belief: 'Confusion, both directions: `is` and `==` are interchangeable, so `is` compares values, or `==` compares identity.',
+    correctModel: '`is` tests identity (the same object); `==` tests equality of value. Equal values can be different objects.',
   },
   {
     id: 'mutability.augmented-assignment-rebinds',
@@ -179,10 +182,12 @@ const MISCONCEPTIONS = [
     correctModel: "Build a new string (`'b' + s[1:]`, `replace`, …).",
   },
   {
-    id: 'strings.strip-removes-substring',
+    id: 'strings.strip-removeprefix-confusion',
     topic: 'strings',
-    belief: "`strip('an')` removes the substring `'an'` from the ends.",
-    correctModel: 'The argument is a set of characters stripped from both ends; use `removeprefix`/`removesuffix` for substrings.',
+    belief:
+      "Confusion, both directions: `strip` and `removeprefix`/`removesuffix` do the same job, so `strip('an')` removes the substring `'an'`, or `removeprefix('~')` removes every leading `'~'`.",
+    correctModel:
+      '`strip(chars)` removes any of the given characters, repeatedly, from both ends; `removeprefix`/`removesuffix` remove one exact substring, once.',
   },
   {
     id: 'strings.split-space-equals-split',
@@ -227,10 +232,10 @@ const MISCONCEPTIONS = [
     correctModel: '`add` mutates in place and returns `None`.',
   },
   {
-    id: 'lists.sort-returns-list',
+    id: 'lists.in-place-method-returns-list',
     topic: 'lists',
-    belief: '`nums.sort()` returns the sorted list.',
-    correctModel: 'In-place methods return `None`; `sorted(nums)` returns a new list.',
+    belief: 'An in-place list method such as `sort()` or `append()` returns the changed list.',
+    correctModel: 'In-place methods change the list and return `None`; `sorted(nums)` returns a new list.',
   },
   {
     id: 'lists.append-extends',

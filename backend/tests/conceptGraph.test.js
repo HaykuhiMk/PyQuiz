@@ -72,6 +72,28 @@ describe('config/conceptGraph.js', () => {
     }
   });
 
+  it('uses the renamed ids (renamed before any was stored), not the old ones', () => {
+    for (const id of [
+      'mutability.identity-equality-confusion',
+      'strings.strip-removeprefix-confusion',
+      'lists.in-place-method-returns-list',
+    ]) {
+      expect(MISCONCEPTION_IDS).toContain(id);
+    }
+    for (const id of ['mutability.is-means-equal', 'strings.strip-removes-substring', 'lists.sort-returns-list']) {
+      expect(MISCONCEPTION_IDS).not.toContain(id);
+    }
+  });
+
+  it('a "-confusion" misconception describes both directions', () => {
+    const confusions = MISCONCEPTIONS.filter((m) => m.id.endsWith('-confusion'));
+    expect(confusions.map((m) => m.id).sort()).toEqual([
+      'mutability.identity-equality-confusion',
+      'strings.strip-removeprefix-confusion',
+    ]);
+    for (const { belief } of confusions) expect(belief).toMatch(/^Confusion, both directions: /);
+  });
+
   it('matches the approved design: 16 topics, 14 edges, 59 misconceptions, at least 2 per topic', () => {
     expect(NODES).toHaveLength(16);
     expect(EDGES).toHaveLength(14);

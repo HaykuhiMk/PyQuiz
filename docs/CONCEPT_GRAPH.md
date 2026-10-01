@@ -84,6 +84,12 @@ model fixes it**, not to the topic whose syntax the example happens to use. For 
 - `[[0] * 2] * 2` sharing its rows uses list syntax, but what fixes it is the reference model
   (`*` repeats references to one object), so it belongs to `mutability`.
 
+**Confusions (owner's decision).** Some misconceptions are a confusion between two concepts, and
+learners make it in either direction. Such a misconception covers **both directions**, and its id
+ends in `-confusion`: `mutability.identity-equality-confusion` (`is` vs `==`) and
+`strings.strip-removeprefix-confusion` (`strip` vs `removeprefix`/`removesuffix`). Which direction
+a wrong option shows is captured by that option's own feedback text, not by the id.
+
 **All 59 were checked against the rule.** Four moved:
 
 | Was | Now | Why |
@@ -101,7 +107,7 @@ Checked and kept where they are, as the closest calls:
 - `tuples.failed-augmented-assignment-changes-nothing`: the fix combines `+=` mutating in place
   (`mutability`) with the tuple refusing the assignment back. What's new, and only happens with
   tuples, is the second step, so it stays in `tuples`.
-- `sets.add-returns-set` and `lists.sort-returns-list`: **these two share one underlying belief**,
+- `sets.add-returns-set` and `lists.in-place-method-returns-list`: **these two share one underlying belief**,
   that a method which changes an object returns the changed object. The fix, "mutating methods
   return `None`", is taught per type, and each belief is about that type's method, so they stay
   as two misconceptions in their own topics. The adaptive engine can treat them as related.
@@ -121,7 +127,7 @@ Python pitfalls; no research is cited.
 | Id | Wrong belief | Example → actual output | Correct model |
 |---|---|---|---|
 | `mutability.assignment-copies` | `b = a` makes a copy. | `a = [1, 2]; b = a; b.append(3); print(a)` → `[1, 2, 3]` | Assignment binds another name to the **same** object. Copy explicitly (`a.copy()`, `list(a)`, `a[:]`). |
-| `mutability.is-means-equal` | `is` compares values, like `==`. | `a = [1, 2]; b = [1, 2]; print(a == b, a is b)` → `True False` | `is` tests identity (same object); `==` tests equality of value. |
+| `mutability.identity-equality-confusion` | *Confusion, both directions:* `is` and `==` are interchangeable, so `is` compares values, or `==` compares identity. | `a = [1, 2]; b = [1, 2]; print(a == b, a is b)` → `True False` | `is` tests identity (the same object); `==` tests equality of value. Equal values can be different objects. |
 | `mutability.augmented-assignment-rebinds` | `b += [2]` makes a new list, like `b = b + [2]`. | `a = [1]; b = a; b += [2]; print(a)` → `[1, 2]` | For mutable types, `+=` mutates in place (`__iadd__`), so every alias sees it. |
 | `mutability.rebinding-mutates` | Assigning a new value to a name changes the object other names refer to. | `a = [1]; b = a; b = b + [2]; print(a)` → `[1]` | `b = …` rebinds only `b`; the object `a` refers to is untouched. |
 | `mutability.arguments-are-copied` | Passing a list to a function gives it a copy. | `def fill(lst): lst.append(0)`; `items = []; fill(items); print(items)` → `[0]` | Arguments are passed as references to the same objects; mutation inside is visible outside. |
@@ -160,7 +166,7 @@ Python pitfalls; no research is cited.
 |---|---|---|---|
 | `strings.methods-modify-in-place` | String methods change the string. | `s = 'hi'; s.upper(); print(s)` → `hi` | Strings are immutable; methods return a **new** string that must be assigned. |
 | `strings.item-assignment` | You can change one character with `s[i] = …`. | `s = 'cat'; s[0] = 'b'` → `TypeError: 'str' object does not support item assignment` | Build a new string (`'b' + s[1:]`, `replace`, …). |
-| `strings.strip-removes-substring` | `strip('an')` removes the substring `'an'` from the ends. | `'banana'.strip('an')` → `b` | The argument is a **set of characters** stripped from both ends; use `removeprefix`/`removesuffix` for substrings. |
+| `strings.strip-removeprefix-confusion` | *Confusion, both directions:* `strip` and `removeprefix`/`removesuffix` do the same job, so `strip('an')` removes the substring `'an'`, or `removeprefix('~')` removes every leading `'~'`. | `print('banana'.strip('an'), '~~x'.removeprefix('~'))` → `b ~x` | `strip(chars)` removes any of the given **characters**, repeatedly, from both ends; `removeprefix`/`removesuffix` remove one exact **substring**, once. |
 | `strings.split-space-equals-split` | `split(' ')` behaves like `split()`. | `'a  b'.split(' ')` → `['a', '', 'b']`; `'a  b'.split()` → `['a', 'b']` | `split()` with no argument splits on runs of whitespace; `split(' ')` splits on every single space. |
 
 ### `functions`: Functions & Built-ins
@@ -183,7 +189,7 @@ Python pitfalls; no research is cited.
 
 | Id | Wrong belief | Example → actual output | Correct model |
 |---|---|---|---|
-| `lists.sort-returns-list` | `nums.sort()` returns the sorted list. | `result = [3, 1, 2].sort()` → `None` (the list itself is sorted) | In-place methods return `None`; `sorted(nums)` returns a new list. |
+| `lists.in-place-method-returns-list` | An in-place list method such as `sort()` or `append()` returns the changed list. | `print([3, 1, 2].sort(), [1].append(2))` → `None None` | In-place methods change the list and return `None`; `sorted(nums)` returns a new list. |
 | `lists.append-extends` | `append([3, 4])` adds two items. | `a = [1, 2]; a.append([3, 4])` → `[1, 2, [3, 4]]`, length 3 | `append` adds one object (here, a list); `extend` adds each item. |
 | `lists.assignment-extends` | Assigning past the end grows the list. | `a = [1]; a[3] = 2` → `IndexError: list assignment index out of range` | Indices must exist; use `append`/`extend`/`insert` to grow a list. |
 
@@ -423,6 +429,34 @@ here, pending your decision.
   name, description, `active` or `planned`), the edges and the misconceptions (id, topic, belief,
   correct model). It contains no question content, answers or tags.
 - **All additive.** No existing request or response changed.
+
+## Renamed before any id was stored
+
+Misconception ids never change once stored. These were renamed before any question or answer event
+stored one (owner's decisions, Stage 3 review):
+
+| Was | Now | Why |
+|---|---|---|
+| `mutability.is-means-equal` | `mutability.identity-equality-confusion` | A confusion: covers `is` as equality and `==` as identity. |
+| `strings.strip-removes-substring` | `strings.strip-removeprefix-confusion` | A confusion: covers `strip` as substring removal and `removeprefix` as repeated stripping. |
+| `lists.sort-returns-list` | `lists.in-place-method-returns-list` | The belief is the same for `append`, `extend`, `insert`, `remove`, … |
+
+**Other candidates for the confusion pattern (not renamed; for the owner to decide):**
+- `numbers.slash-is-integer-division`: `/` vs `//`. The other direction is "`//` gives a float
+  result like `/`".
+- `lists.append-extends`: `append` vs `extend`. The other direction is "`extend([3, 4])` adds the
+  list as one item".
+- `sets.empty-braces-make-set`: `{}` as a set. The other direction is "a non-empty set literal
+  `{0, 1, 2}` is a dict"; one seed Q31 option may fit it.
+- `strings.split-space-equals-split`: `split(' ')` vs `split()`, in either direction.
+- `mutability.augmented-assignment-rebinds` and `mutability.rebinding-mutates`: the two
+  directions of one confusion, `b += x` vs `b = b + x` for a mutable `b`. They could become one
+  `mutability.augmented-assignment-rebinding-confusion`.
+- `scope.loop-variable-discarded` and `scope.comprehension-variable-leaks`: the two directions of
+  one confusion, `for`-loop scope vs comprehension scope. They could become one
+  `scope.loop-comprehension-scope-confusion`.
+
+Merging a pair would bring the total below 59 and needs the same rename-before-storing care.
 
 ## Open points for review
 
