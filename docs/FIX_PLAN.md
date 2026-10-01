@@ -394,15 +394,22 @@ fixes must be applied there. Question numbers are positions in the seed file:
 - **Q28** (comparisons): the stored answer was wrong, because `set1` had an extra `8`. It is
   removed from `set1` and from the explanation, so the stored answer is now the real output.
 - **Q37:** typo in an option (`[['a', 'b', 'c'] d` → `['a', 'b', 'c'] d`).
+- **Q8** (`set`): prints `sorted(s)` instead of the set, so the output doesn't depend on set order;
+  the answer is now `[1, 3, 4, 5, 7]`, and the explanation is updated.
+- **Q28, second fix:** `s2 = s1` instead of a second `'Hello'` literal, so `s2 is s1` is True by
+  the language rules, not because CPython shares equal string literals. Same options and answer;
+  the explanation is updated.
+- **Q42** (`sys.stdout` redirect): starts with `open('log.txt', 'w').close()`, so every run prints
+  the same (it used to append to whatever `log.txt` held). The explanation is updated.
 
 Checked: every seed snippet's real output matches its stored answer on CPython 3.9.6 and 3.14.5
 (`tmp/concept-graph/check-seed.py`).
 
-**Order matters for Q11 and Q28.** `migrateQuestionTopics.js` (M2) matches production questions to
-seed entries by their exact `code`, and the seed file now holds the **new** code for Q11 and Q28.
-Apply these content fixes to production **before** M2, so their code matches, or M2 reports both
-as unmatched and refuses to apply. The other four fixes don't change `code`. The local dev database
-still has the old versions of these six questions; they are updated together with the Stage 3 tags
+**Order matters for Q8, Q11, Q28 and Q42.** `migrateQuestionTopics.js` (M2) matches production
+questions to seed entries by their exact `code`, and the seed file now holds the **new** code for
+these four. Apply these content fixes to production **before** M2, so their code matches, or M2
+reports them as unmatched and refuses to apply. The other fixes don't change `code`. The local dev
+database still has the old versions of these nine questions; they are updated together with the Stage 3 tags
 (`docs/CONCEPT_GRAPH.md`), by the same dry-run-capable script.
 
 ### autoIndex issue

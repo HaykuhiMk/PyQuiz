@@ -136,18 +136,18 @@
   {
     "id": 7,
     "question": "What will be the output of the following code?",
-    "code": "ls = [7, 1, 4, 1, 3, 3, 3, 5]\ns = set(ls)\nprint(s)",
+    "code": "ls = [7, 1, 4, 1, 3, 3, 3, 5]\ns = set(ls)\nprint(sorted(s))",
     "options": [
       "Error",
       "1, 2, 3, 1, 3, 3, 4, 5",
       "1, 2, 3, 4, 5",
       "1, 2, 4, 5, 7",
       "\"12313345\"",
-      "{1, 3, 4, 5, 7}"
+      "[1, 3, 4, 5, 7]"
     ],
-    "answer": "{1, 3, 4, 5, 7}",
+    "answer": "[1, 3, 4, 5, 7]",
     "difficulty": "easy",
-    "explanation": "The `set` function removes duplicate values from the list, leaving `{1, 3, 4, 5, 7}`. Sets are unordered, so the exact order may vary when printed.",
+    "explanation": "📌 `set(ls)` removes the duplicate values, leaving the elements `1, 3, 4, 5, 7`.\n📌 A set has no guaranteed order, so `sorted(s)` puts them in order and returns a list: `[1, 3, 4, 5, 7]`.\n📌 Final output: `[1, 3, 4, 5, 7]`.",
     "primaryTopic": "sets",
     "secondaryTopics": [
       "lists"
@@ -562,7 +562,7 @@
   {
     "id": 27,
     "question": "What will be the output of the following code?",
-    "code": "ls1 = [1, 2]\nls2 = [2]\ns1 = 'Hello'\ns2 = 'Hello'\ns3 = 'Hella'\nset1 = {1, 4, 2, 7}\nset2 = {7, 1, 4, 2}\nx = {}\nprint(ls1 > ls2, s2 is s1, s2 < s3, set1 == set2, isinstance(x, set))",
+    "code": "ls1 = [1, 2]\nls2 = [2]\ns1 = 'Hello'\ns2 = s1\ns3 = 'Hella'\nset1 = {1, 4, 2, 7}\nset2 = {7, 1, 4, 2}\nx = {}\nprint(ls1 > ls2, s2 is s1, s2 < s3, set1 == set2, isinstance(x, set))",
     "options": [
       "True False False False True",
       "True True False False True",
@@ -576,7 +576,7 @@
     ],
     "answer": "False True False True False",
     "difficulty": "medium",
-    "explanation": "📌 `ls1 > ls2` ➝ `False`: Lists are compared lexicographically, and `[1, 2] > [2]` is `False` since `1 < 2`.\n📌 `s2 is s1` ➝ `True`: String interning in Python makes `s1` and `s2` refer to the same memory location.\n📌 `s2 < s3` ➝ `False`: String comparison is based on ASCII values. `'Hello' > 'Hella'` since `o > a`.\n📌 `set1 == set2` ➝ `True`: Sets ignore order, and `{1, 4, 2, 7}` is equal to `{7, 1, 4, 2}`.\n📌 `isinstance(x, set)` ➝ `False`: `{}` creates an empty dictionary, not a set. An empty set should be created with `set()`.",
+    "explanation": "📌 `ls1 > ls2` ➝ `False`: Lists are compared lexicographically, and `[1, 2] > [2]` is `False` since `1 < 2`.\n📌 `s2 is s1` ➝ `True`: `s2 = s1` binds a second name to the same string object, and `is` tests identity.\n📌 `s2 < s3` ➝ `False`: String comparison is based on ASCII values. `'Hello' > 'Hella'` since `o > a`.\n📌 `set1 == set2` ➝ `True`: Sets ignore order, and `{1, 4, 2, 7}` is equal to `{7, 1, 4, 2}`.\n📌 `isinstance(x, set)` ➝ `False`: `{}` creates an empty dictionary, not a set. An empty set should be created with `set()`.",
     "primaryTopic": "mutability",
     "secondaryTopics": [
       "types",
@@ -852,7 +852,7 @@
   {
     "id": 41,
     "question": "What will be the output of the following code?",
-    "code": "import sys\ntemp = sys.stdout\nsys.stdout = open('log.txt', 'a') \nprint('spam', end=', ')\nprint(1, 2, 3, sep='')\nsys.stdout.close() \nsys.stdout = temp\nprint('back here', end=' | ', sep='_')\nprint(open('log.txt').read())",
+    "code": "import sys\nopen('log.txt', 'w').close()\ntemp = sys.stdout\nsys.stdout = open('log.txt', 'a') \nprint('spam', end=', ')\nprint(1, 2, 3, sep='')\nsys.stdout.close() \nsys.stdout = temp\nprint('back here', end=' | ', sep='_')\nprint(open('log.txt').read())",
     "options": [
       "spam, 1 2 3 | back here",
       "back here | spam, 1 2 3",
@@ -867,7 +867,7 @@
     ],
     "answer": "back here | spam, 123",
     "difficulty": "hard",
-    "explanation": "📌 `sys.stdout = open('log.txt', 'a')` redirects print output to `log.txt`.\n📌 `print('spam', end=', ')` writes `spam, ` to `log.txt`.\n📌 `print(1, 2, 3, sep='')` writes `123` to `log.txt`.\n📌 `sys.stdout.close()` closes the file.\n📌 `sys.stdout = temp` restores the original output stream.\n📌 `print('back here', end=' | ', sep='_')` prints `back here | ` to the console.\n📌 `print(open('log.txt').read())` reads and prints `spam, 123` from `log.txt`.\n📌 Final output: `back here | spam, 123`.",
+    "explanation": "📌 `open('log.txt', 'w').close()` creates `log.txt` empty, so every run starts from the same file.\n📌 `sys.stdout = open('log.txt', 'a')` redirects print output to `log.txt`, appending to it.\n📌 `print('spam', end=', ')` writes `spam, ` to `log.txt`.\n📌 `print(1, 2, 3, sep='')` writes `123` to `log.txt`.\n📌 `sys.stdout.close()` closes the file.\n📌 `sys.stdout = temp` restores the original output stream.\n📌 `print('back here', end=' | ', sep='_')` prints `back here | ` to the console.\n📌 `print(open('log.txt').read())` reads and prints `spam, 123` from `log.txt`.\n📌 Final output: `back here | spam, 123`.",
     "primaryTopic": "functions",
     "secondaryTopics": []
   },
