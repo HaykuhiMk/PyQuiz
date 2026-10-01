@@ -17,6 +17,16 @@
     "secondaryTopics": [
       "mutability",
       "slicing"
+    ],
+    "distractors": [
+      {
+        "option": "['hello', 2, 3, 4]",
+        "misconceptionId": "lists.assignment-extends"
+      },
+      {
+        "option": "['hello', 2, 3, 0, 4]",
+        "misconceptionId": "lists.assignment-extends"
+      }
     ]
   },
   {
@@ -94,6 +104,12 @@
     "primaryTopic": "types",
     "secondaryTopics": [
       "numbers"
+    ],
+    "distractors": [
+      {
+        "option": "x is greater than 5",
+        "misconceptionId": "types.implicit-str-number-coercion"
+      }
     ]
   },
   {
@@ -113,6 +129,12 @@
     "primaryTopic": "mutability",
     "secondaryTopics": [
       "strings"
+    ],
+    "distractors": [
+      {
+        "option": "Hello World.",
+        "misconceptionId": "strings.item-assignment"
+      }
     ]
   },
   {
@@ -174,6 +196,12 @@
     "secondaryTopics": [
       "strings",
       "numbers"
+    ],
+    "distractors": [
+      {
+        "option": "37 37 True",
+        "misconceptionId": "types.implicit-str-number-coercion"
+      }
     ]
   },
   {
@@ -193,6 +221,12 @@
     "primaryTopic": "mutability",
     "secondaryTopics": [
       "lists"
+    ],
+    "distractors": [
+      {
+        "option": "[1, 2, 3] [5, 2, 3]",
+        "misconceptionId": "mutability.assignment-copies"
+      }
     ]
   },
   {
@@ -215,6 +249,22 @@
     "secondaryTopics": [
       "lists",
       "slicing"
+    ],
+    "distractors": [
+      {
+        "option": "True True True True True True",
+        "misconceptionId": "mutability.identity-equality-confusion",
+        "feedback": "`is` doesn't compare values: it checks whether two names refer to the same object. Equal lists can be different objects."
+      },
+      {
+        "option": "True False True False False False",
+        "misconceptionId": "mutability.identity-equality-confusion",
+        "feedback": "`==` doesn't check identity: it compares values, so two different lists with the same items are equal."
+      },
+      {
+        "option": "True True False False True False",
+        "misconceptionId": "mutability.assignment-copies"
+      }
     ]
   },
   {
@@ -298,6 +348,16 @@
     "primaryTopic": "loops",
     "secondaryTopics": [
       "numbers"
+    ],
+    "distractors": [
+      {
+        "option": "1 2 3 4 5 6",
+        "misconceptionId": "loops.range-includes-stop"
+      },
+      {
+        "option": "1 4 9 16 25 36",
+        "misconceptionId": "loops.range-includes-stop"
+      }
     ]
   },
   {
@@ -318,6 +378,13 @@
     "primaryTopic": "mutability",
     "secondaryTopics": [
       "lists"
+    ],
+    "distractors": [
+      {
+        "option": "[1, 1, 1, 1, 1] [1, 1, 1, 1, 1]",
+        "misconceptionId": "mutability.augmented-assignment-rebinding-confusion",
+        "feedback": "`a = a + b` (or `a = a * n`) creates a new object and rebinds only that name; other names still refer to the old object. In-place changes, such as `+=` or `append` on a list, modify the shared object."
+      }
     ]
   },
   {
@@ -339,6 +406,12 @@
     "secondaryTopics": [
       "lists",
       "slicing"
+    ],
+    "distractors": [
+      {
+        "option": "[1, 6, 7, 8, 5] [1, 4, 5]",
+        "misconceptionId": "mutability.assignment-copies"
+      }
     ]
   },
   {
@@ -361,6 +434,20 @@
     "primaryTopic": "dicts",
     "secondaryTopics": [
       "slicing"
+    ],
+    "distractors": [
+      {
+        "option": "1",
+        "misconceptionId": "dicts.keys-view-is-list"
+      },
+      {
+        "option": "a",
+        "misconceptionId": "dicts.keys-view-is-list"
+      },
+      {
+        "option": "{a : 1}",
+        "misconceptionId": "dicts.keys-view-is-list"
+      }
     ]
   },
   {
@@ -403,7 +490,14 @@
     "difficulty": "medium",
     "explanation": "📌 `text.removesuffix('~')` removes the suffix `'~'` once, not every trailing tilde: `'~~~Hello___World~~'`.\n📌 `text.removeprefix('~')` removes the prefix `'~'` once: `'~~Hello___World~~'`.\n📌 `text.strip('_')` removes underscores only from the two ends. Both ends are `'~'`, so nothing changes; the underscores in the middle stay.\n📌 Final output: `~~Hello___World~~`.",
     "primaryTopic": "strings",
-    "secondaryTopics": []
+    "secondaryTopics": [],
+    "distractors": [
+      {
+        "option": "Hello___World",
+        "misconceptionId": "strings.strip-removeprefix-confusion",
+        "feedback": "`removeprefix` and `removesuffix` don't strip repeatedly like `strip`: each removes the given substring at most once — `removeprefix` from the start, `removesuffix` from the end."
+      }
+    ]
   },
   {
     "id": 20,
@@ -467,6 +561,12 @@
     "primaryTopic": "slicing",
     "secondaryTopics": [
       "lists"
+    ],
+    "distractors": [
+      {
+        "option": "['C++', 'Java', 'JavaScript'] | ['Kotlin', 'Swift', 'C#'] | ['Kotlin', 'JavaScript']",
+        "misconceptionId": "slicing.stop-inclusive"
+      }
     ]
   },
   {
@@ -495,6 +595,38 @@
     "primaryTopic": "dicts",
     "secondaryTopics": [
       "types"
+    ],
+    "distractors": [
+      {
+        "option": "<class 'set'> | 7",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "<class 'set'> | 6",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "<class 'set'> | 5",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "<class 'set'> | 14",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "<class 'set'> | 12",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "set indices must be integers or slices, not str.",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      }
     ]
   },
   {
@@ -582,6 +714,28 @@
       "types",
       "sets",
       "lists"
+    ],
+    "distractors": [
+      {
+        "option": "True False False False True",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "True True False False True",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "True False True False True",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "True False False True True",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      }
     ]
   },
   {
@@ -659,7 +813,17 @@
     "difficulty": "medium",
     "explanation": "📌 `di` is a set, and `di.add(x)` is used inside the loop.\n📌 `.add(x)` tries to add `x` to `di`, but since `x` is already in the set, nothing changes.\n📌 Important: `.add()` returns `None`, not the modified set.\n📌 The `print(di.add(x))` outputs `None` for each element in `di`.",
     "primaryTopic": "sets",
-    "secondaryTopics": []
+    "secondaryTopics": [],
+    "distractors": [
+      {
+        "option": "{0, 1, 2}",
+        "misconceptionId": "sets.add-returns-set"
+      },
+      {
+        "option": "{0, 1, 2, 0, 1, 2}",
+        "misconceptionId": "sets.add-returns-set"
+      }
+    ]
   },
   {
     "id": 32,
@@ -678,6 +842,12 @@
     "primaryTopic": "loops",
     "secondaryTopics": [
       "functions"
+    ],
+    "distractors": [
+      {
+        "option": "0 | res = 3",
+        "misconceptionId": "loops.range-includes-stop"
+      }
     ]
   },
   {
@@ -787,6 +957,23 @@
     "primaryTopic": "mutability",
     "secondaryTopics": [
       "lists"
+    ],
+    "distractors": [
+      {
+        "option": "[42] [42] | [1, 2, 3, 4] [1, 2, 3, 4]",
+        "misconceptionId": "mutability.augmented-assignment-rebinding-confusion",
+        "feedback": "`a = a + b` (or `a = a * n`) creates a new object and rebinds only that name; other names still refer to the old object. In-place changes, such as `+=` or `append` on a list, modify the shared object."
+      },
+      {
+        "option": "[42, 42] | [1, 2, 3, 4] [1, 2, 3, 4]",
+        "misconceptionId": "mutability.augmented-assignment-rebinding-confusion",
+        "feedback": "`a = a + b` (or `a = a * n`) creates a new object and rebinds only that name; other names still refer to the old object. In-place changes, such as `+=` or `append` on a list, modify the shared object."
+      },
+      {
+        "option": "None 42 | [1, 2, 3, 4] [1, 2, 3, 4]",
+        "misconceptionId": "mutability.augmented-assignment-rebinding-confusion",
+        "feedback": "`a = a + b` (or `a = a * n`) creates a new object and rebinds only that name; other names still refer to the old object. In-place changes, such as `+=` or `append` on a list, modify the shared object."
+      }
     ]
   },
   {
@@ -847,6 +1034,28 @@
     "primaryTopic": "lists",
     "secondaryTopics": [
       "types"
+    ],
+    "distractors": [
+      {
+        "option": "[1, 2, 3, 4, 5, 2, 3,]",
+        "misconceptionId": "lists.in-place-method-returns-list"
+      },
+      {
+        "option": "[1, 2, 3, 4, 5, 2, 3, 4]",
+        "misconceptionId": "lists.in-place-method-returns-list"
+      },
+      {
+        "option": "[1, 2, 3, 4, 4, 5, 2, 3, 4]",
+        "misconceptionId": "lists.in-place-method-returns-list"
+      },
+      {
+        "option": "[1, 2, 3, 4, 5, 1, 2, 3, 4]",
+        "misconceptionId": "lists.in-place-method-returns-list"
+      },
+      {
+        "option": "[1, 2, 3, 4, 4, 5, 1, 2, 3, 4]",
+        "misconceptionId": "lists.in-place-method-returns-list"
+      }
     ]
   },
   {
