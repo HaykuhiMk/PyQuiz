@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <script src="/js/theme-init.js"></script>
+    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Dashboard - PyQuiz</title>
@@ -66,9 +67,11 @@
             <label for="code"
               ><i class="fas fa-code"></i> Code Snippet (optional):</label
             >
+            <p class="form-hint" id="code-python-hint" data-python-author-hint hidden></p>
             <textarea
               id="code"
               placeholder="Enter code snippet (if any)..."
+              aria-describedby="code-python-hint"
             ></textarea>
           </div>
 
@@ -95,6 +98,11 @@
               required
             />
           </div>
+
+          <fieldset class="form-group distractor-fieldset">
+            <legend><i class="fas fa-bug"></i> Wrong options (optional): the misconception each one reveals, and short feedback. Admin-only; not shown to learners yet.</legend>
+            <div id="distractor-fields" class="distractor-fields"></div>
+          </fieldset>
 
           <div class="form-group">
             <label for="difficulty"
@@ -141,5 +149,6 @@
     </main>
 
     <script type="module" src="js/admin_dashboard.js"></script>
+    <script type="module" src="/js/pythonVersionNote.js"></script>
   </body>
 </html>

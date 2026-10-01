@@ -1,8 +1,16 @@
 import { api } from "./api.js";
-import { CANONICAL_TOPICS } from "./topicTaxonomy.js";
+import { getTopicTaxonomy, getTopicNamer } from "./topics.js";
+import { createDistractorFields } from "./distractorFields.js";
 
-function populateTopicOptions(select) {
-    select.innerHTML += CANONICAL_TOPICS.map((topic) => `<option value="${topic}">${topic}</option>`).join("");
+// Option values are stable topic ids; the visible text is the display name.
+function populateTopicOptions(select, topics) {
+    select.innerHTML += topics
+        .map((topic) => `<option value="${escapeTopicText(topic.id)}">${escapeTopicText(topic.name)}</option>`)
+        .join("");
+}
+
+function escapeTopicText(value) {
+    return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -32,9 +40,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     const editPrimaryTopicSelect = document.getElementById("edit-primary-topic");
     const editSecondaryTopicsSelect = document.getElementById("edit-secondary-topics");
 
-    populateTopicOptions(filterTopic);
-    populateTopicOptions(editPrimaryTopicSelect);
-    populateTopicOptions(editSecondaryTopicsSelect);
+    const taxonomy = await getTopicTaxonomy();
+    const topicName = await getTopicNamer();
+    populateTopicOptions(filterTopic, taxonomy);
+    populateTopicOptions(editPrimaryTopicSelect, taxonomy);
+    populateTopicOptions(editSecondaryTopicsSelect, taxonomy);
+    const distractorFields = await createDistractorFields({
+        container: document.getElementById("edit-distractor-fields"),
+        optionsInput: document.getElementById("edit-options"),
+        answerInput: document.getElementById("edit-answer"),
+    });
 
     function escapeHTML(str = "") {
         return String(str).replace(/[&<>"']/g, (match) => ({
@@ -46,23 +61,32 @@ document.addEventListener("DOMContentLoaded", async () => {
         }[match]));
     }
 
+    // Next is enabled only when the server says another page exists (a
+    // full page used to be taken as "there's more", which left an empty last
+    // page whenever the total was a multiple of the page size).
+    function updatePager() {
+        prevBtn.disabled = currentPage <= 1;
+        nextBtn.disabled = !hasNextPage;
+    }
+
     async function loadQuestions() {
-        tableBody.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7">Loading...</td></tr>`;
         try {
             const topics = filterTopic.value ? [filterTopic.value] : [];
             const difficulty = filterDifficulty.value;
-            const questions = await api.getAdminQuestions({
+            const { items: questions, meta } = await api.getAdminQuestionsPage({
                 topics,
                 difficulty,
                 page: currentPage,
                 limit: PAGE_SIZE,
             });
 
-            hasNextPage = questions.length === PAGE_SIZE;
+            hasNextPage = Boolean(meta.hasNextPage);
             pageLabel.textContent = `Page ${currentPage}`;
+            updatePager();
 
             if (!questions.length) {
-                tableBody.innerHTML = `<tr><td colspan="5">No questions found.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="7">No questions found.</td></tr>`;
                 return;
             }
 
@@ -70,10 +94,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                 .map(
                     (q) => `
                 <tr>
+                    <td><code class="question-id">${escapeHTML(String(q._id))}</code></td>
                     <td>${escapeHTML(q.question)}</td>
+                    <td><code class="question-code-line" title="${escapeHTML(firstCodeLine(q.code, Infinity))}">${escapeHTML(firstCodeLine(q.code))}</code></td>
                     <td>${escapeHTML(q.difficulty)}</td>
-                    <td>${escapeHTML(q.primaryTopic || "")}</td>
-                    <td>${escapeHTML((q.secondaryTopics || []).join(", "))}</td>
+                    <td>${escapeHTML(q.primaryTopic ? topicName(q.primaryTopic) : "")}</td>
+                    <td>${escapeHTML((q.secondaryTopics || []).map(topicName).join(", "))}</td>
                     <td>
                         <button type="button" class="secondary-btn edit-btn" data-id="${q._id}">
                             <i class="fas fa-pen"></i> Edit
@@ -95,14 +121,27 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
         } catch (error) {
             console.error("Error loading questions:", error);
-            tableBody.innerHTML = `<tr><td colspan="5">Error: ${escapeHTML(error.message)}</td></tr>`;
+            hasNextPage = false;
+            updatePager();
+            tableBody.innerHTML = `<tr><td colspan="7">Error: ${escapeHTML(error.message)}</td></tr>`;
         }
     }
 
-    async function startEdit(id) {
+    // Every production question has the same prompt, so the list also shows
+    // the id and the first line of code to tell questions apart.
+    function firstCodeLine(code, max = 80) {
+        const line = String(code || "").split("\n").find((l) => l.trim()) || "";
+        const text = line.replace(/\t/g, "    ").trim();
+        return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+    }
+
+    // Loads a question into the edit form; resolves to false (and alerts)
+    // if it can't be loaded, unless `quiet` (then the caller reports it).
+    async function startEdit(id, { quiet = false } = {}) {
         try {
             const question = await api.getAdminQuestion(id);
             editingId = id;
+            document.getElementById("edit-question-id").textContent = `Editing question ${id}`;
             document.getElementById("edit-question-text").value = question.question;
             document.getElementById("edit-code").value = question.code || "";
             document.getElementById("edit-options").value = (question.options || []).join("\n");
@@ -114,13 +153,35 @@ document.addEventListener("DOMContentLoaded", async () => {
                 option.selected = secondary.has(option.value);
             });
             document.getElementById("edit-explanation").value = question.explanation;
+            distractorFields.setValue(question.distractors || []);
             editStatus.textContent = "";
             editSection.hidden = false;
             editSection.scrollIntoView({ behavior: "smooth" });
+            return true;
         } catch (error) {
+            if (quiet) throw error;
             alert("Error loading question: " + error.message);
+            return false;
         }
     }
+
+    const findForm = document.getElementById("find-question-form");
+    const findInput = document.getElementById("find-question-id");
+    const findStatus = document.getElementById("find-question-status");
+    findForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const id = findInput.value.trim();
+        if (!/^[a-f0-9]{24}$/i.test(id)) {
+            findStatus.textContent = "A question id is 24 characters, 0-9 and a-f.";
+            return;
+        }
+        findStatus.textContent = "";
+        try {
+            await startEdit(id.toLowerCase(), { quiet: true });
+        } catch (error) {
+            findStatus.textContent = error.status === 404 ? `No question with id ${id}.` : `Couldn't open it: ${error.message}`;
+        }
+    });
 
     async function handleDelete(id) {
         if (!confirm("Delete this question? This cannot be undone.")) return;
@@ -152,6 +213,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             alert("Correct answer must be one of the options!");
             return;
         }
+        if (new Set(options).size !== options.length) {
+            alert("Options must all be different!");
+            return;
+        }
+        if (!distractorFields.confirmDroppedTags()) return;
 
         const primaryTopic = editPrimaryTopicSelect.value;
         const secondaryTopics = Array.from(editSecondaryTopicsSelect.selectedOptions)
@@ -167,6 +233,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             primaryTopic,
             secondaryTopics,
             explanation: document.getElementById("edit-explanation").value.trim(),
+            distractors: distractorFields.getValue(),
         };
 
         try {
@@ -181,6 +248,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     cancelEditBtn.addEventListener("click", () => {
         editingId = null;
         editForm.reset();
+        distractorFields.setValue([]);
         editSection.hidden = true;
     });
 

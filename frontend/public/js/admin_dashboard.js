@@ -1,8 +1,16 @@
 import { api } from "./api.js";
-import { CANONICAL_TOPICS } from "./topicTaxonomy.js";
+import { getTopicTaxonomy } from "./topics.js";
+import { createDistractorFields } from "./distractorFields.js";
 
-function populateTopicOptions(select) {
-    select.innerHTML = CANONICAL_TOPICS.map((topic) => `<option value="${topic}">${topic}</option>`).join("");
+// Option values are stable topic ids; the visible text is the display name.
+function populateTopicOptions(select, topics) {
+    select.innerHTML = topics
+        .map((topic) => `<option value="${escapeTopicText(topic.id)}">${escapeTopicText(topic.name)}</option>`)
+        .join("");
+}
+
+function escapeTopicText(value) {
+    return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -16,8 +24,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     const questionForm = document.getElementById("question-form");
     const primaryTopicSelect = document.getElementById("primary-topic");
     const secondaryTopicsSelect = document.getElementById("secondary-topics");
-    if (primaryTopicSelect) populateTopicOptions(primaryTopicSelect);
-    if (secondaryTopicsSelect) populateTopicOptions(secondaryTopicsSelect);
+    const taxonomy = await getTopicTaxonomy();
+    if (primaryTopicSelect) populateTopicOptions(primaryTopicSelect, taxonomy);
+    if (secondaryTopicsSelect) populateTopicOptions(secondaryTopicsSelect, taxonomy);
+    const distractorFields = await createDistractorFields({
+        container: document.getElementById("distractor-fields"),
+        optionsInput: document.getElementById("options"),
+        answerInput: document.getElementById("answer"),
+    });
 
     if (questionForm) {
         questionForm.addEventListener("submit", async (event) => {
@@ -37,6 +51,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                 alert("Correct answer must be one of the options!");
                 return;
             }
+            if (new Set(options).size !== options.length) {
+                alert("Options must all be different!");
+                return;
+            }
+            if (!distractorFields.confirmDroppedTags()) return;
 
             const questionData = {
                 question,
@@ -46,12 +65,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                 difficulty,
                 primaryTopic,
                 secondaryTopics,
-                explanation
+                explanation,
+                distractors: distractorFields.getValue()
             };
             try {
                 await api.addQuestion(questionData);
                 document.getElementById("question-success").textContent = "Question added successfully!";
                 questionForm.reset();
+                distractorFields.setValue([]);
             } catch (error) {
                 console.error("Error submitting question:", error);
                 alert("Error: " + (error.message || "Failed to add question"));

@@ -27,6 +27,10 @@ const adminV1Routes = require('./routes/v1/adminRoutes');
 const contactV1Routes = require('./routes/v1/contactRoutes');
 const quizV1Routes = require('./routes/v1/quizRoutes');
 const validationRulesV1Routes = require('./routes/v1/validationRulesRoutes');
+const topicV1Routes = require('./routes/v1/topicRoutes');
+const conceptGraphV1Routes = require('./routes/v1/conceptGraphRoutes');
+const pythonVersionV1Routes = require('./routes/v1/pythonVersionRoutes');
+const { allowedOrigins: corsAllowedOrigins } = require('./config/corsOrigins');
 
 const app = express();
 
@@ -36,12 +40,10 @@ const app = express();
 configureTrustProxy(app);
 warnAboutRateLimitBypass();
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  process.env.CLIENT_URI,
-  process.env.API_URI
-].filter(Boolean); 
+const allowedOrigins = corsAllowedOrigins();
+if (process.env.NODE_ENV === 'production' && !process.env.CLIENT_URI) {
+  logger.warn('CLIENT_URI is not set: in production no browser origin may call the API.');
+}
 
 app.use(cors({
   origin: allowedOrigins,
@@ -187,6 +189,9 @@ app.use('/api/v1/challenges', challengeV1Routes);
 app.use('/api/v1/admin', adminV1Routes);
 app.use('/api/v1/contact', contactV1Routes);
 app.use('/api/v1/validation-rules', validationRulesV1Routes);
+app.use('/api/v1/topics', topicV1Routes);
+app.use('/api/v1/concept-graph', conceptGraphV1Routes);
+app.use('/api/v1/python-version', pythonVersionV1Routes);
 app.use('/api/v1/quiz', quizV1Routes);
 
 app.get('/healthz', (req, res) => {

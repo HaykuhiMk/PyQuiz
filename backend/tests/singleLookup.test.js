@@ -41,7 +41,7 @@ async function lookupsFor(makeRequest) {
 describe('exactly one user lookup per request with a session', () => {
   it('for public, guest-capable, authenticated and state-changing user routes', async () => {
     await Question.create({
-      question: 'Q', options: ['a', 'b'], answer: 'b', difficulty: 'easy', primaryTopic: 'Lists', explanation: 'e',
+      question: 'Q', options: ['a', 'b'], answer: 'b', difficulty: 'easy', primaryTopic: 'lists', explanation: 'e',
     });
     const u = await registerAndLogin('onelookup@example.com', { username: 'onelookup' });
     const withSession = (req) => req.set('Cookie', u.cookieHeader).set('X-CSRF-Token', u.csrfToken);

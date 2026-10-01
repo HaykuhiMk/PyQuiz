@@ -8,3 +8,50 @@
   max-width: 640px;
   margin-top: var(--space-6);
 }
+
+/* Wrong-option misconception tags (js/distractorFields.js). */
+.distractor-fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+
+.distractor-fields {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.distractor-row {
+  display: grid;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.distractor-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.distractor-row select {
+  max-width: 100%;
+}
+
+.distractor-hint {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.distractor-warning {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--sun);
+  background: var(--sun-soft);
+  border-radius: var(--radius-sm);
+}
+
+/* Author hint under a field label (js/pythonVersionNote.js). */
+.form-hint {
+  color: var(--text-muted);
+  margin: 0 0 var(--space-2);
+}

@@ -15,8 +15,8 @@ const validQuestionPayload = {
   options: ['2', '3', '4'],
   answer: '3',
   difficulty: 'easy',
-  primaryTopic: 'Functions & Built-ins',
-  secondaryTopics: ['Lists'],
+  primaryTopic: 'functions',
+  secondaryTopics: ['lists'],
   explanation: 'There are three elements in the list.',
 };
 

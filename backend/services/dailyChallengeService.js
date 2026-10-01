@@ -5,6 +5,7 @@ const userRepository = require('../repositories/userRepository');
 const dailyChallengeSetRepository = require('../repositories/dailyChallengeSetRepository');
 const answerEventRepository = require('../repositories/answerEventRepository');
 const userService = require('../services/userService');
+const { chosenMisconceptionId } = require('../utils/distractors');
 
 const DAILY_QUESTION_COUNT = 5;
 const DAILY_POINTS_PER_CORRECT = 20;
@@ -216,6 +217,7 @@ async function submitDailyChallenge(userId, answers = []) {
       questionId: question._id,
       mode: 'daily',
       selectedIndex: Number.isFinite(Number(selectedIndex)) ? Number(selectedIndex) : null,
+      misconceptionId: Number.isFinite(Number(selectedIndex)) ? chosenMisconceptionId(question, selectedIndex) : null,
       correct: isCorrect,
       attemptNumber: 1,
       timeTakenMs: 0,

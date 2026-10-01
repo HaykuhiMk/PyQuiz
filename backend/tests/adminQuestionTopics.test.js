@@ -21,8 +21,8 @@ const validQuestionPayload = {
   options: ['2', '3', '4'],
   answer: '3',
   difficulty: 'easy',
-  primaryTopic: 'Functions & Built-ins',
-  secondaryTopics: ['Lists'],
+  primaryTopic: 'functions',
+  secondaryTopics: ['lists'],
   explanation: 'There are three elements in the list.',
 };
 
@@ -74,7 +74,7 @@ describe('POST /api/v1/questions/add — canonical topic validation', () => {
     const res = await request(app)
       .post('/api/v1/questions/add')
       .set(adminHeaders)
-      .send({ ...validQuestionPayload, primaryTopic: 'Lists', secondaryTopics: ['Lists'] });
+      .send({ ...validQuestionPayload, primaryTopic: 'lists', secondaryTopics: ['lists'] });
 
     expect(res.statusCode).toBe(400);
     expect(await Question.countDocuments()).toBe(0);
@@ -93,13 +93,13 @@ describe('POST /api/v1/questions/add — canonical topic validation', () => {
 
 describe('PATCH /api/v1/admin/questions/:id — canonical topic validation', () => {
   it('rejects changing secondaryTopics to include the (unchanged) primaryTopic', async () => {
-    const q = await createQuestionDirectly(); // primaryTopic: 'Functions & Built-ins'
+    const q = await createQuestionDirectly(); // primaryTopic: 'functions'
     const adminHeaders = await adminLogin();
 
     const res = await request(app)
       .patch(`/api/v1/admin/questions/${q._id}`)
       .set(adminHeaders)
-      .send({ secondaryTopics: ['Functions & Built-ins'] });
+      .send({ secondaryTopics: ['functions'] });
 
     expect(res.statusCode).toBe(400);
   });
@@ -108,16 +108,16 @@ describe('PATCH /api/v1/admin/questions/:id — canonical topic validation', () 
 describe('GET /api/v1/questions?topics= — primary OR secondary match (Phase 3 taxonomy revision)', () => {
   it('returns a question when the filter topic is only its secondary topic, not its primary', async () => {
     const q = await createQuestionDirectly({
-      primaryTopic: 'Functions & Built-ins',
-      secondaryTopics: ['Sets'],
+      primaryTopic: 'functions',
+      secondaryTopics: ['sets'],
     });
     await createQuestionDirectly({
       question: 'A different question, unrelated to Sets',
-      primaryTopic: 'Strings',
+      primaryTopic: 'strings',
       secondaryTopics: [],
     });
 
-    const res = await request(app).get('/api/v1/questions').query({ topics: 'Sets' });
+    const res = await request(app).get('/api/v1/questions').query({ topics: 'sets' });
 
     expect(res.statusCode).toBe(200);
     const ids = res.body.data.map((item) => item._id);

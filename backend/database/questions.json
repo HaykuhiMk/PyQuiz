@@ -13,10 +13,20 @@
     "answer": "list assignment index out of range.",
     "difficulty": "easy",
     "explanation": "Lists in Python are mutable, meaning their elements can be changed. However, attempting to assign a value to an index that is out of range (like `ls[4]` when the list has only 3 elements) raises an 'IndexError'.",
-    "primaryTopic": "Lists",
+    "primaryTopic": "lists",
     "secondaryTopics": [
-      "Names, Mutability & Identity",
-      "Indexing & Slicing"
+      "mutability",
+      "slicing"
+    ],
+    "distractors": [
+      {
+        "option": "['hello', 2, 3, 4]",
+        "misconceptionId": "lists.assignment-extends"
+      },
+      {
+        "option": "['hello', 2, 3, 0, 4]",
+        "misconceptionId": "lists.assignment-extends"
+      }
     ]
   },
   {
@@ -33,9 +43,9 @@
     "answer": "'tuple' object does not support item assignment.",
     "difficulty": "easy",
     "explanation": "Tuples in Python are immutable, meaning their elements cannot be changed after creation. Attempting to modify a tuple's elements using index assignment results in a 'TypeError'.",
-    "primaryTopic": "Names, Mutability & Identity",
+    "primaryTopic": "mutability",
     "secondaryTopics": [
-      "Tuples"
+      "tuples"
     ]
   },
   {
@@ -51,10 +61,10 @@
     "answer": "P J C",
     "difficulty": "easy",
     "explanation": "The loop iterates through the list of words, and 'word[0]' accesses the first character of each string. Therefore, 'P', 'J', and 'C' are printed on separate lines.",
-    "primaryTopic": "Strings",
+    "primaryTopic": "strings",
     "secondaryTopics": [
-      "Lists",
-      "Loops & Control Flow"
+      "lists",
+      "loops"
     ]
   },
   {
@@ -73,9 +83,9 @@
     "answer": "s p a m",
     "difficulty": "easy",
     "explanation": "The for-loop iterates over each character in the string 'spam'. Since strings are iterable in Python, each character ('s', 'p', 'a', 'm') is printed on a new line.",
-    "primaryTopic": "Strings",
+    "primaryTopic": "strings",
     "secondaryTopics": [
-      "Loops & Control Flow"
+      "loops"
     ]
   },
   {
@@ -91,9 +101,15 @@
     "answer": "Type error",
     "difficulty": "easy",
     "explanation": "The comparison `x > '5'` raises a `TypeError` because `x` is an integer and '5' is a string. In Python, different data types cannot be directly compared using relational operators like `>`.",
-    "primaryTopic": "Data Types & Conversion",
+    "primaryTopic": "types",
     "secondaryTopics": [
-      "Numbers & Arithmetic"
+      "numbers"
+    ],
+    "distractors": [
+      {
+        "option": "x is greater than 5",
+        "misconceptionId": "types.implicit-str-number-coercion"
+      }
     ]
   },
   {
@@ -110,9 +126,15 @@
     "answer": "'str' object does not support item assignment",
     "difficulty": "medium",
     "explanation": "Strings in Python are immutable, meaning their elements cannot be modified after creation. The attempt to assign `str1[len(str1)] = '.'` results in a `TypeError` because item assignment is not allowed for strings.",
-    "primaryTopic": "Names, Mutability & Identity",
+    "primaryTopic": "mutability",
     "secondaryTopics": [
-      "Strings"
+      "strings"
+    ],
+    "distractors": [
+      {
+        "option": "Hello World.",
+        "misconceptionId": "strings.item-assignment"
+      }
     ]
   },
   {
@@ -130,27 +152,27 @@
     "answer": "1 2 4 5",
     "difficulty": "easy",
     "explanation": "The `continue` statement skips the iteration when `i == 3`, so 3 is not printed. The `break` statement stops the loop when `i == 5`, so the loop does not reach 6. Thus, the output is `1 2 4 5`.",
-    "primaryTopic": "Loops & Control Flow",
+    "primaryTopic": "loops",
     "secondaryTopics": []
   },
   {
     "id": 7,
     "question": "What will be the output of the following code?",
-    "code": "ls = [7, 1, 4, 1, 3, 3, 3, 5]\ns = set(ls)\nprint(s)",
+    "code": "ls = [7, 1, 4, 1, 3, 3, 3, 5]\ns = set(ls)\nprint(sorted(s))",
     "options": [
       "Error",
       "1, 2, 3, 1, 3, 3, 4, 5",
       "1, 2, 3, 4, 5",
       "1, 2, 4, 5, 7",
       "\"12313345\"",
-      "{1, 3, 4, 5, 7}"
+      "[1, 3, 4, 5, 7]"
     ],
-    "answer": "{1, 3, 4, 5, 7}",
+    "answer": "[1, 3, 4, 5, 7]",
     "difficulty": "easy",
-    "explanation": "The `set` function removes duplicate values from the list, leaving `{1, 3, 4, 5, 7}`. Sets are unordered, so the exact order may vary when printed.",
-    "primaryTopic": "Sets",
+    "explanation": "📌 `set(ls)` removes the duplicate values, leaving the elements `1, 3, 4, 5, 7`.\n📌 A set has no guaranteed order, so `sorted(s)` puts them in order and returns a list: `[1, 3, 4, 5, 7]`.\n📌 Final output: `[1, 3, 4, 5, 7]`.",
+    "primaryTopic": "sets",
     "secondaryTopics": [
-      "Lists"
+      "lists"
     ]
   },
   {
@@ -170,10 +192,16 @@
     "answer": "1720 37 18",
     "difficulty": "medium",
     "explanation": "1️⃣ `str1 = str(17) + str(20)` results in `'1720'` due to string concatenation.\n2️⃣ `str2 = str(17 + 20)` evaluates `37` first, then converts to `'37'`.\n3️⃣ `str3 = str(17 + True)` treats `True` as `1`, so `17 + 1 = 18`.\nThus, output: `'1720  37  18'`.",
-    "primaryTopic": "Data Types & Conversion",
+    "primaryTopic": "types",
     "secondaryTopics": [
-      "Strings",
-      "Numbers & Arithmetic"
+      "strings",
+      "numbers"
+    ],
+    "distractors": [
+      {
+        "option": "37 37 True",
+        "misconceptionId": "types.implicit-str-number-coercion"
+      }
     ]
   },
   {
@@ -190,32 +218,53 @@
     "answer": "[5, 2, 3] [5, 2, 3]",
     "difficulty": "easy",
     "explanation": "📌 `l2 = l1` creates a reference, not a copy. Both variables point to the same list.\n📌 `l2[0] = 5` modifies the original list since lists are mutable.\n📌 Therefore, both `l1` and `l2` print `[5, 2, 3]`, showing that they share the same memory.",
-    "primaryTopic": "Names, Mutability & Identity",
+    "primaryTopic": "mutability",
     "secondaryTopics": [
-      "Lists"
+      "lists"
+    ],
+    "distractors": [
+      {
+        "option": "[1, 2, 3] [5, 2, 3]",
+        "misconceptionId": "mutability.assignment-copies"
+      }
     ]
   },
   {
     "id": 10,
     "question": "What will be the output of the following code?",
-    "code": "import sys\nl1 = [1, 2, 3]\nl2 = l1\nl3 = [1, 2, 3]\nprint(sys.getrefcount(l3), sys.getrefcount(l1))\nprint(l1 == l2, l1 == l3, l1 is l2, l1 is l3)\nx = 42\ny = 42\nprint(x == y, x is y)",
+    "code": "l1 = [1, 2, 3]\nl2 = l1\nl3 = [1, 2, 3]\nl4 = l1[:]\nprint(l1 == l2, l1 == l3, l1 is l2, l1 is l3)\nprint(l1 == l4, l1 is l4)",
     "options": [
-      "3 3 True True True False True True",
-      "2 3 True False True False True False",
-      "2 3 True True True False True True",
-      "2 3 True True True True True True",
-      "3 3 True True True True True True",
-      "3 3 True False True False True False",
+      "True True True True True True",
+      "True True True False True False",
+      "True False True False False False",
+      "True True False False True False",
+      "True True True False True True",
       "Nothing",
       "Error"
     ],
-    "answer": "2 3 True True True False True True",
+    "answer": "True True True False True False",
     "difficulty": "medium",
-    "explanation": "📌 `sys.getrefcount(obj)` returns the reference count of an object.\n📌 `l1 = [1, 2, 3]` and `l2 = l1` share the same reference, so `l1` has more references than `l3`.\n📌 `l1 == l2` and `l1 == l3` check equality (same values), while `l1 is l2` and `l1 is l3` check identity (same object).\n📌 `x = 42; y = 42`: Small integers (from -5 to 256) are interned, so `x is y` evaluates to `True`.",
-    "primaryTopic": "Names, Mutability & Identity",
+    "explanation": "📌 `l2 = l1` binds a second name to the same list, so `l1 == l2` and `l1 is l2` are both `True`.\n📌 `l3 = [1, 2, 3]` is a different list with equal contents: `l1 == l3` is `True`, but `l1 is l3` is `False`.\n📌 `l4 = l1[:]` makes a new list (a copy): again equal (`True`) but not the same object (`False`).\n📌 `==` compares values; `is` compares identity (whether two names refer to the same object).\n📌 Final output: `True True True False True False`.",
+    "primaryTopic": "mutability",
     "secondaryTopics": [
-      "Lists",
-      "Numbers & Arithmetic"
+      "lists",
+      "slicing"
+    ],
+    "distractors": [
+      {
+        "option": "True True True True True True",
+        "misconceptionId": "mutability.identity-equality-confusion",
+        "feedback": "`is` doesn't compare values: it checks whether two names refer to the same object. Equal lists can be different objects."
+      },
+      {
+        "option": "True False True False False False",
+        "misconceptionId": "mutability.identity-equality-confusion",
+        "feedback": "`==` doesn't check identity: it compares values, so two different lists with the same items are equal."
+      },
+      {
+        "option": "True True False False True False",
+        "misconceptionId": "mutability.assignment-copies"
+      }
     ]
   },
   {
@@ -233,9 +282,9 @@
     "answer": "5",
     "difficulty": "easy",
     "explanation": "📌 `len(l1)` counts the number of top-level elements in the list.\n📌 The list `l1` has 5 elements: `1`, `[8, 7, 6]`, `3`, `4`, and `5`.\n📌 Even though `[8, 7, 6]` contains 3 elements, it's treated as one element in `l1`.\n📌 So, `len(l1) = 5`.",
-    "primaryTopic": "Lists",
+    "primaryTopic": "lists",
     "secondaryTopics": [
-      "Functions & Built-ins"
+      "functions"
     ]
   },
   {
@@ -254,9 +303,9 @@
     "answer": "10 20 40 50",
     "difficulty": "easy",
     "explanation": "📌 The loop iterates over `[10, 20, 30, 40, 50]`.\n📌 If condition: `if not (i == 30)` skips printing `30`.\n📌 Break condition: `if i > 40` breaks after printing `50`.\n📌 Final output: `10 20 40 50`.",
-    "primaryTopic": "Loops & Control Flow",
+    "primaryTopic": "loops",
     "secondaryTopics": [
-      "Lists"
+      "lists"
     ]
   },
   {
@@ -275,9 +324,9 @@
     "answer": "7 8",
     "difficulty": "medium",
     "explanation": "📌 The loop iterates over `[7, 8, 9, 10, 11]`.\n📌 `if i % 3 == 0` (i.e., `9` is skipped using `continue`).\n📌 `if i == 10:` stops the loop using `break`.\n📌 Printed values: `7 8`.",
-    "primaryTopic": "Loops & Control Flow",
+    "primaryTopic": "loops",
     "secondaryTopics": [
-      "Numbers & Arithmetic"
+      "numbers"
     ]
   },
   {
@@ -296,9 +345,19 @@
     "answer": "1 4 9",
     "difficulty": "easy",
     "explanation": "📌 The loop iterates over `range(1, 6)`, computing `square = i ** 2`.\n📌 The squares calculated are `1, 4, 9, 16, 25`.\n📌 When `square == 9`, the `break` statement stops the loop.\n📌 Printed values: `1 4 9`.",
-    "primaryTopic": "Loops & Control Flow",
+    "primaryTopic": "loops",
     "secondaryTopics": [
-      "Numbers & Arithmetic"
+      "numbers"
+    ],
+    "distractors": [
+      {
+        "option": "1 2 3 4 5 6",
+        "misconceptionId": "loops.range-includes-stop"
+      },
+      {
+        "option": "1 4 9 16 25 36",
+        "misconceptionId": "loops.range-includes-stop"
+      }
     ]
   },
   {
@@ -316,9 +375,16 @@
     "answer": "[1] [1, 1, 1, 1, 1]",
     "difficulty": "easy",
     "explanation": "📌 `list = [1]` creates a list containing a single element: `[1]`.\n📌 `list1 = list` assigns `list1` as a reference to `list`.\n📌 `list1 = list1 * 5` creates a new list, repeating the contents 5 times, but does not modify `list`.\n📌 Final output: `list` remains `[1]`, while `list1` becomes `[1, 1, 1, 1, 1]`.",
-    "primaryTopic": "Names, Mutability & Identity",
+    "primaryTopic": "mutability",
     "secondaryTopics": [
-      "Lists"
+      "lists"
+    ],
+    "distractors": [
+      {
+        "option": "[1, 1, 1, 1, 1] [1, 1, 1, 1, 1]",
+        "misconceptionId": "mutability.augmented-assignment-rebinding-confusion",
+        "feedback": "`a = a + b` (or `a = a * n`) creates a new object and rebinds only that name; other names still refer to the old object. In-place changes, such as `+=` or `append` on a list, modify the shared object."
+      }
     ]
   },
   {
@@ -336,10 +402,16 @@
     "answer": "[1, 8, 5] [1, 8, 5]",
     "difficulty": "medium",
     "explanation": "📌 `list = [1, 2, 3, 4, 5]` initializes a list.\n📌 `list1 = list` makes `list1` refer to the same list in memory (not a copy).\n📌 `list[1:4] = [6, 7, 8]` replaces elements at indices 1 to 3 with `[6, 7, 8]`, updating `list` to `[1, 6, 7, 8, 5]`.\n📌 `list1[1:3] = []` removes elements at indices 1 and 2, modifying `list1` to `[1, 8, 5]`.\n📌 Since `list1` and `list` refer to the same object, the changes affect both.\n📌 Final output: `[1, 8, 5] [1, 8, 5]`.",
-    "primaryTopic": "Names, Mutability & Identity",
+    "primaryTopic": "mutability",
     "secondaryTopics": [
-      "Lists",
-      "Indexing & Slicing"
+      "lists",
+      "slicing"
+    ],
+    "distractors": [
+      {
+        "option": "[1, 6, 7, 8, 5] [1, 4, 5]",
+        "misconceptionId": "mutability.assignment-copies"
+      }
     ]
   },
   {
@@ -352,16 +424,30 @@
       "{a : 1}",
       "(1, 2, 3)",
       "(a, b, c)",
-      "'dict_keys' object does not support indexing.",
+      "TypeError (a dict_keys view can't be indexed)",
       "'tuple' object does not support item assignment",
       "Nothing"
     ],
-    "answer": "'dict_keys' object does not support indexing.",
+    "answer": "TypeError (a dict_keys view can't be indexed)",
     "difficulty": "easy",
-    "explanation": "📌 `di = dict(a=1, b=2, c=3)` creates a dictionary `{ 'a': 1, 'b': 2, 'c': 3 }`.\n📌 `diKeys = di.keys()` returns a `dict_keys` view object, which behaves like a set, not a list.\n📌 Attempting `diKeys[0]` raises a TypeError because `dict_keys` does not support indexing.\n📌 To access elements, convert to a list: `list(di.keys())[0]` → `'a'`.",
-    "primaryTopic": "Dictionaries",
+    "explanation": "📌 `di = dict(a=1, b=2, c=3)` creates a dictionary `{ 'a': 1, 'b': 2, 'c': 3 }`.\n📌 `diKeys = di.keys()` returns a `dict_keys` view object, which behaves like a set, not a list.\n📌 Attempting `diKeys[0]` raises a `TypeError` because `dict_keys` does not support indexing. (The exact wording of the error message differs between Python versions; the exception is always a `TypeError`.)\n📌 To access elements, convert to a list: `list(di.keys())[0]` → `'a'`.",
+    "primaryTopic": "dicts",
     "secondaryTopics": [
-      "Indexing & Slicing"
+      "slicing"
+    ],
+    "distractors": [
+      {
+        "option": "1",
+        "misconceptionId": "dicts.keys-view-is-list"
+      },
+      {
+        "option": "a",
+        "misconceptionId": "dicts.keys-view-is-list"
+      },
+      {
+        "option": "{a : 1}",
+        "misconceptionId": "dicts.keys-view-is-list"
+      }
     ]
   },
   {
@@ -381,9 +467,9 @@
     "answer": "<class 'dict'> | do good",
     "difficulty": "hard",
     "explanation": "📌 `str.maketrans('be', 'do')` creates a translation dictionary `{98: 100, 101: 111}` where 'b' (ASCII 98) maps to 'd' (ASCII 100) and 'e' (ASCII 101) maps to 'o' (ASCII 111).\n📌 `type(var)` prints `<class 'dict'>` because `str.maketrans()` returns a dictionary.\n📌 `text.translate(var)` replaces 'b' → 'd' and 'e' → 'o', so `'be good'` becomes `'do good'`.",
-    "primaryTopic": "Strings",
+    "primaryTopic": "strings",
     "secondaryTopics": [
-      "Dictionaries"
+      "dicts"
     ]
   },
   {
@@ -391,20 +477,27 @@
     "question": "What will be the output of the following code?",
     "code": "text = '~~~Hello___World~~~'\ntext = text.removesuffix('~')\ntext = text.removeprefix('~')\ntext = text.strip('_')\nprint(text)",
     "options": [
-      "Hello_ _ _World",
+      "Hello___World",
       "HelloWorld",
-      "Hello_ _World",
+      "Hello__World",
       "~~HelloWorld~~",
-      "~~Hello_ _ _World~~",
-      "~Hello_ _World~",
+      "~~Hello___World~~",
+      "~Hello__World~",
       "Error",
       "Nothing"
     ],
-    "answer": "~~Hello_ _ _World~~",
+    "answer": "~~Hello___World~~",
     "difficulty": "medium",
-    "explanation": "📌 `text.removesuffix('~')` removes only the trailing tildes, reducing it to `'~~~Hello___World'`.\n📌 `text.removeprefix('~')` removes only the leading tilde, leaving `'~~Hello___World'`.\n📌 `text.strip('_')` removes leading and trailing underscores, but there are none at the edges, so `'~~Hello___World~~'` remains unchanged.",
-    "primaryTopic": "Strings",
-    "secondaryTopics": []
+    "explanation": "📌 `text.removesuffix('~')` removes the suffix `'~'` once, not every trailing tilde: `'~~~Hello___World~~'`.\n📌 `text.removeprefix('~')` removes the prefix `'~'` once: `'~~Hello___World~~'`.\n📌 `text.strip('_')` removes underscores only from the two ends. Both ends are `'~'`, so nothing changes; the underscores in the middle stay.\n📌 Final output: `~~Hello___World~~`.",
+    "primaryTopic": "strings",
+    "secondaryTopics": [],
+    "distractors": [
+      {
+        "option": "Hello___World",
+        "misconceptionId": "strings.strip-removeprefix-confusion",
+        "feedback": "`removeprefix` and `removesuffix` don't strip repeatedly like `strip`: each removes the given substring at most once — `removeprefix` from the start, `removesuffix` from the end."
+      }
+    ]
   },
   {
     "id": 20,
@@ -423,9 +516,9 @@
     "answer": "['jAVAsCRIPT', 'pYTHON', 'jAVA', 'c++']",
     "difficulty": "medium",
     "explanation": "📌 `swapcase()` converts lowercase to uppercase and vice versa, so:\n  - 'Python' → 'pYTHON'\n  - 'C++' → 'c++'\n  - 'Java' → 'jAVA'\n  - 'JavaScript' → 'jAVAsCRIPT'\n📌 `sort(key=len, reverse=True)` sorts the list by length in descending order, so 'jAVAsCRIPT' (10) comes first, followed by 'pYTHON' (6), 'jAVA' (4), and 'c++' (3).",
-    "primaryTopic": "Functions & Built-ins",
+    "primaryTopic": "functions",
     "secondaryTopics": [
-      "Strings"
+      "strings"
     ]
   },
   {
@@ -445,9 +538,9 @@
     "answer": "[5748, 4532, 123, 88, 43]",
     "difficulty": "easy",
     "explanation": "📌 `set(ls)` removes duplicates, so the list becomes `{123, 43, 5748, 4532, 88}`.\n📌 `sorted(set(ls), reverse=True)` sorts the elements in descending order: `[5748, 4532, 123, 88, 43]`.",
-    "primaryTopic": "Sets",
+    "primaryTopic": "sets",
     "secondaryTopics": [
-      "Functions & Built-ins"
+      "functions"
     ]
   },
   {
@@ -455,7 +548,7 @@
     "question": "What will be the output of the following code?",
     "code": "words = ['Python', 'C++', 'Java', 'JavaScript', 'C#', 'Swift', 'Kotlin']\nprint(words[1::3], end = ' | ')\nprint(words[:-3:-1], end = ' | ')\nprint(words[-1:-5:-3])",
     "options": [
-      "['Python', 'C++', 'Java] | ['C#', 'Swift', 'Kotlin'] | ['Kotlin', 'JavaScript']",
+      "['Python', 'C++', 'Java'] | ['C#', 'Swift', 'Kotlin'] | ['Kotlin', 'JavaScript']",
       "['C++', 'Java'] | ['Kotlin', 'Swift'] | ['Kotlin', 'JavaScript']",
       "['C++', 'C#'] | ['Kotlin', 'Swift'] | ['Kotlin', 'JavaScript']",
       "['C++', 'Java', 'JavaScript'] | ['Kotlin', 'Swift', 'C#'] | ['Kotlin', 'JavaScript']",
@@ -465,9 +558,15 @@
     "answer": "['C++', 'C#'] | ['Kotlin', 'Swift'] | ['Kotlin', 'JavaScript']",
     "difficulty": "medium",
     "explanation": "📌 `words[1::3]` selects every 3rd element starting from index 1 → `['C++', 'C#']`.\n📌 `words[:-3:-1]` takes the last two elements in reverse order → `['Kotlin', 'Swift']`.\n📌 `words[-1:-5:-3]` starts from the last element and moves backwards in steps of 3 → `['Kotlin', 'JavaScript']`.",
-    "primaryTopic": "Indexing & Slicing",
+    "primaryTopic": "slicing",
     "secondaryTopics": [
-      "Lists"
+      "lists"
+    ],
+    "distractors": [
+      {
+        "option": "['C++', 'Java', 'JavaScript'] | ['Kotlin', 'Swift', 'C#'] | ['Kotlin', 'JavaScript']",
+        "misconceptionId": "slicing.stop-inclusive"
+      }
     ]
   },
   {
@@ -493,9 +592,41 @@
     "answer": "<class 'dict'> | 5",
     "difficulty": "medium",
     "explanation": "📌 `di` is initialized as an empty dictionary (`{}`).\n📌 Keys `1`, `2`, `'1'`, `3`, and `'2'` are added.\n📌 The key `'2'` is assigned twice, but dictionary keys must be unique, so only the last value remains.\n📌 Similarly, `3` is reassigned, keeping only one occurrence.\n📌 This results in `{1: 1, 2: 2, '1': 1, 3: 3, '2': 1}`.\n📌 The final dictionary has 5 unique keys, so `len(di) = 5`.",
-    "primaryTopic": "Dictionaries",
+    "primaryTopic": "dicts",
     "secondaryTopics": [
-      "Data Types & Conversion"
+      "types"
+    ],
+    "distractors": [
+      {
+        "option": "<class 'set'> | 7",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "<class 'set'> | 6",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "<class 'set'> | 5",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "<class 'set'> | 14",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "<class 'set'> | 12",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "set indices must be integers or slices, not str.",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      }
     ]
   },
   {
@@ -517,9 +648,9 @@
     "answer": "0 False 0 0",
     "difficulty": "easy",
     "explanation": "📌 `bool()` returns `False`, and `int(False)` is `0`, so `x = 0`.\n📌 `int()` returns `0`, and `bool(0)` is `False`, so `y = False`.\n📌 `x + y = 0 + False = 0` (since `False` is treated as `0` in arithmetic operations).\n📌 `x * y = 0 * False = 0`.\n📌 Final output: `0 False 0 0`.",
-    "primaryTopic": "Data Types & Conversion",
+    "primaryTopic": "types",
     "secondaryTopics": [
-      "Numbers & Arithmetic"
+      "numbers"
     ]
   },
   {
@@ -536,9 +667,9 @@
     "answer": "'int' object is not iterable.",
     "difficulty": "easy",
     "explanation": "📌 In Python, `for i in x` requires `x` to be an iterable (like a list, string, or tuple). \n📌 Since `x` is an `int`, it is not iterable, causing a `TypeError`.\n📌 Correcting this would require converting `x` to a string (`str(x)`) or a list of digits.\n📌 Hence, the error message: `'int' object is not iterable.`",
-    "primaryTopic": "Data Types & Conversion",
+    "primaryTopic": "types",
     "secondaryTopics": [
-      "Loops & Control Flow"
+      "loops"
     ]
   },
   {
@@ -555,15 +686,15 @@
     "answer": "0 1 2",
     "difficulty": "easy",
     "explanation": "📌 When iterating over a dictionary using `for i in di`, the loop iterates over keys by default.\n📌 The keys in `di` are `0, 1, 2`, so they are printed sequentially.\n📌 If you wanted to print values instead, you could use `di.values()`, and for key-value pairs, `di.items()`.",
-    "primaryTopic": "Dictionaries",
+    "primaryTopic": "dicts",
     "secondaryTopics": [
-      "Loops & Control Flow"
+      "loops"
     ]
   },
   {
     "id": 27,
     "question": "What will be the output of the following code?",
-    "code": "ls1 = [1, 2]\nls2 = [2]\ns1 = 'Hello'\ns2 = 'Hello'\ns3 = 'Hella'\nset1 = {1, 4, 2, 7, 8}\nset2 = {7, 1, 4, 2}\nx = {}\nprint(ls1 > ls2, s2 is s1, s2 < s3, set1 == set2, isinstance(x, set))",
+    "code": "ls1 = [1, 2]\nls2 = [2]\ns1 = 'Hello'\ns2 = s1\ns3 = 'Hella'\nset1 = {1, 4, 2, 7}\nset2 = {7, 1, 4, 2}\nx = {}\nprint(ls1 > ls2, s2 is s1, s2 < s3, set1 == set2, isinstance(x, set))",
     "options": [
       "True False False False True",
       "True True False False True",
@@ -577,12 +708,34 @@
     ],
     "answer": "False True False True False",
     "difficulty": "medium",
-    "explanation": "📌 `ls1 > ls2` ➝ `False`: Lists are compared lexicographically, and `[1, 2] > [2]` is `False` since `1 < 2`.\n📌 `s2 is s1` ➝ `True`: String interning in Python makes `s1` and `s2` refer to the same memory location.\n📌 `s2 < s3` ➝ `False`: String comparison is based on ASCII values. `'Hello' > 'Hella'` since `o > a`.\n📌 `set1 == set2` ➝ `True`: Sets ignore order, and `{1, 4, 2, 7, 8}` is equal to `{7, 1, 4, 2}`.\n📌 `isinstance(x, set)` ➝ `False`: `{}` creates an empty dictionary, not a set. An empty set should be created with `set()`.",
-    "primaryTopic": "Names, Mutability & Identity",
+    "explanation": "📌 `ls1 > ls2` ➝ `False`: Lists are compared lexicographically, and `[1, 2] > [2]` is `False` since `1 < 2`.\n📌 `s2 is s1` ➝ `True`: `s2 = s1` binds a second name to the same string object, and `is` tests identity.\n📌 `s2 < s3` ➝ `False`: String comparison is based on ASCII values. `'Hello' > 'Hella'` since `o > a`.\n📌 `set1 == set2` ➝ `True`: Sets ignore order, and `{1, 4, 2, 7}` is equal to `{7, 1, 4, 2}`.\n📌 `isinstance(x, set)` ➝ `False`: `{}` creates an empty dictionary, not a set. An empty set should be created with `set()`.",
+    "primaryTopic": "mutability",
     "secondaryTopics": [
-      "Data Types & Conversion",
-      "Sets",
-      "Lists"
+      "types",
+      "sets",
+      "lists"
+    ],
+    "distractors": [
+      {
+        "option": "True False False False True",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "True True False False True",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "True False True False True",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      },
+      {
+        "option": "True False False True True",
+        "misconceptionId": "sets.set-dict-braces-confusion",
+        "feedback": "`{}` is an empty dict, not an empty set; an empty set is written `set()`."
+      }
     ]
   },
   {
@@ -600,9 +753,9 @@
     "answer": "a | b | c |",
     "difficulty": "easy",
     "explanation": "📌 `di.keys()` returns an iterable of dictionary keys: `[0, 1, 2]`. \n📌 Inside the loop, `di[x]` retrieves the corresponding value for each key. \n📌 The output will be `'a' | 'b' | 'c' |'` because values `'a'`, `'b'`, and `'c'` are printed with `end=' | '`. \n📌 The trailing `print()` ensures a newline after execution.",
-    "primaryTopic": "Dictionaries",
+    "primaryTopic": "dicts",
     "secondaryTopics": [
-      "Loops & Control Flow"
+      "loops"
     ]
   },
   {
@@ -620,9 +773,9 @@
     "answer": "KeyError",
     "difficulty": "easy",
     "explanation": "📌 `di.values()` returns the dictionary's values: `['a', 'b', 'c']`.\n📌 The loop iterates over these values (`x` takes 'a', 'b', then 'c').\n📌 The error occurs because `di[x]` tries to access `di['a']`, `di['b']`, etc., but 'a', 'b', and 'c' are not keys in `di`.\n📌 Since `di` only has numeric keys (`0, 1, 2`), trying `di['a']` raises a `KeyError`.",
-    "primaryTopic": "Dictionaries",
+    "primaryTopic": "dicts",
     "secondaryTopics": [
-      "Loops & Control Flow"
+      "loops"
     ]
   },
   {
@@ -639,9 +792,9 @@
     "answer": "Error",
     "difficulty": "easy",
     "explanation": "📌 The code attempts to call `.values()` on `di`.\n📌 However, `di = {0, 1, 2}` is a set, not a dictionary.\n📌 Sets do not have keys or values, so calling `.values()` on a set raises an AttributeError.\n📌 Fix: If `di` was a dictionary (e.g., `di = {0: 'a', 1: 'b', 2: 'c'}`), `.values()` would work.",
-    "primaryTopic": "Sets",
+    "primaryTopic": "sets",
     "secondaryTopics": [
-      "Dictionaries"
+      "dicts"
     ]
   },
   {
@@ -659,8 +812,18 @@
     "answer": "None | None | None |",
     "difficulty": "medium",
     "explanation": "📌 `di` is a set, and `di.add(x)` is used inside the loop.\n📌 `.add(x)` tries to add `x` to `di`, but since `x` is already in the set, nothing changes.\n📌 Important: `.add()` returns `None`, not the modified set.\n📌 The `print(di.add(x))` outputs `None` for each element in `di`.",
-    "primaryTopic": "Sets",
-    "secondaryTopics": []
+    "primaryTopic": "sets",
+    "secondaryTopics": [],
+    "distractors": [
+      {
+        "option": "{0, 1, 2}",
+        "misconceptionId": "sets.add-returns-set"
+      },
+      {
+        "option": "{0, 1, 2, 0, 1, 2}",
+        "misconceptionId": "sets.add-returns-set"
+      }
+    ]
   },
   {
     "id": 32,
@@ -676,9 +839,15 @@
     "answer": "res = 3",
     "difficulty": "easy",
     "explanation": "📌 `range(0)` produces an empty sequence, so the `for` loop does not execute at all.\n📌 The `print(i, end=' | ')` inside the loop never runs because there are no values to iterate over.\n📌 The next lines execute normally: `a + b = 3`, so the output is simply `res =  3`.",
-    "primaryTopic": "Loops & Control Flow",
+    "primaryTopic": "loops",
     "secondaryTopics": [
-      "Functions & Built-ins"
+      "functions"
+    ],
+    "distractors": [
+      {
+        "option": "0 | res = 3",
+        "misconceptionId": "loops.range-includes-stop"
+      }
     ]
   },
   {
@@ -696,10 +865,10 @@
     "answer": "9 7 B y e",
     "difficulty": "easy",
     "explanation": "📌 `x, y = y, x` swaps `x` and `y`, so now `x = 9` and `y = 7`.\n📌 `a, b, c = 'Bye'` unpacks each character of the string into separate variables: `a = 'B'`, `b = 'y'`, `c = 'e'`.\n📌 The final `print(x, y, a, b, c)` outputs: `9 7 B y e`.",
-    "primaryTopic": "Names, Mutability & Identity",
+    "primaryTopic": "mutability",
     "secondaryTopics": [
-      "Tuples",
-      "Strings"
+      "tuples",
+      "strings"
     ]
   },
   {
@@ -716,9 +885,9 @@
     "answer": "1 2 3 | 4 5 6 | 7 8 9 |",
     "difficulty": "medium",
     "explanation": "📌 `tp` is a tuple of tuples, each containing exactly three elements.\n📌 `for a, b, c in tp:` unpacks each inner tuple into `a, b, c`.\n📌 The loop iterates three times, printing each tuple's values in order:\n  - `1 2 3 | 4 5 6 | 7 8 9 |`",
-    "primaryTopic": "Tuples",
+    "primaryTopic": "tuples",
     "secondaryTopics": [
-      "Loops & Control Flow"
+      "loops"
     ]
   },
   {
@@ -741,9 +910,9 @@
     "answer": "0 1 2 3 ['a', 'b'] ['c', 'd']",
     "difficulty": "medium",
     "explanation": "📌 `ls = [['a', 'b'], 'c', 'd']` is a list with three elements.\n📌 `a, *b = ls` unpacks:\n  - `a = ['a', 'b']` (first element of `ls`)\n  - `b = ['c', 'd']` (remaining elements in a list)\n📌 `x, y, z, p = range(4)` assigns `x = 0`, `y = 1`, `z = 2`, `p = 3`.\n📌 Final output: `0 1 2 3 ['a', 'b'] ['c', 'd']`",
-    "primaryTopic": "Names, Mutability & Identity",
+    "primaryTopic": "mutability",
     "secondaryTopics": [
-      "Lists"
+      "lists"
     ]
   },
   {
@@ -756,7 +925,7 @@
       "0 [1, 2, 3] None | [['a', 'b'], 'c'] d",
       "0 [1, 2, 3] None | [['a', 'b'], 'c', 'd'] None",
       "range(0, 4) range(0, 4) range(0, 4) | [['a', 'b'], 'c'] d",
-      "range(0, 4) range(0, 4) range(0, 4) | [['a', 'b', 'c'] d",
+      "range(0, 4) range(0, 4) range(0, 4) | ['a', 'b', 'c'] d",
       "range(0, 4) range(0, 4) range(0, 4) | [['a', 'b'], 'c', 'd'] None",
       "Error: too many values to unpack.",
       "Error: not enough values to unpack.",
@@ -765,9 +934,9 @@
     "answer": "0 [1, 2] 3 | [['a', 'b'], 'c'] d",
     "difficulty": "medium",
     "explanation": "📌 `a, *b, c = range(4)`:\n  - `a = 0` (first value of range)\n  - `b = [1, 2]` (middle values as a list)\n  - `c = 3` (last value of range)\n📌 `*x, y = ls`:\n  - `x = [['a', 'b'], 'c']` (all but the last element)\n  - `y = 'd'` (last element)\n📌 Final output: `0 [1, 2] 3 | [['a', 'b'], 'c'] d`",
-    "primaryTopic": "Names, Mutability & Identity",
+    "primaryTopic": "mutability",
     "secondaryTopics": [
-      "Lists"
+      "lists"
     ]
   },
   {
@@ -785,9 +954,26 @@
     "answer": "[42] [42] | [1, 2, 3, 4] [1, 2]",
     "difficulty": "medium",
     "explanation": "📌 `a = b = []` creates a single empty list referenced by both `a` and `b`.\n  - `b.append(42)` modifies the same list, so `a` also reflects the change.\n📌 `ls = [1, 2]` creates a new list.\n  - `ls1 = ls` makes `ls1` reference the same list.\n  - `ls = ls + [3]` creates a new list and reassigns `ls`, breaking the reference with `ls1`.\n  - `ls.append(4)` modifies the new list, but `ls1` remains unchanged.\n📌 Final output: `[42] [42] | [1, 2, 3, 4] [1, 2]`.",
-    "primaryTopic": "Names, Mutability & Identity",
+    "primaryTopic": "mutability",
     "secondaryTopics": [
-      "Lists"
+      "lists"
+    ],
+    "distractors": [
+      {
+        "option": "[42] [42] | [1, 2, 3, 4] [1, 2, 3, 4]",
+        "misconceptionId": "mutability.augmented-assignment-rebinding-confusion",
+        "feedback": "`a = a + b` (or `a = a * n`) creates a new object and rebinds only that name; other names still refer to the old object. In-place changes, such as `+=` or `append` on a list, modify the shared object."
+      },
+      {
+        "option": "[42, 42] | [1, 2, 3, 4] [1, 2, 3, 4]",
+        "misconceptionId": "mutability.augmented-assignment-rebinding-confusion",
+        "feedback": "`a = a + b` (or `a = a * n`) creates a new object and rebinds only that name; other names still refer to the old object. In-place changes, such as `+=` or `append` on a list, modify the shared object."
+      },
+      {
+        "option": "None 42 | [1, 2, 3, 4] [1, 2, 3, 4]",
+        "misconceptionId": "mutability.augmented-assignment-rebinding-confusion",
+        "feedback": "`a = a + b` (or `a = a * n`) creates a new object and rebinds only that name; other names still refer to the old object. In-place changes, such as `+=` or `append` on a list, modify the shared object."
+      }
     ]
   },
   {
@@ -804,10 +990,10 @@
     "answer": "Error",
     "difficulty": "medium",
     "explanation": "📌 `ls = ['Hi', 7, 8]` creates a list and assigns it to `ls`.\n  - `ls1 = ls` makes `ls1` reference the same list as `ls`.\n📌 `ls1.append(9)` modifies the original list (`ls` also gets modified).\n📌 `ls1 = ls1 + 'Bye'` causes an error because:\n  - `'Bye'` is a string.\n  - `ls1 + 'Bye'` attempts to concatenate a list and a string, which raises a TypeError.\n📌 Since the error occurs before `print(ls, ls1)`, the program crashes and nothing is printed.",
-    "primaryTopic": "Data Types & Conversion",
+    "primaryTopic": "types",
     "secondaryTopics": [
-      "Names, Mutability & Identity",
-      "Lists"
+      "mutability",
+      "lists"
     ]
   },
   {
@@ -824,9 +1010,9 @@
     "answer": "Error",
     "difficulty": "easy",
     "explanation": "📌 `ls = [1, 2, 3]` creates a list.\n📌 `ls1 = [4, 5]` creates another list.\n📌 `ls = ls + ls1 + [6, 7] + ['Hi']` concatenates all these lists into `ls`.\n📌 `ls2 = LS` causes an error because Python is case-sensitive:\n   - `ls` exists, but `LS` (uppercase) is not defined.\n   - This results in a NameError.\n📌 Since an error occurs before `print(ls2)`, the program crashes and nothing is printed.",
-    "primaryTopic": "Names, Mutability & Identity",
+    "primaryTopic": "mutability",
     "secondaryTopics": [
-      "Lists"
+      "lists"
     ]
   },
   {
@@ -845,15 +1031,37 @@
     "answer": "Error",
     "difficulty": "medium",
     "explanation": "📌 `ls = [1, 2, 3]` creates a list.\n📌 `ls.append(4)` modifies `ls` in place and returns `None`.\n📌 `ls = ls.append(4)` assigns `None` to `ls` instead of the modified list.\n📌 `ls + ls1 + ls[1:]` causes a TypeError:\n   - `ls` is `None`.\n   - `None + ls1` is invalid in Python.\n📌 The program crashes before reaching `print(ls)`, so no output is printed.",
-    "primaryTopic": "Lists",
+    "primaryTopic": "lists",
     "secondaryTopics": [
-      "Data Types & Conversion"
+      "types"
+    ],
+    "distractors": [
+      {
+        "option": "[1, 2, 3, 4, 5, 2, 3,]",
+        "misconceptionId": "lists.in-place-method-returns-list"
+      },
+      {
+        "option": "[1, 2, 3, 4, 5, 2, 3, 4]",
+        "misconceptionId": "lists.in-place-method-returns-list"
+      },
+      {
+        "option": "[1, 2, 3, 4, 4, 5, 2, 3, 4]",
+        "misconceptionId": "lists.in-place-method-returns-list"
+      },
+      {
+        "option": "[1, 2, 3, 4, 5, 1, 2, 3, 4]",
+        "misconceptionId": "lists.in-place-method-returns-list"
+      },
+      {
+        "option": "[1, 2, 3, 4, 4, 5, 1, 2, 3, 4]",
+        "misconceptionId": "lists.in-place-method-returns-list"
+      }
     ]
   },
   {
     "id": 41,
     "question": "What will be the output of the following code?",
-    "code": "import sys\ntemp = sys.stdout\nsys.stdout = open('log.txt', 'a') \nprint('spam', end=', ')\nprint(1, 2, 3, sep='')\nsys.stdout.close() \nsys.stdout = temp\nprint('back here', end=' | ', sep='_')\nprint(open('log.txt').read())",
+    "code": "import sys\nopen('log.txt', 'w').close()\ntemp = sys.stdout\nsys.stdout = open('log.txt', 'a') \nprint('spam', end=', ')\nprint(1, 2, 3, sep='')\nsys.stdout.close() \nsys.stdout = temp\nprint('back here', end=' | ', sep='_')\nprint(open('log.txt').read())",
     "options": [
       "spam, 1 2 3 | back here",
       "back here | spam, 1 2 3",
@@ -868,8 +1076,8 @@
     ],
     "answer": "back here | spam, 123",
     "difficulty": "hard",
-    "explanation": "📌 `sys.stdout = open('log.txt', 'a')` redirects print output to `log.txt`.\n📌 `print('spam', end=', ')` writes `spam, ` to `log.txt`.\n📌 `print(1, 2, 3, sep='')` writes `123` to `log.txt`.\n📌 `sys.stdout.close()` closes the file.\n📌 `sys.stdout = temp` restores the original output stream.\n📌 `print('back here', end=' | ', sep='_')` prints `back here | ` to the console.\n📌 `print(open('log.txt').read())` reads and prints `spam, 123` from `log.txt`.\n📌 Final output: `back here | spam, 123`.",
-    "primaryTopic": "Functions & Built-ins",
+    "explanation": "📌 `open('log.txt', 'w').close()` creates `log.txt` empty, so every run starts from the same file.\n📌 `sys.stdout = open('log.txt', 'a')` redirects print output to `log.txt`, appending to it.\n📌 `print('spam', end=', ')` writes `spam, ` to `log.txt`.\n📌 `print(1, 2, 3, sep='')` writes `123` to `log.txt`.\n📌 `sys.stdout.close()` closes the file.\n📌 `sys.stdout = temp` restores the original output stream.\n📌 `print('back here', end=' | ', sep='_')` prints `back here | ` to the console.\n📌 `print(open('log.txt').read())` reads and prints `spam, 123` from `log.txt`.\n📌 Final output: `back here | spam, 123`.",
+    "primaryTopic": "functions",
     "secondaryTopics": []
   },
   {
@@ -889,10 +1097,10 @@
     "answer": "Python ython thon hon on n Version 1",
     "difficulty": "hard",
     "explanation": "📌 The `while x:` loop runs as long as `x` is not empty.\n📌 `print(x, end=' ')` prints the current value of `x`.\n📌 `x = x[1:]` removes the first character of `x` in each iteration.\n📌 The loop executes 6 times: `Python`, `ython`, `thon`, `hon`, `on`, `n`.\n📌 When `x` becomes an empty string (`''`), the loop stops.\n📌 `bool(x)` is `False` because `x` is empty (`''` is falsy).\n📌 `res = ['Version 1', 'Version 2'][False]` → `res = 'Version 1'`.\n📌 Final output: `Python ython thon hon on n Version 1`.",
-    "primaryTopic": "Loops & Control Flow",
+    "primaryTopic": "loops",
     "secondaryTopics": [
-      "Strings",
-      "Data Types & Conversion"
+      "strings",
+      "types"
     ]
   },
   {
@@ -909,9 +1117,9 @@
     "answer": "a - 1 | b - 2 | c - 3 |",
     "difficulty": "easy",
     "explanation": "📌 `di.items()` returns key-value pairs from the dictionary.\n📌 The loop `for x, y in di.items():` unpacks key (`x`) and value (`y`).\n📌 `print(x, y, sep=' - ', end=' | ')` prints each key-value pair with `-` separator and `|` as an end character.\n📌 The output is:\n   - `a - 1 |`\n   - `b - 2 |`\n   - `c - 3 |`\n📌 The correct answer is `'a - 1 | b - 2 | c - 3 |'`.",
-    "primaryTopic": "Dictionaries",
+    "primaryTopic": "dicts",
     "secondaryTopics": [
-      "Strings"
+      "strings"
     ]
   },
   {
@@ -929,9 +1137,9 @@
     "answer": "1 5 - 6 | 2 6 - 8 | 3 7 - 10 |",
     "difficulty": "easy",
     "explanation": "📌 `zip(ls1, ls2)` pairs elements from `ls1` and `ls2`:\n   - (1,5), (2,6), (3,7)\n📌 `for (x, y) in zip(ls1, ls2):` iterates over pairs.\n📌 `print(x, y, '-', x+y, end=' | ')` prints:\n   - `1 5 - 6 | 2 6 - 8 | 3 7 - 10 |`\n📌 The correct answer is `'1 5 - 6 | 2 6 - 8 | 3 7 - 10 |'`.",
-    "primaryTopic": "Functions & Built-ins",
+    "primaryTopic": "functions",
     "secondaryTopics": [
-      "Lists"
+      "lists"
     ]
   },
   {
@@ -953,9 +1161,9 @@
     "answer": "[('a', 'x'), ('b', 'y'), ('c', 'z')] | ['ab', 'bc', 'cd']",
     "difficulty": "medium",
     "explanation": "📌 `zip(st1, st2)` pairs elements from `st1` ('abc') and `st2` ('xyz123'), stopping at the shortest sequence.\n   - Output: `[('a', 'x'), ('b', 'y'), ('c', 'z')]`\n📌 `map(foo, st1)` applies `foo(x)` to each character in `st1`:\n   - `foo('a') = 'a' + 'b' → 'ab'`\n   - `foo('b') = 'b' + 'c' → 'bc'`\n   - `foo('c') = 'c' + 'd' → 'cd'`\n   - Output: `['ab', 'bc', 'cd']`\n📌 The correct answer is `'[('a', 'x'), ('b', 'y'), ('c', 'z')] | ['ab', 'bc', 'cd']'`.",
-    "primaryTopic": "Functions & Built-ins",
+    "primaryTopic": "functions",
     "secondaryTopics": [
-      "Strings"
+      "strings"
     ]
   },
   {
@@ -977,9 +1185,9 @@
     "answer": "[(97, 'Python'), (98, 'C++'), (99, 'Java'), (100, 'JavaScript')]",
     "difficulty": "hard",
     "explanation": "📌 `ls[2]` is `'Java'`, so `ls[2][1:5:7]` tries to take characters from index `1 to 5 with step 7`. Since the step skips out of range, it only takes `'a'` (index 1).\n   - `ord('a') = 97`\n📌 `enumerate(ls, x)` starts enumeration from `97`, so we get:\n   - `(97, 'Python'), (98, 'C++'), (99, 'Java'), (100, 'JavaScript')`\n📌 The correct answer is `'[(97, 'Python'), (98, 'C++'), (99, 'Java'), (100, 'JavaScript')]'`.",
-    "primaryTopic": "Indexing & Slicing",
+    "primaryTopic": "slicing",
     "secondaryTopics": [
-      "Functions & Built-ins"
+      "functions"
     ]
   }
 ]

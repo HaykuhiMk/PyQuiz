@@ -2,6 +2,8 @@ const questionRepository = require('../repositories/questionRepository');
 const userAnsweredQuestionRepository = require('../repositories/userAnsweredQuestionRepository');
 const AppError = require('../core/AppError');
 const mongoose = require('mongoose');
+const { topicName } = require('../config/topicTaxonomy');
+const { distractorProblem } = require('../utils/distractors');
 
 function sanitizeQuestion(question) {
   if (!question) return question;
@@ -42,9 +44,14 @@ function buildQuestionQuery({ topics = [], difficulty, excludeIds = [] }) {
   return query;
 }
 
+// Topics that have at least one question, as { id, name } (the id is what
+// filters and questions use; the name is only for display), by name.
 async function getTopics() {
-  const topics = await questionRepository.findDistinctTopics();
-  return topics.filter(Boolean).sort();
+  const ids = await questionRepository.findDistinctTopics();
+  return ids
+    .filter(Boolean)
+    .map((id) => ({ id, name: topicName(id) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // Public aggregate counts for the About page (GET /api/v1/questions/stats):
@@ -136,6 +143,7 @@ async function updateQuestion(id, payload) {
     answer: existing.answer,
     primaryTopic: existing.primaryTopic,
     secondaryTopics: existing.secondaryTopics || [],
+    distractors: existing.distractors || [],
     ...payload,
   };
 
@@ -144,6 +152,12 @@ async function updateQuestion(id, payload) {
   }
   if (merged.secondaryTopics.includes(merged.primaryTopic)) {
     throw new AppError('A topic cannot be both the primary topic and a secondary topic', 400);
+  }
+  // Checked against the merged question, so changing options or the answer
+  // without resending matching distractors is rejected, not left stale.
+  const problem = distractorProblem(merged);
+  if (problem) {
+    throw new AppError(problem, 400);
   }
 
   const updated = await questionRepository.updateQuestionById(id, payload);

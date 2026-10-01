@@ -1,0 +1,18 @@
+[
+  { "question": "correct output", "code": "print(1 + 1)", "options": ["2", "3"], "answer": "2" },
+  { "question": "wrong answer", "code": "print(2)", "options": ["2", "3"], "answer": "3" },
+  { "question": "correct error answer", "code": "[][0]", "options": ["Error", "None"], "answer": "Error" },
+  { "question": "raises, but the answer is not an error", "code": "print(1 / 0)", "options": ["inf", "Error"], "answer": "inf" },
+  { "question": "two options equal the output", "code": "print('a', 'b')", "options": ["a b", "a  b"], "answer": "a b" },
+  { "question": "never ends", "code": "while True:\n    pass", "options": ["Nothing", "Error"], "answer": "Nothing" },
+  { "question": "writes a file in its own folder", "code": "open('x.txt', 'a').write('hi')\nprint(open('x.txt').read())", "options": ["hi", "hihi"], "answer": "hi" },
+  { "question": "convention: Error: <message>", "code": "assert False, 'X too small'", "options": ["Error: X too small", "Nothing"], "answer": "Error: X too small" },
+  { "question": "convention: Nothing for no output", "code": "x = 1", "options": ["Nothing", "1"], "answer": "Nothing" },
+  { "question": "Error: with a different message", "code": "assert False, 'X too small'", "options": ["Error: X too big", "Nothing"], "answer": "Error: X too big" },
+  { "question": "[ ] is not [] (no normalisation)", "code": "print([])", "options": ["[ ]", "Error"], "answer": "[ ]" },
+  { "question": "output, then error: the rule's format", "code": "print('a')\nraise ValueError('boom')", "options": ["a Error: boom", "b"], "answer": "a Error: boom" },
+  { "question": "output, then an error without a message: the type name", "code": "print('a')\nraise StopIteration", "options": ["a Error: StopIteration", "Error"], "answer": "a Error: StopIteration" },
+  { "question": "output, then error, but the answer is only the error", "code": "print('a')\nraise ValueError('boom')", "options": ["Error", "b"], "answer": "Error" },
+  { "question": "a wrong option equals the output printed before the error", "code": "print('a')\nraise ValueError('boom')", "options": ["a Error: boom", "a"], "answer": "a Error: boom" },
+  { "question": "no output, an error without a message: Error: <type>", "code": "raise ValueError", "options": ["Error: ValueError", "Nothing"], "answer": "Error: ValueError" }
+]

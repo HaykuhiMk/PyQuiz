@@ -24,7 +24,7 @@ const router = express.Router();
  *     security: []
  *     responses:
  *       200:
- *         description: Sorted topic names.
+ *         description: Topics with at least one question, as { id, name }, sorted by name.
  *         content:
  *           application/json:
  *             schema:
@@ -32,7 +32,7 @@ const router = express.Router();
  *                 - $ref: '#/components/schemas/ApiSuccess'
  *                 - type: object
  *                   properties:
- *                     data: { type: array, items: { type: string } }
+ *                     data: { type: array, items: { $ref: '#/components/schemas/TopicEntry' } }
  *       429: { $ref: '#/components/responses/TooManyRequests' }
  */
 router.get('/topics', cacheMiddleware('questions:topics', 300), questionController.getTopics);

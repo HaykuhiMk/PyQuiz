@@ -1,10 +1,14 @@
 import { api, requireAuth } from './api.js';
 import { icon, mountIcons } from './icons.js';
+import { getTopicNamer } from './topics.js';
 
 const PAGE_SIZE = 6;
 
 let page = 1;
+// Topics with questions, as [{ id, name }]; the search matches names and the
+// filter sends ids. topicName turns stored ids into display names.
 let topics = [];
+let topicName = (id) => id;
 let hasNext = false;
 
 function escapeHTML(str = '') {
@@ -20,7 +24,7 @@ function capitalize(str = '') {
 function matchingTopics() {
   const search = document.getElementById('study-search').value.trim().toLowerCase();
   if (!search) return { search, matches: [] };
-  return { search, matches: topics.filter((topic) => topic.toLowerCase().includes(search)) };
+  return { search, matches: topics.filter((topic) => topic.name.toLowerCase().includes(search)) };
 }
 
 function updateSearchHelp() {
@@ -29,7 +33,7 @@ function updateSearchHelp() {
   if (!search) {
     help.textContent = 'Leave empty to include every topic.';
   } else if (matches.length) {
-    help.textContent = `Matches ${matches.length} topic${matches.length === 1 ? '' : 's'}: ${matches.slice(0, 4).join(', ')}${matches.length > 4 ? '…' : ''}`;
+    help.textContent = `Matches ${matches.length} topic${matches.length === 1 ? '' : 's'}: ${matches.slice(0, 4).map((topic) => topic.name).join(', ')}${matches.length > 4 ? '…' : ''}`;
   } else {
     help.textContent = 'No topic matches, so every topic is included.';
   }
@@ -47,7 +51,7 @@ function renderExplanation(answer, explanation) {
 }
 
 function renderCard(question) {
-  const topicsLabel = [question.primaryTopic, ...(question.secondaryTopics || [])].filter(Boolean).join(', ');
+  const topicsLabel = [question.primaryTopic, ...(question.secondaryTopics || [])].filter(Boolean).map(topicName).join(', ');
   const hasAnswer = question.answer !== undefined && question.answer !== null;
   const correctIndex = hasAnswer ? (question.options || []).indexOf(question.answer) : -1;
   return `
@@ -117,13 +121,15 @@ async function loadCards() {
   const { matches: filteredTopics } = matchingTopics();
 
   try {
-    const questions = await api.getStudyQuestions({
-      topics: filteredTopics,
+    const { items: questions, meta } = await api.getStudyQuestionsPage({
+      topics: filteredTopics.map((topic) => topic.id),
       difficulty,
       page,
       limit: PAGE_SIZE,
     });
-    hasNext = questions.length === PAGE_SIZE;
+    // The server says whether another page exists; a full page doesn't mean
+    // there's more (the total can be a multiple of the page size).
+    hasNext = Boolean(meta.hasNextPage);
     updatePager();
 
     if (!questions.length) {
@@ -153,7 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   mountIcons(document.querySelector('main'));
 
   try {
-    topics = await api.getTopics();
+    [topics, topicName] = await Promise.all([api.getTopics(), getTopicNamer()]);
   } catch {
     topics = [];
   }

@@ -21,10 +21,15 @@ const AVATAR_LONGEST_PREFIX = 'data:image/jpeg;base64,';
 const AVATAR_MAX_FILE_BYTES = Math.floor((AVATAR_MAX_DATA_URL_LENGTH - AVATAR_LONGEST_PREFIX.length) / 4) * 3;
 const AVATAR_TOO_LARGE_MESSAGE = `Image is too large. The maximum is ${Math.floor(AVATAR_MAX_FILE_BYTES / 1024)} KB.`;
 
+// Admin question form: the optional targeted feedback on a wrong option
+// (Question.distractors, docs/CONCEPT_GRAPH.md Stage 2).
+const DISTRACTOR_FEEDBACK_MAX_LENGTH = 300;
+
 module.exports = {
   AVATAR_MAX_DATA_URL_LENGTH,
   AVATAR_MAX_FILE_BYTES,
   AVATAR_TOO_LARGE_MESSAGE,
+  DISTRACTOR_FEEDBACK_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   PASSWORD_PATTERN,
   PASSWORD_REQUIREMENTS,

@@ -1,5 +1,9 @@
 import { api, getAchievementMeta, requireAuth } from './api.js';
 import { icon, mountIcons } from './icons.js';
+import { getTopicNamer } from './topics.js';
+
+// Mastery rows carry stable topic ids; this turns them into display names.
+let topicName = (id) => id;
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (!(await requireAuth())) return;
@@ -33,7 +37,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
-    const { mastery, weakTopics } = await api.getTopicMastery();
+    const [{ mastery, weakTopics }, namer] = await Promise.all([api.getTopicMastery(), getTopicNamer()]);
+    topicName = namer;
     renderTopicMastery(mastery || []);
     renderWeakTopics(weakTopics || []);
   } catch (error) {
@@ -100,7 +105,7 @@ function renderTopicMastery(mastery) {
     .map(
       (topic) => `
         <div class="pq-mastery" data-level="${topic.level}">
-          <span>${escapeHTML(topic.topic)}<small class="pq-mastery__level">${MASTERY_LEVEL_LABEL[topic.level] || topic.level}</small></span>
+          <span>${escapeHTML(topicName(topic.topic))}<small class="pq-mastery__level">${MASTERY_LEVEL_LABEL[topic.level] || topic.level}</small></span>
           <div class="pq-meter pq-meter--sm" style="--v: ${topic.coverage}%"><span></span></div>
           <b>${topic.coverage}%</b>
         </div>`
@@ -124,7 +129,7 @@ function renderWeakTopics(weakTopics) {
       (topic) => `
         <a href="/questions.html" class="card pq-card--fold fold-card">
           <div class="card__meta"><span>${topic.attempted} attempted</span></div>
-          <h3 class="pq-heading fold-card__title">${escapeHTML(topic.topic)}</h3>
+          <h3 class="pq-heading fold-card__title">${escapeHTML(topicName(topic.topic))}</h3>
           <p class="pq-muted pq-small">Attempts correct: ${topic.accuracy}%</p>
           <div class="pq-meter pq-meter--sm" style="--v: ${topic.coverage}%"><span></span></div>
         </a>`

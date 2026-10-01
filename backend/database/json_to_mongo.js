@@ -33,6 +33,7 @@ async function insertQuestions() {
       primaryTopic: q.primaryTopic,
       secondaryTopics: q.secondaryTopics || [],
       explanation: q.explanation || 'No explanation provided.',
+      distractors: q.distractors || [],
     }));
 
     await Question.insertMany(transformedQuestions);

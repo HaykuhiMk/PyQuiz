@@ -18,7 +18,7 @@ const validQuestionPayload = {
   options: ['1', '2', '3', '4'],
   answer: '3',
   difficulty: 'easy',
-  primaryTopic: 'Lists',
+  primaryTopic: 'lists',
   secondaryTopics: [],
   explanation: 'len returns the number of items.',
 };

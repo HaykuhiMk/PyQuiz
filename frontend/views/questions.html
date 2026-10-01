@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <script src="/js/theme-init.js"></script>
+    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PyQuiz - Quiz</title>
@@ -47,6 +48,7 @@
       <div class="selection-header">
         <h2>Choose Your Python Topics</h2>
         <p>Select the topics you'd like to practice. Mix and match to create your perfect quiz!</p>
+        <p class="pq-small pq-muted python-version-note" data-python-note hidden></p>
       </div>
 
       <div class="pq-field search-container">
@@ -143,5 +145,6 @@
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/components/prism-python.min.js"></script>
     <script type="module" src="/js/questions.js"></script>
     <script type="module" src="/js/load_sidebar.js"></script>
+    <script type="module" src="/js/pythonVersionNote.js"></script>
   </body>
 </html>

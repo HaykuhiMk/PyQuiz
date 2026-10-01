@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <script src="/js/theme-init.js"></script>
+    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Manage Questions - PyQuiz Admin</title>
@@ -62,13 +63,21 @@
         <button type="button" id="filter-btn" class="secondary-btn">
           <i class="fas fa-filter"></i> Filter
         </button>
+        <form id="find-question-form" class="find-question">
+          <label for="find-question-id">Find by id</label>
+          <input type="text" id="find-question-id" placeholder="e.g. 67e2f3bff5addb214fc6a82d" spellcheck="false" autocomplete="off" />
+          <button type="submit" class="secondary-btn"><i class="fas fa-search"></i> Open</button>
+          <span id="find-question-status" class="find-question__status" role="status"></span>
+        </form>
       </section>
 
       <section id="question-list-section">
         <table id="question-table">
           <thead>
             <tr>
+              <th>ID</th>
               <th>Question</th>
+              <th>Code (first line)</th>
               <th>Difficulty</th>
               <th>Primary Topic</th>
               <th>Secondary Topics</th>
@@ -92,6 +101,7 @@
 
       <section id="edit-question-section" hidden>
         <h2>Edit Question</h2>
+        <p id="edit-question-id" class="edit-question-id"></p>
         <form id="edit-question-form">
           <div class="form-group">
             <label for="edit-question-text"
@@ -104,7 +114,8 @@
             <label for="edit-code"
               ><i class="fas fa-code"></i> Code Snippet (optional):</label
             >
-            <textarea id="edit-code"></textarea>
+            <p class="form-hint" id="edit-code-python-hint" data-python-author-hint hidden></p>
+            <textarea id="edit-code" aria-describedby="edit-code-python-hint"></textarea>
           </div>
 
           <div class="form-group">
@@ -121,6 +132,11 @@
             >
             <input type="text" id="edit-answer" required />
           </div>
+
+          <fieldset class="form-group distractor-fieldset">
+            <legend><i class="fas fa-bug"></i> Wrong options (optional): the misconception each one reveals, and short feedback. Admin-only; not shown to learners yet.</legend>
+            <div id="edit-distractor-fields" class="distractor-fields"></div>
+          </fieldset>
 
           <div class="form-group">
             <label for="edit-difficulty"
@@ -166,5 +182,6 @@
     </main>
 
     <script type="module" src="js/manage-questions.js"></script>
+    <script type="module" src="/js/pythonVersionNote.js"></script>
   </body>
 </html>

@@ -96,7 +96,9 @@ function redirectToLoginOn401(path) {
   }
 }
 
-async function request(path, options = {}) {
+// withMeta: resolve to { items, meta } instead of the data alone, for paged
+// lists (meta.hasNextPage says whether another page exists).
+async function request(path, { withMeta = false, ...options } = {}) {
   const headers = {
     Accept: 'application/json',
     'Content-Type': 'application/json',
@@ -138,7 +140,15 @@ async function request(path, options = {}) {
   if (path === '/api/v1/auth/logout') clearClientVisibleSessionState('user');
   if (path === '/api/v1/admin/logout') clearClientVisibleSessionState('admin');
 
+  if (withMeta) return { items: payload.data, meta: payload.meta || {} };
   return payload.data;
+}
+
+function listQuery({ topics = [], difficulty = '', page = 1, limit = 20 } = {}) {
+  const params = new URLSearchParams({ page, limit });
+  if (topics.length) params.set('topics', topics.join(','));
+  if (difficulty) params.set('difficulty', difficulty);
+  return params;
 }
 
 export const api = {
@@ -157,6 +167,9 @@ export const api = {
   deleteAccount: (body) =>
     request('/api/v1/users/me', { method: 'DELETE', body: JSON.stringify(body) }),
   getTopics: () => request('/api/v1/questions/topics'),
+  getTopicTaxonomy: () => request('/api/v1/topics'),
+  getConceptGraph: () => request('/api/v1/concept-graph'),
+  getPythonVersion: () => request('/api/v1/python-version'),
   getValidationRules: () => request('/api/v1/validation-rules'),
   getRandomQuestion: ({ topics = [], difficulty = '', excludeIds = [] } = {}) => {
     const params = new URLSearchParams();
@@ -172,6 +185,14 @@ export const api = {
     if (difficulty) params.set('difficulty', difficulty);
     return request(`/api/v1/questions/study?${params}`);
   },
+  // The paged lists: resolve to { items, meta }.
+  getStudyQuestionsPage: ({ limit = 10, ...rest } = {}) =>
+    request(`/api/v1/questions/study?${listQuery({ limit, ...rest })}`, { withMeta: true }),
+  getAdminQuestionsPage: (args = {}) => request(`/api/v1/admin/questions?${listQuery(args)}`, { withMeta: true }),
+  getAdminUsersPage: ({ page = 1, limit = 20 } = {}) =>
+    request(`/api/v1/admin/users?${new URLSearchParams({ page, limit })}`, { withMeta: true }),
+  getAdminContactsPage: ({ page = 1, limit = 20 } = {}) =>
+    request(`/api/v1/admin/contacts?${new URLSearchParams({ page, limit })}`, { withMeta: true }),
   startQuizSession: ({ mode, topics = [], difficulty = '', practiceMode = false } = {}) =>
     request('/api/v1/quiz/sessions', {
       method: 'POST',

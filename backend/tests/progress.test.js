@@ -28,7 +28,7 @@ function createQuestion(overrides = {}) {
     options: ['3', '4', '5', '6'],
     answer: '4',
     difficulty: 'easy',
-    primaryTopic: 'Numbers & Arithmetic',
+    primaryTopic: 'numbers',
     secondaryTopics: [],
     explanation: '2 + 2 = 4',
     ...overrides,
@@ -40,7 +40,7 @@ function createQuestion(overrides = {}) {
 // randomly include (and therefore exclude from Study) the question(s) they
 // create and assert on.
 async function freezeUnrelatedDailySet() {
-  const decoy = await createQuestion({ question: 'Decoy daily question', primaryTopic: 'Tuples' });
+  const decoy = await createQuestion({ question: 'Decoy daily question', primaryTopic: 'tuples' });
   await DailyChallengeSet.create({ date: dailyChallengeService.getTodayKey(), questionIds: [decoy._id] });
 }
 

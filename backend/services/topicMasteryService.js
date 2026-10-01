@@ -1,3 +1,4 @@
+const { topicName } = require('../config/topicTaxonomy');
 const Question = require('../models/questionModel');
 const AnswerEvent = require('../models/answerEvent');
 const userRepository = require('../repositories/userRepository');
@@ -114,7 +115,7 @@ async function getTopicMastery(userId) {
 
       return { topic, total, answered, coverage, correct, attempted, accuracy, level };
     })
-    .sort((a, b) => b.coverage - a.coverage || a.topic.localeCompare(b.topic));
+    .sort((a, b) => b.coverage - a.coverage || topicName(a.topic).localeCompare(topicName(b.topic)));
 
   const weakTopics = mastery
     .filter(

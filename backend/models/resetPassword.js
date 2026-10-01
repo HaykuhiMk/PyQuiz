@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const resetPasswordSchema = new mongoose.Schema({
-    email: { type: String, required: true },
+    email: { type: String, required: true, lowercase: true, trim: true },
     // SHA-256 hash of the reset key, not the key itself (docs/AUDIT.md
     // Phase 4, item 14) — a leaked copy of this collection (DB dump, backup)
     // is not directly usable to reset anyone's password. The plaintext key

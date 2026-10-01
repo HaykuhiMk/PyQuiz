@@ -110,6 +110,8 @@ Backend test files live in `backend/tests/`, and browser tests in `e2e/tests/`.
 | FR-16 | An admin can read contact-form messages. | §5.12 | `adminContacts.test.js` |
 | FR-17 | A visitor can send a contact message, which is stored and emailed to the admin. | §5.13 | `contact.test.js` |
 | FR-18 | The About page shows live question and topic counts without exposing question content. | §5.13 | `publicStats.test.js`, `smoke.spec.js` |
+| FR-19 | The concept graph (topics, acyclic prerequisite edges, misconceptions) is served read-only; an admin can tag wrong options with misconceptions and feedback, which learners never see; every answer event records the chosen option's misconception. | §5.14 | `conceptGraph.test.js`, `distractors.test.js`, `syncSeedQuestions.test.js`, `distractors.spec.js` |
+| FR-20 | Every seed question's stored answer matches its snippet's real output on the reference Python versions, which the learner pages state. | §5.3 | `verifyQuestions.test.js`, `pythonVersion.test.js`, `pythonVersion.spec.js` |
 
 ### 4.2 Non-functional requirements
 
@@ -138,8 +140,10 @@ password change:
 - at least one of `@ $ ! % * ? & _`;
 - other characters, including spaces, are allowed.
 
-Passwords are never trimmed, so a password works exactly as typed. Registration fails if the email
-is already in use, or if the username matches an existing one ignoring case.
+Passwords are never trimmed, so a password works exactly as typed. Email addresses are trimmed and
+lowercased at registration, login and password reset, so an address works in any case. Registration
+fails if the email is already in use (ignoring case), or if the username matches an existing one
+ignoring case.
 
 **Login.** Login and the session model are described in Section 12. The frontend decides whether a
 user is logged in by asking the server (`GET /api/v1/auth/me`). On any expired or revoked session
@@ -169,7 +173,7 @@ The browser sends only the question id and the index of the chosen option.
 
 ### 5.3 Topics and Difficulty Levels
 
-**Topics.** The question bank uses a fixed taxonomy of **11 canonical topics**:
+**Topics.** The question bank uses a fixed taxonomy of **16 canonical topics**:
 - Names, Mutability & Identity
 - Loops & Control Flow
 - Dictionaries
@@ -181,12 +185,54 @@ The browser sends only the question id and the index of the chosen option.
 - Indexing & Slicing
 - Tuples
 - Numbers & Arithmetic
+- Classes & Objects
+- Inheritance & MRO
+- Scope & Namespaces
+- Generators & Iterators
+- Exceptions
+
+The last five were added with the production data migration: the bundled seed questions don't use
+them, but 67 production questions do. Quiz and Study filters list only topics that have questions.
+
+**Stable ids.** Each topic has a short, stable id (`mutability`, `loops`, `dicts`, `types`,
+`strings`, `functions`, `sets`, `lists`, `slicing`, `tuples`, `numbers`, `classes`, `inheritance`,
+`scope`, `generators`, `exceptions`). Questions, quiz sessions,
+API parameters and API responses store and pass only ids. The display names above live only in
+`backend/config/topicTaxonomy.js`, and the frontend reads them from `GET /api/v1/topics`. An id
+never changes once set, but a display name can change freely without a data migration.
 
 **Tagging.** Every question has exactly one required **primary topic**: the concept a learner must
 understand to answer it. A question may also have optional **secondary topics** for filtering. Quiz
 and Study topic filters match a question by its primary *or* any secondary topic.
 
-**Counts.** The bundled dataset contains **47 questions**: 25 easy, 18 medium and 4 hard.
+**Counts: the production question bank.** As of 2026-10-01, after the production conversion and
+the content fixes, production holds **145 questions**: 103 easy, 33 medium and 9 hard. All 16
+topics have at least one primary question, so all 16 are visible. There are **39 misconception
+tags**, on 18 questions; 17 of them carry feedback. The counts come from a local copy of the
+production database, counted with the question content only.
+
+| Primary topic | Questions |
+|---|---|
+| Functions & Built-ins | 25 |
+| Inheritance & MRO | 19 |
+| Classes & Objects | 17 |
+| Names, Mutability & Identity | 15 |
+| Scope & Namespaces | 13 |
+| Generators & Iterators | 11 |
+| Dictionaries | 8 |
+| Exceptions | 7 |
+| Loops & Control Flow | 7 |
+| Data Types & Conversion | 6 |
+| Strings | 5 |
+| Lists | 4 |
+| Sets | 4 |
+| Indexing & Slicing | 2 |
+| Numbers & Arithmetic | 1 |
+| Tuples | 1 |
+
+**Counts: the bundled seed dataset.** `backend/database/questions.json` seeds development and test
+databases with **47 questions**: 25 easy, 18 medium and 4 hard. 47 of the production questions
+started as these.
 
 | Primary topic | Questions |
 |---|---|
@@ -203,8 +249,17 @@ and Study topic filters match a question by its primary *or* any secondary topic
 | Numbers & Arithmetic | 0 |
 
 **Visibility.** Topics with no primary questions are hidden from filters and from the mastery list.
-With the current data that is Numbers & Arithmetic, so **10 topics are visible**. Admins add
+In production every topic has one, so all 16 are visible. With only the seed data, the five newest
+topics and Numbers & Arithmetic have none, so 10 are visible. Admins add
 questions through the admin panel, restricted to the canonical list.
+
+**Reference Python version.** Answers assume **Python 3.9 or newer** (Q20 uses
+`str.removeprefix`, added in 3.9), and every seed question's real output matches its stored answer
+on Python 3.9 and 3.14, checked by `npm run verify-questions` (Section 13). The quiz, Study, Daily Challenge and About pages show "Answers assume Python 3.9 or
+newer, and are checked on Python 3.9 and 3.14", and the admin question forms show authors a hint
+(the answer must be the same on 3.9 and every newer version, with no version-specific error
+messages and no reliance on CPython caching). Both texts come from one constant,
+`backend/config/pythonVersion.js`, served by `GET /api/v1/python-version`.
 
 ### 5.4 Study Mode
 
@@ -398,6 +453,77 @@ returns only those two numbers.
 
 Exposure in production is covered in Section 12.
 
+### 5.14 Concept Graph
+
+The flat topic taxonomy is extended into a **concept graph** for a future adaptive engine and AI
+interviewer: what a learner should learn next, and which wrong belief a wrong answer reveals. The
+full design, with every edge's reason and a verified code example per misconception, is
+`docs/CONCEPT_GRAPH.md`. The graph lives in `backend/config/conceptGraph.js`, and the public,
+read-only `GET /api/v1/concept-graph` serves it without any question content.
+
+- **Nodes: 16 topics,** the taxonomy of Section 5.3. A topic can also be **planned**: in the graph
+  but not yet accepted on questions. None is planned now; the five newest topics started that way
+  and joined the taxonomy with the production migration.
+- **Edges: 14 prerequisites.** `A → B` means A must come first, and a topic with several incoming
+  edges needs all of them. The graph is acyclic, which a test checks.
+- **Misconceptions: 57**, each with a stable id `<topic>.<wrong-belief>`. Each belongs to the topic
+  whose correct mental model fixes it. Eight are **confusions** between two concepts (e.g. `is` vs
+  `==`, `append` vs `extend`) that cover both directions. Their ids end in `-confusion`.
+- **Tags on wrong options.** An admin can tag each wrong option with the misconception choosing it
+  reveals, plus optional short feedback (`Question.distractors`, Section 10). The tags are matched
+  to the option's exact text, so a question's options must all be different. An option is tagged
+  only when that one misconception explains choosing it. It is not tagged when two different
+  beliefs could explain it, or when something else is the decisive reason it is wrong.
+  - **Seed questions:** 39 of their 275 wrong options are tagged, on 18 of the 47 questions.
+    Production has the same 39 tags; its 98 other questions aren't tagged yet.
+  - **Feedback:** only the 17 options tagged with a confusion have it, saying which direction
+    they show.
+- **Recording.** Every answer event stores the chosen option's `misconceptionId` (or null) and
+  whether it was a Blitz timeout, so misconception data accumulates from now on.
+- **Not shown to learners.** No learner-facing response contains tags or feedback: a tagged option
+  is known to be wrong, so showing them could reveal the answer. Feedback for learners will be a
+  separate feature with its own rules.
+
+Arrows point from prerequisite to dependent topic; the five newest topics are highlighted.
+
+```mermaid
+flowchart TD
+  lists["Lists"]
+  loops["Loops & Control Flow"]
+  strings["Strings"]
+  functions["Functions & Built-ins"]
+  numbers["Numbers & Arithmetic"]
+  mutability["Names, Mutability & Identity"]
+  slicing["Indexing & Slicing"]
+  tuples["Tuples"]
+  sets["Sets"]
+  dicts["Dictionaries"]
+  types["Data Types & Conversion"]
+  scope["Scope & Namespaces"]
+  classes["Classes & Objects"]
+  inheritance["Inheritance & MRO"]
+  generators["Generators & Iterators"]
+  exceptions["Exceptions"]
+
+  lists --> mutability
+  lists --> slicing
+  mutability --> tuples
+  mutability --> sets
+  mutability --> dicts
+  numbers --> types
+  strings --> types
+  functions --> scope
+  functions --> classes
+  mutability --> classes
+  classes --> inheritance
+  loops --> generators
+  functions --> generators
+  functions --> exceptions
+
+  classDef newTopic fill:#fff4d6,stroke:#b8860b,stroke-width:2px;
+  class classes,inheritance,scope,generators,exceptions newTopic;
+```
+
 ## 6. Quiz Modes and Assessment Methodology
 
 ### 6.1 Quiz sessions
@@ -523,7 +649,9 @@ frontend server — communicating only over HTTP.
 Rules that must be identical in several places live in `backend/config/`:
 - quiz timing and points (`quizConfig.js`);
 - mastery thresholds (`masteryConfig.js`);
-- the topic taxonomy (`topicTaxonomy.js`);
+- the topic taxonomy, stable ids and display names (`topicTaxonomy.js`);
+- the concept graph: prerequisite edges and misconceptions (`conceptGraph.js`);
+- the reference Python version for question answers (`pythonVersion.js`);
 - client-facing validation rules (`validationRules.js`).
 
 Every error response, including authentication failures and rate limits, goes through one
@@ -661,13 +789,16 @@ MongoDB is the only data store. It holds eight collections:
     time, and Blitz/Survival bests.
   - `achievements`, and the most recent `dailyChallenge` result.
   - An index on points and best streak serves the leaderboard.
-- **`Question`**: prompt, optional code, options, answer (stored as text and matched against the
-  options), difficulty, `primaryTopic`, `secondaryTopics` and explanation. It has indexes on
-  difficulty and the topic fields.
+- **`Question`**: prompt, optional code, options (all different), answer (stored as text and
+  matched against the options), difficulty, `primaryTopic`, `secondaryTopics` and explanation, plus optional
+  admin-only `distractors`: tags on wrong options, each naming a misconception id from the concept
+  graph and/or short feedback (`docs/CONCEPT_GRAPH.md` §6; never sent to learners). It has indexes
+  on difficulty and the topic fields.
 - **`QuizSession`**: server-side quiz state (Section 6.1), keyed by a random `token`. A TTL index
   deletes it 24 hours after creation.
 - **`AnswerEvent`**: one immutable document per answer attempt by a logged-in user: user, session,
-  question, mode (including `daily`), selected index, correctness, attempt number and time taken.
+  question, mode (including `daily`), selected index, the chosen option's `misconceptionId` (or
+  null), whether it was a Blitz timeout, correctness, attempt number and time taken.
   It is the source of accuracy (Section 5.8). It is kept when its question is deleted, and deleted
   with the user's account (Section 5.11).
 - **`UserAnsweredQuestion`**: one document per (user, question) pair, unique on the pair, with
@@ -717,6 +848,7 @@ erDiagram
     string primaryTopic "canonical"
     array secondaryTopics "canonical"
     string explanation
+    array distractors "admin-only"
   }
   QUIZ_SESSION {
     ObjectId _id
@@ -738,6 +870,8 @@ erDiagram
     ObjectId questionId
     string mode "classic|blitz|survival|daily"
     number selectedIndex
+    string misconceptionId "null if untagged"
+    boolean timedOut
     boolean correct
     number attemptNumber
     number timeTakenMs
@@ -779,7 +913,7 @@ relation to other collections.
 The table was generated from the Express router stacks of the route files in
 `backend/routes/v1/` (the purpose column comes from each route's OpenAPI summary). Full request and
 response schemas are served at `/api-docs` outside production, and `backend/tests/swagger.test.js`
-fails if the documentation and the real routes diverge. There are **40 operations on 37 paths**: 37
+fails if the documentation and the real routes diverge. There are **43 operations on 40 paths**: 40
 under `/api/v1` plus 3 operational endpoints.
 
 **Columns:**
@@ -812,7 +946,7 @@ under `/api/v1` plus 3 operational endpoints.
 | PATCH | `/api/v1/users/settings/profile` | User | Yes | — | Update username and/or avatar |
 | PATCH | `/api/v1/users/settings/password` | User | Yes | — | Change the current user's password |
 | DELETE | `/api/v1/users/me` | User | Yes | — | Delete the current user's account |
-| GET | `/api/v1/questions/topics` | Public | No | — | List topics that have at least one question |
+| GET | `/api/v1/questions/topics` | Public | No | — | Topics that have at least one question, as `{ id, name }` |
 | GET | `/api/v1/questions/stats` | Public | No | — | Public aggregate question counts (About page) |
 | GET | `/api/v1/questions/study` | User | No | — | Study mode — questions with answers and explanations |
 | GET | `/api/v1/questions/random` | Public | No | — | Get one random question (answer stripped) |
@@ -826,6 +960,9 @@ under `/api/v1` plus 3 operational endpoints.
 | POST | `/api/v1/quiz/sessions/:sessionId/reveal` | Guest or user | If logged in | — | Reveal the answer to an exhausted question |
 | POST | `/api/v1/contact` | Public | No | 5 / 15 min per IP | Send a contact-form message |
 | GET | `/api/v1/validation-rules` | Public | No | — | Validation rules the frontend applies client-side |
+| GET | `/api/v1/topics` | Public | No | — | The full topic taxonomy: every topic's stable id and display name |
+| GET | `/api/v1/concept-graph` | Public | No | — | The concept graph (topics, prerequisite edges, misconceptions) |
+| GET | `/api/v1/python-version` | Public | No | — | The Python version question answers assume |
 | POST | `/api/v1/admin/login` | Public | No | 20 / 15 min per IP | Log in as an admin |
 | POST | `/api/v1/admin/logout` | Public | No | — | Log out (clear the admin session cookies) |
 | GET | `/api/v1/admin/me` | Admin | No | — | Confirm the admin session and get a CSRF token |
@@ -889,7 +1026,9 @@ also refused at login.
   server refuses to derive one from an empty or missing session.
 
 **CORS.** The API allows credentialed requests only from an explicit allow-list of origins, and
-never answers with a wildcard. Because login and `/me` return the CSRF token in the body, tests pin
+never answers with a wildcard. In production the list is the frontend's origin alone
+(`CLIENT_URI`); outside production it also contains the local dev servers and `API_URI`
+(`backend/config/corsOrigins.js`). Because login and `/me` return the CSRF token in the body, tests pin
 that no other origin — including sibling subdomains — is ever granted read access.
 
 **Credentials.**
@@ -947,17 +1086,22 @@ allows 1 MB so that an oversized photo gets a readable "Image is too large" erro
 
 ## 13. Testing
 
-**Backend.** The backend has **265 automated tests in 33 test suites** (Jest and Supertest against a
+**Backend.** The backend has **317 automated tests in 39 test suites** (Jest and Supertest against a
 real MongoDB, via `mongodb-memory-server` or a local test database), all passing. Before this
 remediation work began, it had 89 tests in 9 suites.
 
-**Frontend.** A Playwright suite in `e2e/` has **16 browser tests**, all passing:
+**Frontend.** A Playwright suite in `e2e/` has **23 browser tests**, all passing:
 - **7 smoke tests:** guest quiz, login and logout, a Classic quiz, the Daily Challenge, the theme
   toggle, the About page, and CSRF recovery after a reload;
 - **5 tests** that the frontend's validation matches the server's;
 - **1 test** that the dashboard's two accuracy measures are labelled and filled separately;
 - **1 test** that an admin page returns to the admin login when the session ends mid-page;
-- **2 tests** that rate-limit errors reach the page with their real message.
+- **2 tests** that rate-limit errors reach the page with their real message;
+- **3 tests** that topics are sent as stable ids and shown by name, including filtering by "Names,
+  Mutability & Identity" (the comma bug);
+- **1 test** that the admin forms save, load and change misconception tags, warning before an edit
+  drops one;
+- **3 tests** that the Python version note and the author hint appear.
 
 It runs against its own backend, frontend and a disposable local database, and fails on any
 Content-Security-Policy violation or page error.
@@ -965,12 +1109,12 @@ Content-Security-Policy violation or page error.
 **Coverage** (`npm run test:coverage`, measured over all runtime backend code: everything except
 the one-off `scripts/` and `database/` tools):
 
-| | Before (commit `d8ad91e`, 89 tests) | Now (265 tests) |
+| | Before (commit `d8ad91e`, 89 tests) | Now (317 tests) |
 |---|---|---|
-| Lines | 77.69% | 90.17% |
-| Branches | 50.39% | 76.15% |
-| Statements | 77.19% | 89.87% |
-| Functions | 72.57% | 90.80% |
+| Lines | 77.69% | 90.78% |
+| Branches | 50.39% | 76.45% |
+| Statements | 77.19% | 90.55% |
+| Functions | 72.57% | 91.51% |
 
 Both columns use the same coverage configuration, so they measure the same set of files. The
 least-covered code is the unused BullMQ email queue (0%) and the Redis-only caching code, which the
@@ -978,6 +1122,31 @@ test suite does not exercise because it runs without Redis.
 
 **Other checks.** `npm run lint` (ESLint) is clean. `npm run typecheck` passes, but it performs
 only a syntax check, not type checking (Section 19).
+
+**Automated content-quality check.** `npm run verify-questions` runs every question's code snippet
+on each available Python version and compares the real output with the stored answer
+(`backend/scripts/verifyQuestions.js` and `verify_questions.py`; it requires `python3`). Each
+snippet runs in its own process, in an empty folder, with a timeout. The check reports:
+- an output that differs from the answer;
+- a snippet that raises an error when the answer isn't an error option;
+- a second option that also equals the output (an ambiguous question);
+- a snippet that times out.
+
+**The answer is everything the program shows:** its printed output in order, then the error if one
+is raised, written `<output> Error: <detail>` (the detail is the exception's message, or its type
+name when the message is empty or differs between Python versions; with no output this is the
+older `Error: <message>` form). The check also reports a wrong option equal to the output printed
+before an error. Snippets that raise without printing anything may keep the older answers (`Error`,
+or naming the exception type). `Nothing` matches a snippet that prints nothing. Nothing else is
+normalised, so `[ ]` written for `[]` is a mismatch. `docs/CONTENT_FIXES.md` lists the production
+questions that don't follow these rules yet.
+
+It finds every `python3`/`python3.N` on the `PATH` (or the interpreters listed in `PYQUIZ_PYTHONS`),
+warns when one of the reference versions in `backend/config/pythonVersion.js` (3.9 and 3.14) isn't
+available, and fails on it with `--require-checked`. All 47 seed questions pass on CPython 3.9.6 and
+3.14.5, and `backend/tests/verifyQuestions.test.js` runs it on the seed file and on a fixture with
+one example of each kind of mismatch. It executes the snippets, so it is meant for trusted question
+data such as the seed file.
 
 **Bugs the tests caught.** Several real defects were found by tests written during this work,
 rather than by inspection:
@@ -1125,12 +1294,14 @@ No study has been run yet, and no results exist.
 
 ## 19. Current Limitations
 
-- **Small question bank with content gaps.** There are 47 questions, only 4 of them hard. Some
-  topics are too thin for mastery:
-  - Numbers & Arithmetic has 0 primary questions, so it is hidden;
-  - Tuples has 1 and Indexing & Slicing has 2, so both show "Not enough questions yet".
-
-  A heavy user will exhaust the eligible Classic pool quickly.
+- **Small question bank with content gaps.** Production has 145 questions, only 9 of them hard
+  (Section 5.3). Some topics are too thin for mastery: Numbers & Arithmetic and Tuples have 1
+  primary question each and Indexing & Slicing has 2, so they show "Not enough questions yet".
+  Classes & Objects has 17 questions, all easy. A heavy user will exhaust the eligible Classic pool
+  quickly.
+- **Python versions in between are not checked.** The questions are checked on Python 3.9 and
+  3.14 only (Section 5.3). Versions 3.10–3.13 are not run, so a behaviour change in one of them
+  would go unnoticed, although nothing in the current seed set differs between 3.9 and 3.14.
 - **Answers can be looked up.** Scoring cannot be forged, but a logged-in user can read any
   question's answer in Study mode, except today's Daily Challenge questions, before answering it in
   a quiz (Section 6.4).
@@ -1157,8 +1328,12 @@ No study has been run yet, and no results exist.
 
 These are proposals; none exists in the codebase today.
 
-- **Adaptive practice.** Use the mastery and weak-topic data (Section 5.8) and the attempt log
-  (`AnswerEvent`) to bias which questions are served.
+- **Adaptive practice.** Use the mastery and weak-topic data (Section 5.8), the attempt log
+  (`AnswerEvent`) and the concept graph (Section 5.14) to bias which questions are served, e.g.
+  toward a weak topic's prerequisites.
+- **Misconception feedback for learners.** Show the targeted feedback of a tagged wrong option
+  (Section 5.14), with rules that keep it from revealing the answer during a quiz.
+- **Tag more questions.** Only the seed questions are tagged so far.
 - **More content.** A larger question bank that closes the gaps in Section 19, plus more question
   formats (e.g. fill-in-the-blank).
 - **Asynchronous email.** Wire the existing BullMQ queue into password-reset and contact emails
@@ -1184,10 +1359,13 @@ provides:
 - live per-topic mastery computed from primary topics;
 - rule-based points, streaks and achievements;
 - a leaderboard;
+- a concept graph of topics, prerequisites and misconceptions, with the misconception behind each
+  tagged wrong answer recorded from now on;
 - account management and an admin panel.
 
-Its security measures are described in Section 12. Its behaviour is covered by 265 backend tests
-(90.17% line and 76.15% branch coverage) and 16 browser tests.
+Its security measures are described in Section 12. Its behaviour is covered by 317 backend tests
+(90.78% line and 76.45% branch coverage) and 23 browser tests, and every seed question's answer is
+checked against its snippet's real output (Section 13).
 
 Its main limitations are the small question bank, answers being readable in Study mode, a typecheck
 step that does not type-check, and an email queue that is not yet wired up (Section 19). The

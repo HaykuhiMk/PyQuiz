@@ -32,12 +32,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
     }
 
+    // Next is enabled only when the server says another page exists (a
+    // full page used to be taken as "there's more", which left an empty last
+    // page whenever the total was a multiple of the page size).
+    function updatePager() {
+        prevBtn.disabled = currentPage <= 1;
+        nextBtn.disabled = !hasNextPage;
+    }
+
     async function loadContacts() {
         tableBody.innerHTML = `<tr><td colspan="4">Loading...</td></tr>`;
         try {
-            const contacts = await api.getAdminContacts({ page: currentPage, limit: PAGE_SIZE });
-            hasNextPage = contacts.length === PAGE_SIZE;
+            const { items: contacts, meta } = await api.getAdminContactsPage({ page: currentPage, limit: PAGE_SIZE });
+            hasNextPage = Boolean(meta.hasNextPage);
             pageLabel.textContent = `Page ${currentPage}`;
+            updatePager();
 
             if (!contacts.length) {
                 tableBody.innerHTML = `<tr><td colspan="4">No messages yet.</td></tr>`;
@@ -57,6 +66,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 )
                 .join("");
         } catch (error) {
+            hasNextPage = false;
+            updatePager();
             console.error("Error loading contact messages:", error);
             tableBody.innerHTML = `<tr><td colspan="4">Error: ${escapeHTML(error.message)}</td></tr>`;
         }

@@ -30,7 +30,7 @@ function createQuestion(overrides = {}) {
     options: ['3', '4', '5', '6'],
     answer: '4',
     difficulty: 'easy',
-    primaryTopic: 'Numbers & Arithmetic',
+    primaryTopic: 'numbers',
     secondaryTopics: [],
     explanation: '2 + 2 = 4',
     ...overrides,

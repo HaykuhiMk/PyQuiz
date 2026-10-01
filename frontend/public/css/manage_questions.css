@@ -83,3 +83,39 @@
 #edit-question-form {
   max-width: 640px;
 }
+
+/* Find by id, and the id / first code line columns. */
+.find-question {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.find-question input {
+  width: 26ch;
+  font-family: var(--font-mono);
+}
+
+.find-question__status {
+  flex-basis: 100%;
+  color: var(--text-muted);
+}
+
+.question-id,
+.question-code-line,
+.edit-question-id {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  word-break: break-all;
+}
+
+.question-code-line {
+  white-space: pre-wrap;
+  word-break: normal;
+}
+
+.edit-question-id {
+  color: var(--text-muted);
+}

@@ -79,7 +79,7 @@ describe('account deletion', () => {
       options: ['3', '4', '5', '6'],
       answer: '4',
       difficulty: 'easy',
-      primaryTopic: 'Data Types & Conversion',
+      primaryTopic: 'types',
       explanation: '2 + 2 = 4',
     });
 

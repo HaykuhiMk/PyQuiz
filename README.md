@@ -105,6 +105,7 @@ In `backend/`:
 - `npm run test:coverage` — the same suite with line/branch coverage (`coverage/`, gitignored)
 - `npm run typecheck` — `tsc --noEmit` with `checkJs` off, i.e. a syntax check of the JS sources, not type checking
 - `npm run benchmark -- --url http://localhost:<port>` — autocannon latency/throughput for the main endpoints; defaults to `http://localhost:7498` and never reads its target from env. Start the target backend with `BENCHMARK_DISABLE_RATE_LIMITS=true` (ignored in production) and a throwaway database — it registers a user and writes quiz data.
+- `npm run verify-questions` — runs every seed question's code snippet on each available Python version (requires `python3`; finds every `python3`/`python3.N` on `PATH`, or set `PYQUIZ_PYTHONS=/path/a:/path/b`) and reports any answer that doesn't match the real output. The reference versions are in `backend/config/pythonVersion.js`; `-- --require-checked` also fails if one of them isn't available.
 - `npm run build`
 
 ## Frontend smoke tests

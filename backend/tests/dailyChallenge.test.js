@@ -31,7 +31,7 @@ function seedQuestions(count = 5) {
     options: ['a', 'b', 'c'],
     answer: 'a',
     difficulty: 'easy',
-    primaryTopic: 'Loops & Control Flow',
+    primaryTopic: 'loops',
     secondaryTopics: [],
     explanation: 'because a is correct',
   }));
@@ -209,8 +209,8 @@ describe("Daily Challenge set is frozen for the day", () => {
 describe('Daily Challenge answers count as real evidence', () => {
   it('records AnswerEvent, UserAnsweredQuestion.everCorrect, topic mastery and streaks', async () => {
     await Question.create([
-      { question: 'Q1', options: ['a', 'b'], answer: 'a', difficulty: 'easy', primaryTopic: 'Loops & Control Flow', explanation: 'e' },
-      { question: 'Q2', options: ['a', 'b'], answer: 'a', difficulty: 'easy', primaryTopic: 'Loops & Control Flow', explanation: 'e' },
+      { question: 'Q1', options: ['a', 'b'], answer: 'a', difficulty: 'easy', primaryTopic: 'loops', explanation: 'e' },
+      { question: 'Q2', options: ['a', 'b'], answer: 'a', difficulty: 'easy', primaryTopic: 'loops', explanation: 'e' },
     ]);
     const { cookieHeader, csrfToken } = await registerAndLogin('evidence@example.com');
 
@@ -248,7 +248,7 @@ describe('Daily Challenge answers count as real evidence', () => {
     expect(correctlyTracked.everCorrect).toBe(true);
 
     const mastery = await request(app).get('/api/v1/users/topic-mastery').set('Cookie', cookieHeader);
-    const loopsStats = mastery.body.data.mastery.find((t) => t.topic === 'Loops & Control Flow');
+    const loopsStats = mastery.body.data.mastery.find((t) => t.topic === 'loops');
     expect(loopsStats).toMatchObject({ attempted: 2, correct: 1 });
 
     // First (correct) answer extends the streak; the second (wrong) resets

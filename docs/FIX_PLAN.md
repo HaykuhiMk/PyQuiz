@@ -2,7 +2,8 @@
 
 Resumption document for the `fix/review-weaknesses` audit/remediation task, written so a fresh
 session can do the remaining work (Phase 6) without the conversation that produced Phases 0–5.
-Branch: `fix/review-weaknesses`. Last updated after the password-trimming fix (2026-09-30).
+Branch: `fix/review-weaknesses`. Last updated after the password-trimming fix (2026-09-30); the
+status below also records the concept-graph work (branch `feature/concept-graph`, 2026-10-01).
 
 ## Status so far
 
@@ -12,6 +13,46 @@ mermaid-cli, a generated endpoint table, TODO(author) placeholders for Related W
 Background, the user study and deployment details) and added `docs/evaluation/questionnaire.md`.
 **Remaining:** the Final report (instructions at the end of this document) and the author's
 TODO(author) items in those two files.
+
+**Concept graph ("foundation 2") is complete** on branch `feature/concept-graph` (not merged, not
+pushed by Claude). All three stages are done:
+- the stable topic ids;
+- the graph config and endpoint;
+- misconception tags on wrong options, recorded on every answer event, with no learner-facing
+  feedback yet;
+- the 39 seed tags, applied to the seed file and the local dev database;
+- the seed content fixes;
+- the reference Python version, with `npm run verify-questions`.
+
+Read `docs/CONCEPT_GRAPH.md` (status, §3 rules, §6–§7 implementation) and Section 5.14 of the system
+description before continuing that work.
+
+**Production conversion done (2026-10-01, by the owner): READY TO REOPEN.** Then a real-data audit
+on `pyquiz_realcopy`, a local exact copy (branch `fix/real-data-audit`, not merged, not pushed by
+Claude). It found and fixed:
+- paged lists showing an empty last page (60 users is exactly 3 pages);
+- the Classic/Survival Next and exhausted-attempts states;
+- explanation line breaks and the tab width;
+- the admin question list: its id and code columns, and find by id;
+- case-sensitive emails: now lowercase everywhere, plus `scripts/lowercaseEmails.js` for the 3
+  stored mixed-case emails, which must run before the new code serves logins (`DEPLOY_RUNBOOK.md`
+  checklist);
+- the missing favicon;
+- the verifier's rule for "output, then error".
+
+The content problems, by id, are in `docs/CONTENT_FIXES.md`.
+
+**Content fixes by script (2026-10-01).** The owner's admin-panel edits were never saved. The fixes
+were proposed, approved, and put into `backend/database/contentFixes.json`, which
+`backend/scripts/applyContentFixes.js` applies (the owner runs it on production; steps in
+`DEPLOY_RUNBOOK.md`).
+- **Rehearsal** on `pyquiz_verify`, a local copy of production after the conversion and the email
+  fix:
+  - exactly the 20 questions changed, in exactly the approved fields, and no tag was lost;
+  - all 145 questions pass the v2 validators and `npm run verify-questions` on 3.9 and 3.14;
+  - an API round trip passed for all 145;
+  - the runbook's dry run said READY TO REOPEN with no WARN.
+- **Still open:** misconception tags for the 98 production-only questions.
 
 **Deployment preparation is paused** (production data migration). Read "Deployment preparation
 (paused)" below before any deploy or any work against `pyquiz_prodcopy`. Full detail, evidence and
@@ -236,7 +277,61 @@ addendum"):**
   - `tsc` doesn't type-check (`checkJs` off).
   - BullMQ email queue not wired up.
 
-## Deployment preparation (paused)
+## Deployment preparation (resumed 2026-10-01)
+
+**Resumed on 2026-10-01** (the production site is stopped, so no live users and no old code use the
+database). The owner runs the conversion of the real database himself, over an SSH tunnel. Claude
+runs the runbook only against local rehearsal databases.
+- **Stage 1 done:** the migration list was confirmed from the data and the server patch (below).
+- **Stage 2 done:** `backend/scripts/productionMigration.js`, one ordered runbook covering the
+  whole list, with tests in `backend/tests/productionMigration.test.js`.
+- **Stage 3 done (2026-10-01): the rehearsal.**
+  - The backup was restored into a fresh `pyquiz_rehearsal` (453 documents), mapping the archive's
+    database `pyquiz` to the new name, so the dev database wasn't touched.
+  - Dry run, `--apply` (exit 2: migrated, not ready because of the 8 collisions), and a second
+    `--apply` that changed nothing.
+  - v2 started against it; a browser smoke test passed for the quiz on a new topic, Study, the
+    Daily Challenge, the dashboard, the leaderboard and the admin panel.
+  - A migrated user's progress and mastery endpoints answered from the migrated history (75
+    answered of 145).
+  - The test accounts and their data were removed afterwards.
+- **Stage 4 done: `docs/DEPLOY_RUNBOOK.md`**, the owner's exact steps: tunnel, fresh backup and
+  check, dry run with expected numbers, apply, verification queries, resolving the collisions, the
+  "Before reopening" checklist and rollback.
+- **Owner's decisions (2026-10-01):** the Stage 2 defaults are confirmed (Q25, M3, M8, M10,
+  collisions skipped).
+  - Production-only content fixes are deferred to the admin panel, listed in the runbook's
+    checklist.
+  - CORS is narrowed to `CLIENT_URI` in production.
+  - No extra MongoDB packages are needed (the URI uses only `authSource=admin`).
+  - The verifier accepts `Error: <message>` and `Nothing`.
+
+### Server patch review (2026-10-01)
+
+`~/pyquiz-backups/pyquiz-server-changes.patch` holds the 11 modified files on top of `9b0d8b4`. It
+was read only through a redaction filter, and no value from it is in the repository.
+- **No model or schema change.** It doesn't explain `correctAnswer`, `createdBy`/timestamps or
+  `contacts`. The server's frontend `questions.js` was patched to read `correctAnswer` instead of
+  `answer`, so the questions in production were stored with `correctAnswer` by something outside
+  this code (no route in it writes that field), and the frontend was adapted to them.
+- **The old `quizsessions`** come from `9b0d8b4` itself (`models/QuizSession.js`, written by
+  `POST /start-quiz`, still present in the patched `routes/account.js`). M9 stands.
+- **Configuration v2 must keep:**
+  - the API address `https://api-pyquiz.picsartacademy.am` (v2's default `PRODUCTION_API_URL`);
+  - the backend `.env` values `MONGO_URI` (v2 reads `MONGODB_URI`, then `MONGO_URI`),
+    `CLIENT_URI` (CORS origin and reset links), `PORT` and `API_URI`.
+- **CORS:** the server removed `API_URI` from the allowed origins. v2 still allows `CLIENT_URI`,
+  `API_URI`, `http://localhost:3000` and `http://localhost:3001`. Narrowing that for production is a
+  code change, not yet made (owner to decide).
+- **Listening:** the server added `app.listen(PORT, '0.0.0.0')`. v2's `app.listen(PORT)` already
+  listens on all interfaces.
+- **Dependencies:** the server added the MongoDB driver's optional packages (`kerberos`, `snappy`,
+  `@mongodb-js/zstd`, `aws4`, `@aws-sdk/credential-providers`, `mongodb-client-encryption`,
+  `gcp-metadata`, `socks`). v2's `npm run build` reports exactly these as missing-module warnings
+  and succeeds without them. They are needed only if the production `MONGO_URI` uses one of those
+  features (compression, AWS or Kerberos authentication, encryption, a SOCKS proxy). The owner
+  checks the URI's options, without sharing the value.
+- **No change to the migration list.**
 
 Paused on 2026-09-30 at the owner's request, before any migration was applied. **Nothing has been
 applied to `pyquiz_prodcopy`** (the local copy of the production database), apart from the index
@@ -253,10 +348,8 @@ committed. Only counts, question ids and question content were used.
   use `correctAnswer`, `createdBy`, `createdAt` and `updatedAt`, and a `contacts` collection
   exists. No commit in this repository, on any branch, ever wrote `correctAnswer`, `createdBy` or
   timestamps to questions.
-- **These differences very likely come from the 11 uncommitted files.** First step when resuming:
-  get those files' diffs, and re-derive the migration list below from `9b0d8b4` plus that diff.
-  The M1–M10 list was derived from the data itself plus the closest matching commit for users and
-  sessions (`eb480a5` = `d159696^`).
+- **The 11 files don't explain them either** (see "Server patch review"). The M1–M11 list stands
+  on the data itself.
 
 ### The copy as found (counts only)
 
@@ -273,7 +366,7 @@ committed. Only counts, question ids and question content were used.
 | # | Collection | Change | Migration | Decision |
 |---|---|---|---|---|
 | M1 | questions | `correctAnswer` → `answer` | **new script**, with dry run | approved |
-| M2 | questions | `topics` → `primaryTopic` + `secondaryTopics` | existing `migrateQuestionTopics.js`, plus mappings for the 98 unmatched questions and the new topics | approved (see below) |
+| M2 | questions | `topics` → `primaryTopic` + `secondaryTopics`, **written as stable topic ids** | existing `migrateQuestionTopics.js`, plus mappings for the 98 unmatched questions and the new topics | approved (see below) |
 | M3 | questions | extra `createdBy`, `createdAt`, `updatedAt` | none needed; the schema ignores them | open: keep or remove |
 | M4 | questions | content problems and the duplicated question (see below) | content-fix script, reusable on production | approved once the owner has reviewed `content-fixes.md` |
 | M5 | users | backfill `usernameLower` (all 60 users) | existing `backfillUsernameLower.js` | ready |
@@ -288,6 +381,41 @@ documents, so there's no `resetKey` → hash migration), and the new collections
 demand; indexes built at app startup). `resetFarmedPoints.js` would affect **0 users**, because
 production has no points. It isn't needed, and note that it **writes by default** (`--dry-run` is
 opt-in).
+
+### The runbook: `backend/scripts/productionMigration.js` (Stage 2)
+
+One script, in this order. Each step changes only what still needs changing, so a second run does
+nothing.
+
+| Step | Covers | What it does |
+|---|---|---|
+| 1 `answer-field` | M1 | `correctAnswer` → `answer` (146 questions) |
+| 2 `duplicate-q25` | M4 | Keep `67dd1ccbe41a42083801b230`, move the other copy's history to it (2 users gain it; 4 had both), delete `67c45ba322943ce7acd24d21` |
+| 3 `seed-questions` | M2, M4, tags | The 47 seed questions get content, topic ids and misconception tags from `database/questions.json`, matched by code or earlier code (`seedCodeHistory.json`). This includes the content fixes and Q33's stale answer, so there's no separate "fixes before M2" step. |
+| 4 `other-questions` | M2 | The 98 others get topic ids from `database/productionTopicMapping.json` (the reviewed proposals) |
+| 5 `username-lower` | M5 | 52 of 60 users; the 8 accounts in the 4 collision pairs are skipped and listed by id (M6: the owner resolves them) |
+| 6 `user-defaults` | M8 | Missing v2 user fields get their schema defaults |
+| 7 `answer-history` | M7 | 994 entries → `useransweredquestions` with `everCorrect: false` and `answeredAt` = migration time; then the array is removed |
+| 8 `old-sessions` | M9 | Delete the 247 sessions without a `token` (the backup is the archive) |
+| 9 `quizprogresses` | M10 | Drop the collection, only if it's empty |
+| 10 `indexes` | M11 | Build every v2 index explicitly (the app would otherwise build them at startup and only log failures) |
+| 11 verify | | FAIL checks: answers among options, topic ids, valid tags, no legacy fields or arrays, v2 user fields, no old sessions, every index. WARN checks: users without `usernameLower`, and questions the admin forms would reject (content to fix later). |
+
+**Safety:**
+- The connection string comes only from `--uri`; it never reads `.env`.
+- Before anything else, it prints the target host, database name, question count and user count.
+- It's a dry run by default; `--apply` asks you to type the database name.
+- It refuses before any write if it finds data it doesn't expect.
+- It uses native-driver writes, with `autoIndex` and `autoCreate` off.
+- It prints counts and ids only.
+
+**Implemented with Claude's recommended defaults, confirmed by the owner on 2026-10-01:**
+1. **Q25:** keep `67dd1ccbe41a42083801b230` (step 2).
+2. **M3:** keep `createdBy`, `createdAt` and `updatedAt`.
+3. **M8:** backfill the defaults (step 6).
+4. **M10:** drop `quizprogresses` (step 9).
+5. **Collisions:** skip the 8 accounts. Until each pair is resolved, the second account of the pair to save anything gets a duplicate-key error, because the model sets `usernameLower` on save. So resolve them before reopening the site.
+6. **Content fixes for production-only questions:** deferred to a later reviewed pass. Verification lists the affected questions as WARN, e.g. the duplicated `'Box Magic'` option on `67e2f3bff5addb214fc6a82d`.
 
 ### Answer-field problem (M1)
 
@@ -315,6 +443,22 @@ required).
   - map the 31 as proposed;
   - still to do: recompute primary-topic counts for all 146 questions and flag any topic above
     about a third.
+- **Stable topic ids (decided after the pause, `docs/CONCEPT_GRAPH.md` §5).** Topics are now
+  stored as ids, never display names, so the production migration must **write ids directly**:
+  - `migrateQuestionTopics.js` copies `primaryTopic`/`secondaryTopics` from
+    `backend/database/questions.json`, which now holds ids, so the 48 matched questions get ids
+    with no change to the script;
+  - the mappings for the 98 unmatched questions must use ids. `tmp/prodcopy/topic-proposals.md`
+    uses display names; convert them when writing the mapping (`mutability`, `loops`, `dicts`,
+    `types`, `strings`, `functions`, `sets`, `lists`, `slicing`, `tuples`, `numbers`);
+  - the five new topics get the ids proposed in `docs/CONCEPT_GRAPH.md`: `classes` (Classes &
+    Objects), `inheritance` (Inheritance & MRO), `scope` (Scope & Namespaces), `generators`
+    (Generators & Iterators) and `exceptions` (Exceptions). Add them to
+    `backend/config/topicTaxonomy.js` before running M2;
+  - `scripts/migrateTopicIds.js` (names → ids) is **not** part of the production runbook.
+    Production has never stored `primaryTopic` names; the script exists for databases that were
+    migrated with names, i.e. the local dev database, where it has been applied. The old
+    `quizsessions` it would also convert are dropped by M9.
 
 ### Old `quizsessions` collection (M9)
 
@@ -345,7 +489,12 @@ db.users.aggregate([
 Proposed fixes go into `tmp/prodcopy/content-fixes.md` (not written yet) for the owner's review,
 then are applied by a script so the same fixes can run on production.
 - **Answer not among its options:** `67c45ba322943ce7acd24d29`.
-- **Duplicated option text:** `67e2f3bff5addb214fc6a82d` (`'Box Magic'` twice).
+- **Duplicated option text:** `67e2f3bff5addb214fc6a82d` (`'Box Magic'` twice). **Must be fixed
+  before the migration.** The question validators now reject duplicate option texts on create and
+  update (the answer and misconception tags are matched to an option by its exact text), so this
+  question couldn't be edited in the admin panel, and its answer matching is ambiguous. It is the
+  only one the earlier survey of the copy listed; the migration's dry run should check all
+  questions for duplicate options again.
 - **Stated answer wrong:** `67dd83578e2ddadc28e387f6` prints `foo` then `main`, but the answer is
   `main` and no option matches.
 - **Ambiguous:** `67e2b4aef5addb214fc6a7e1`: output printed before an error; the dataset is
@@ -357,6 +506,70 @@ then are applied by a script so the same fixes can run on production.
   Decision: keep whichever copy the answer history references, and repoint references from the
   other.
 
+**Seed-question fixes (approved, made in `backend/database/questions.json`).** These seed questions
+are also in production (48 production questions matched seed questions by code), so the same
+fixes must be applied there. Question numbers are positions in the seed file:
+- **Q11** (`is` vs `==`): rewritten so its answer doesn't depend on the CPython version. It no
+  longer uses `sys.getrefcount` or small-integer caching, only lists and a slice copy. New code,
+  options, answer and explanation; secondary topics now `lists`, `slicing`.
+- **Q18** (`dict_keys` indexing): the answer no longer quotes a version-specific error message. It
+  is now `TypeError (a dict_keys view can't be indexed)`, and the explanation notes that the
+  wording differs between versions.
+- **Q20** (`removeprefix`/`removesuffix`/`strip`): the answer and three options showed underscores
+  as `_ _ _`; they are now as printed (`~~Hello___World~~`). The explanation is corrected:
+  `removesuffix('~')` and `removeprefix('~')` remove one tilde each, not all of them.
+- **Q23:** typo in an option (`'Java]` → `'Java']`).
+- **Q28** (comparisons): the stored answer was wrong, because `set1` had an extra `8`. It is
+  removed from `set1` and from the explanation, so the stored answer is now the real output.
+- **Q37:** typo in an option (`[['a', 'b', 'c'] d` → `['a', 'b', 'c'] d`).
+- **Q8** (`set`): prints `sorted(s)` instead of the set, so the output doesn't depend on set order;
+  the answer is now `[1, 3, 4, 5, 7]`, and the explanation is updated.
+- **Q28, second fix:** `s2 = s1` instead of a second `'Hello'` literal, so `s2 is s1` is True by
+  the language rules, not because CPython shares equal string literals. Same options and answer;
+  the explanation is updated.
+- **Q42** (`sys.stdout` redirect): starts with `open('log.txt', 'w').close()`, so every run prints
+  the same (it used to append to whatever `log.txt` held). The explanation is updated.
+
+Checked: every seed snippet's real output matches its stored answer on CPython 3.9.6 and 3.14.5,
+now with `npm run verify-questions`. For production, the 98 questions that aren't seed questions
+have never been checked this way. Export them from `pyquiz_prodcopy` to a JSON file in `tmp/` and run
+`npm run verify-questions -- --file <that file>` before the content fixes are finalised. The
+verifier reads `answer`, and production still stores `correctAnswer` until M1, so map that field in
+the export (question content only, no personal data).
+
+**Order matters for Q8, Q11, Q28 and Q42.** `migrateQuestionTopics.js` (M2) matches production
+questions to seed entries by their exact `code`, and the seed file now holds the **new** code for
+these four. Apply these content fixes to production **before** M2, so their code matches, or M2
+reports them as unmatched and refuses to apply. The other fixes don't change `code`. The local dev
+database still has the old versions of these nine questions; they are updated together with the Stage 3 tags
+(`docs/CONCEPT_GRAPH.md`), by the same dry-run-capable script.
+
+### Misconception tags after migration
+
+Production questions carry no misconception tags. The concept-graph features need no data
+migration: `distractors` defaults to empty, and answer events written before the change simply
+have no `misconceptionId` or `timedOut`. But misconception data only accumulates for tagged
+questions, so **production questions will need tagging after the migration**:
+- **The 48 seed questions:** they get the approved tags with the seed content. Match them by code,
+  using `backend/database/seedCodeHistory.json` for the snippets whose code was fixed.
+  `backend/scripts/syncSeedQuestions.js` does exactly this for local databases. It refuses any
+  non-local host, and it overwrites every seed field. So for production, either run it against a
+  restored copy as part of the rehearsal, or write a dedicated step for the runbook that sets only
+  the approved fields.
+- **The 98 non-seed questions:** they need their own proposals, under the same rules
+  (`docs/CONCEPT_GRAPH.md` §3: placement, confusions, the tagging rule), reviewed by the owner
+  before applying. 67 of them belong to the five planned topics, whose misconceptions
+  (`classes.*`, `inheritance.*`, `scope.*`, `generators.*`, `exceptions.*`) have no tagged
+  questions yet.
+- **Check answers first:** run `npm run verify-questions` on an export of them (see above).
+
+**Found while syncing the local dev database:** four of its questions had a stored answer that
+matched none of their options (seed Q8, Q9, Q18 and Q33), so they could never be scored correct.
+The seed file was corrected in `274b2d9`, after the dev database was seeded. Production's copies are
+probably not affected: the survey found 145 of 146 production answers among their options, and the
+one exception is `67c45ba322943ce7acd24d29` (listed under M4). The verify step above would confirm
+it.
+
 ### autoIndex issue
 
 - **What happened:** the first dry runs loaded the Mongoose models with the default
@@ -367,7 +580,8 @@ then are applied by a script so the same fixes can run on production.
   after.
 - **Consequence:** the same scripts would do this on production.
 - **Fix, applied only to the scratch guard so far:** `tmp/prodcopy/guard.js` forces
-  `autoIndex: false` and `autoCreate: false`. The repository's scripts don't do this yet.
+  `autoIndex: false` and `autoCreate: false`. Of the repository's scripts, only the new
+  `migrateTopicIds.js` does this; the migration scripts used in production don't do it yet.
 
 ### Requirements for every migration script (owner's decisions)
 
@@ -387,9 +601,12 @@ and database printed before each run. Then:
    diffs.
 2. Decide M3, M8 and M10.
 3. Recompute the taxonomy counts for all 146 questions.
-4. Write the scripts (M1, M2 mappings, M4, M7, M9, and M8/M10 if approved).
-5. Write `content-fixes.md` for review.
-6. Build the runbook, update the AUDIT.md checklist, and rehearse.
+4. Move the five planned topics (`PLANNED_TOPICS` in `backend/config/topicTaxonomy.js`, already
+   graph nodes) into `TOPICS`, then write the scripts (M1, M2 mappings in ids, M4, M7, M9, and
+   M8/M10 if approved). Apply the seed content fixes before M2 (see "Seed-question fixes").
+5. Misconception tagging for production questions (see "Misconception tags after migration").
+6. Write `content-fixes.md` for review.
+7. Build the runbook, update the AUDIT.md checklist, and rehearse.
 
 Local working files (gitignored, question content only, no personal data): `tmp/prodcopy/`
 (`guard.js`, `run.sh`, `unmatched-questions.json`, `topic-proposals.md`, `1-topics-dryrun.txt`, and
