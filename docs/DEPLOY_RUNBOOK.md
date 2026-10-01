@@ -289,6 +289,140 @@ The backup from section 2 is the archive of the old database. To return to it:
    Check it with the backup-check counts from section 2, now against `$PYQUIZ_URI` (146, 60, 247).
 4. **Redeploy the old code**: commit `9b0d8b4` plus `~/pyquiz-backups/pyquiz-server-changes.patch`.
 
+## 9. Putting v2.1 on the server
+
+The production **database** is done: converted, emails lowercased, content fixes applied, READY TO
+REOPEN, with a final backup. This section puts the **code**, tag `v2.1` (the merge of
+`fix/real-data-audit` into `main`), on the server and starts it.
+
+> **The server's processes run under another user (`john`).** How v2.1 is started and kept running
+> (systemd, pm2, a screen session, …), under which user, and who may restart it must be **agreed
+> with the server owner** first: `TODO(author)`. The commands below show *what* has to run, not
+> how the server owner prefers to run it.
+
+### 9.1 Get v2.1 onto the server
+
+1. **From the Mac, push `main` and the tag** (Claude Code didn't push):
+   `git push origin main && git push origin v2.1`.
+2. **On the server, in the app's directory** (`TODO(author)`: path):
+   - **Keep the old server changes.** The server's checkout has 11 uncommitted modified files on
+     top of `9b0d8b4`, and the checkout would refuse to overwrite them. They're already saved in
+     `~/pyquiz-backups/pyquiz-server-changes.patch` on the Mac. On the server, set them aside too:
+
+     ```bash
+     git status --short                                   # the 11 modified files
+     git stash push -m "pre-v2.1 server changes (9b0d8b4 + patch)"
+     ```
+
+   - **Keep the existing `.env` files.** They are untracked (and ignored in v2), so the checkout
+     leaves them in place. Copy them aside anyway: `cp backend/.env ~/env-backend-pre-v2.1`.
+   - **Check out v2.1:**
+
+     ```bash
+     git fetch origin --tags
+     git checkout v2.1            # a detached HEAD at the tag, which is fine for a deployment
+     git log -1 --oneline         # 2a7d11a Merge branch 'fix/real-data-audit': …
+     ```
+
+### 9.2 Environment variables
+
+v2 reads `backend/.env` and `frontend/.env` (dotenv; each app reads the file in its own directory).
+The names below come from `backend/env.example` and `frontend/.env.example`. **Generate new secrets
+on the server** (e.g. `openssl rand -hex 32`); never paste them into a chat, a ticket or the
+repository.
+
+**Backend (`backend/.env`):**
+
+| Variable | Value |
+|---|---|
+| `NODE_ENV` | `production`. **Required:** secure `__Host-` cookies, JSON logs, `/api-docs` off, `/metrics` protected. `npm run prod` sets it too. |
+| `PORT` | The port the reverse proxy forwards to (keep the old site's value). |
+| `MONGODB_URI` | **New: it contains the new database password.** `mongodb://<user>:<new password>@<host>:<port>/pyquiz?authSource=admin`, plus `&directConnection=true` if the server connects to a single member of a replica set by its address (`TODO(author)`: check against the server's MongoDB setup). The old name `MONGO_URI` still works, with a warning; rename it. |
+| `JWT_SECRET` | **New.** A new random secret. Every existing login ends, which already happens because v2 uses new cookie names. |
+| `DAILY_CHALLENGE_SEED_SECRET` | **New, required** for the Daily Challenge. A random secret, different from `JWT_SECRET`. |
+| `EMAIL_USER` | The Gmail address password-reset and contact mails are sent from (keep it). |
+| `EMAIL_PASS` | **New:** the new Gmail **app password** for `EMAIL_USER`. |
+| `CLIENT_URI` | The frontend's origin, e.g. `https://pyquiz.example` (`TODO(author)`: the real one, keep the old value). In production it is the **only** origin the API accepts (CORS), and the base of password-reset links. |
+| `API_URI` | The API's public URL, `https://api-pyquiz.picsartacademy.am` (keep it). |
+| `TRUST_PROXY` | `1`: exactly one reverse proxy (nginx) in front. Never `true`. |
+| `METRICS_TOKEN` | **New**, optional. A random token for `GET /metrics`; without it, `/metrics` returns 404 in production. |
+| `ENABLE_API_DOCS` | Leave unset, so `/api-docs` stays off in production. |
+| `REDIS_URL` | Leave unset; not used in production. |
+| `LOG_LEVEL` | Optional (`info` by default). |
+| `BENCHMARK_DISABLE_RATE_LIMITS` | **Never set** on the server (it's ignored in production anyway). |
+
+**Frontend (`frontend/.env`):**
+
+| Variable | Value |
+|---|---|
+| `NODE_ENV` | `production` |
+| `PORT` | The port the reverse proxy forwards the site to (keep the old site's value). |
+| `PRODUCTION_API_URL` | Leave unset: it defaults to `https://api-pyquiz.picsartacademy.am`. Set it only if the API moves. |
+| `API_URL` | Not used in production (only when the page is opened on `localhost`). |
+
+The old server's `config.js` hard-coded the API address. v2 serves `/js/config.js` from
+`frontend/app.js` instead, so there's nothing to edit in the code.
+
+### 9.3 Install, build, start
+
+Node.js 20 (v2.1 was tested with 20.11; `TODO(author)`: check `node --version` on the server).
+
+```bash
+cd backend
+npm ci                 # clean install from package-lock.json
+npm run build          # webpack -> dist/server.js; about 10 "Module not found" warnings for
+                       # optional MongoDB packages are expected and harmless
+npm run prod           # NODE_ENV=production node dist/server.js  (reads backend/.env)
+
+cd ../frontend
+npm ci
+NODE_ENV=production npm start      # node app.js (reads frontend/.env)
+```
+
+Run both under the agreed process manager and user, so they restart on failure and on reboot.
+Nothing in the database needs to be done at startup: the indexes already exist (the runbook built
+them), so the app's index build at startup finds them all present and changes nothing.
+
+**Checked locally on 2026-10-01:** the `v2.1` bundle (`npm run build`, then `node dist/server.js`
+with `NODE_ENV=production`) starts and answers `/readyz` and the API, `/api-docs` returns 404, and
+`/metrics` without a token returns 404.
+
+### 9.4 Smoke test on the live site
+
+1. **Health:** `curl -s https://api-pyquiz.picsartacademy.am/readyz` gives `{"ready":true,"dbState":1}`.
+2. **About:** shows **145** questions and **16** topics.
+3. **Guest:** a Classic quiz. Answer a question; Next stays disabled until the question is resolved.
+4. **Log in** with a real account. Expect a one-time re-login: the cookies and `JWT_SECRET` are new.
+   Then play a Blitz and a Survival quiz.
+5. **Study:** filter by **Classes & Objects** and by **Scope & Namespaces** (production-only topics).
+   Line breaks show in explanations.
+6. **Daily Challenge:** complete it; the result shows, with bonus points for each correct answer.
+7. **Dashboard:** points, rank, accuracy and topic mastery show without `undefined`/`NaN`.
+8. **Leaderboard:** shows the top 50 users.
+9. **Password reset:** request a reset for your own account. The email arrives (this proves the new
+   Gmail app password) and the link opens on `CLIENT_URI`.
+10. **Admin panel:**
+    - log in; open **Manage Questions**, filter **Inheritance & MRO**;
+    - use **Find by id** on `67e2f3bff5addb214fc6a82d` (18 options, all different);
+    - open **Users**, check paging, and **Contacts**.
+11. **Security:** `curl -s -o /dev/null -w "%{http_code}" https://api-pyquiz.picsartacademy.am/api-docs` gives
+    `404`, and `/metrics` without `Authorization: Bearer <METRICS_TOKEN>` gives `401`, or `404` if
+    no token is set.
+12. **Logs:** the backend log shows no errors during all of this.
+
+### 9.5 If v2.1 has to be rolled back
+
+The old code (`9b0d8b4` + the server patch) **cannot** run on the converted database. Rolling back
+the code means rolling back the data as well:
+1. Stop v2.1.
+2. Restore the **pre-conversion** backup (`~/pyquiz-backups/pyquiz-before-conversion.gz`) as in
+   section 8.
+3. `git checkout 9b0d8b4 && git stash pop` (the stash from 9.1).
+4. Start the old app as before.
+
+Everything since the conversion (the content fixes, and any new users or answers) would be lost,
+so prefer fixing forward.
+
 ## Afterwards
 
 - Close the tunnel (Ctrl-C in its terminal) and `unset PYQUIZ_URI`.
