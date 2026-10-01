@@ -46,7 +46,7 @@ async function hitUntil429(makeRequest, max) {
 }
 
 // The two tests below exhaust a real rate limit by sending real requests
-// (up to 70 session starts; 301 general /api requests), so how long they
+// (up to 70 session starts; 1001 general /api requests), so how long they
 // take depends on machine speed: about 1.3 s and 2.4 s on an idle dev laptop,
 // but over Jest's 5 s default under CPU load, which made them fail
 // intermittently. They get an explicit timeout sized for that work instead.
@@ -102,8 +102,19 @@ describe('central error envelope', () => {
 
   it('general /api rate limiter (429), previously plain text', async () => {
     const user = await registerAndLogin('shapegeneral@example.com', { username: 'shapegeneral' });
-    const res = await hitUntil429(() => request(app).get('/api/v1/auth/me').set('Cookie', user.cookieHeader), 320);
-    expectEnvelope(res, 429, /too many requests/i);
+    const me = () => request(app).get('/api/v1/auth/me').set('Cookie', user.cookieHeader);
+    // 1000 per user per 15 minutes, as for guests (QA finding F-01; it was
+    // 300, which a fast logged-in player could reach mid-session).
+    const first = await me();
+    expect(first.statusCode).toBe(200);
+    expect(first.headers['ratelimit-limit']).toBe('1000');
+    let ok = 1;
+    for (; ok < 1000; ok += 1) {
+      const res = await me();
+      if (res.statusCode !== 200) break;
+    }
+    expect(ok).toBe(1000);
+    expectEnvelope(await me(), 429, /too many requests/i);
   }, LIMITER_TEST_TIMEOUT_MS);
 
   it('/readyz 503 when the database is not connected', async () => {

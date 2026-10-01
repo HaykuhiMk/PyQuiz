@@ -920,7 +920,7 @@ under `/api/v1` plus 3 operational endpoints.
 - **Auth:** *User* = regular-user session cookie; *Admin* = admin session cookie; *Guest or user* =
   works for guests, and uses the session when present.
 - **CSRF:** whether an `X-CSRF-Token` header bound to that session is required.
-- **Rate limits:** every `/api` request passes the general limiter, which allows 300 requests per 15
+- **Rate limits:** every `/api` request passes the general limiter, which allows 1000 requests per 15
   minutes per logged-in user and 1000 per 15 minutes per guest IP. Additional limits are listed per
   row.
 

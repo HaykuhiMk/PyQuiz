@@ -96,13 +96,14 @@ app.use(
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Keyed by user ID for authenticated requests and by IP for guests (not
-// just for session creation — see docs/AUDIT.md Phase 3 follow-up): a
-// shared IP is the normal case for guests specifically (a classroom or
-// office behind one NAT/proxy address), so it gets a much higher budget
-// than any one legitimate authenticated user should need. Requires
-// optionalAuthenticate to run first so req.user is populated when the key
-// is computed.
-const GENERAL_LIMIT_PER_USER = 300;
+// just for session creation — see docs/AUDIT.md Phase 3 follow-up). A
+// shared IP is the normal case for guests (a classroom or office behind one
+// NAT/proxy address), so guests get 1000 per IP. Logged-in users get the
+// same 1000 per account (owner's decision on QA finding F-01, v2.1): about
+// 2 requests per question, so a fast Blitz player stays well inside it.
+// Requires optionalAuthenticate to run first so req.user is populated when
+// the key is computed.
+const GENERAL_LIMIT_PER_USER = 1000;
 const GENERAL_LIMIT_PER_GUEST_IP = 1000;
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

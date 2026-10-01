@@ -2,7 +2,7 @@ const logger = require('./logger');
 
 // BENCHMARK_DISABLE_RATE_LIMITS=true turns every rate limiter off so
 // scripts/benchmark.js measures the endpoints rather than the limiter's 429s
-// (the general limiter allows 300 requests per user / 1000 per guest IP per
+// (the general limiter allows 1000 requests per user and per guest IP per
 // 15 minutes, far below any useful benchmark). It is honoured only outside
 // production and is re-checked on every request, so it cannot take effect in
 // a process running with NODE_ENV=production.
