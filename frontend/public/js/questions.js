@@ -530,7 +530,8 @@ document.addEventListener("DOMContentLoaded", () => {
             session.correct += 1;
             session.streak += 1;
             session.bestStreak = Math.max(session.bestStreak, session.streak);
-            if (!resultContainer.innerText) resultContainer.innerText = "Correct!";
+            // Replaces any earlier "Wrong — try again" from this question.
+            resultContainer.innerText = "Correct!";
             showExplanation();
         } else {
             session.wrong += 1;
