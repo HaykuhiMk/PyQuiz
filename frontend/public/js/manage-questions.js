@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     async function loadQuestions() {
-        tableBody.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7">Loading...</td></tr>`;
         try {
             const topics = filterTopic.value ? [filterTopic.value] : [];
             const difficulty = filterDifficulty.value;
@@ -86,7 +86,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             updatePager();
 
             if (!questions.length) {
-                tableBody.innerHTML = `<tr><td colspan="5">No questions found.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="7">No questions found.</td></tr>`;
                 return;
             }
 
@@ -94,7 +94,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 .map(
                     (q) => `
                 <tr>
+                    <td><code class="question-id">${escapeHTML(String(q._id))}</code></td>
                     <td>${escapeHTML(q.question)}</td>
+                    <td><code class="question-code-line" title="${escapeHTML(firstCodeLine(q.code, Infinity))}">${escapeHTML(firstCodeLine(q.code))}</code></td>
                     <td>${escapeHTML(q.difficulty)}</td>
                     <td>${escapeHTML(q.primaryTopic ? topicName(q.primaryTopic) : "")}</td>
                     <td>${escapeHTML((q.secondaryTopics || []).map(topicName).join(", "))}</td>
@@ -121,14 +123,25 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.error("Error loading questions:", error);
             hasNextPage = false;
             updatePager();
-            tableBody.innerHTML = `<tr><td colspan="5">Error: ${escapeHTML(error.message)}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="7">Error: ${escapeHTML(error.message)}</td></tr>`;
         }
     }
 
-    async function startEdit(id) {
+    // Every production question has the same prompt, so the list also shows
+    // the id and the first line of code to tell questions apart.
+    function firstCodeLine(code, max = 80) {
+        const line = String(code || "").split("\n").find((l) => l.trim()) || "";
+        const text = line.replace(/\t/g, "    ").trim();
+        return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+    }
+
+    // Loads a question into the edit form; resolves to false (and alerts)
+    // if it can't be loaded, unless `quiet` (then the caller reports it).
+    async function startEdit(id, { quiet = false } = {}) {
         try {
             const question = await api.getAdminQuestion(id);
             editingId = id;
+            document.getElementById("edit-question-id").textContent = `Editing question ${id}`;
             document.getElementById("edit-question-text").value = question.question;
             document.getElementById("edit-code").value = question.code || "";
             document.getElementById("edit-options").value = (question.options || []).join("\n");
@@ -144,10 +157,31 @@ document.addEventListener("DOMContentLoaded", async () => {
             editStatus.textContent = "";
             editSection.hidden = false;
             editSection.scrollIntoView({ behavior: "smooth" });
+            return true;
         } catch (error) {
+            if (quiet) throw error;
             alert("Error loading question: " + error.message);
+            return false;
         }
     }
+
+    const findForm = document.getElementById("find-question-form");
+    const findInput = document.getElementById("find-question-id");
+    const findStatus = document.getElementById("find-question-status");
+    findForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const id = findInput.value.trim();
+        if (!/^[a-f0-9]{24}$/i.test(id)) {
+            findStatus.textContent = "A question id is 24 characters, 0-9 and a-f.";
+            return;
+        }
+        findStatus.textContent = "";
+        try {
+            await startEdit(id.toLowerCase(), { quiet: true });
+        } catch (error) {
+            findStatus.textContent = error.status === 404 ? `No question with id ${id}.` : `Couldn't open it: ${error.message}`;
+        }
+    });
 
     async function handleDelete(id) {
         if (!confirm("Delete this question? This cannot be undone.")) return;

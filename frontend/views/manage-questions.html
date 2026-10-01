@@ -62,13 +62,21 @@
         <button type="button" id="filter-btn" class="secondary-btn">
           <i class="fas fa-filter"></i> Filter
         </button>
+        <form id="find-question-form" class="find-question">
+          <label for="find-question-id">Find by id</label>
+          <input type="text" id="find-question-id" placeholder="e.g. 67e2f3bff5addb214fc6a82d" spellcheck="false" autocomplete="off" />
+          <button type="submit" class="secondary-btn"><i class="fas fa-search"></i> Open</button>
+          <span id="find-question-status" class="find-question__status" role="status"></span>
+        </form>
       </section>
 
       <section id="question-list-section">
         <table id="question-table">
           <thead>
             <tr>
+              <th>ID</th>
               <th>Question</th>
+              <th>Code (first line)</th>
               <th>Difficulty</th>
               <th>Primary Topic</th>
               <th>Secondary Topics</th>
@@ -92,6 +100,7 @@
 
       <section id="edit-question-section" hidden>
         <h2>Edit Question</h2>
+        <p id="edit-question-id" class="edit-question-id"></p>
         <form id="edit-question-form">
           <div class="form-group">
             <label for="edit-question-text"
