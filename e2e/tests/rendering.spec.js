@@ -8,10 +8,26 @@ test('Study cards keep explanation line breaks and render tabs as 4 columns', as
   await logIn(page, await registerUser(request));
   await page.goto('/study.html');
   await expect(page.locator('#study-cards article.study-card').first()).toBeVisible();
-  const style = await page.evaluate(() => {
-    const p = [...document.querySelectorAll('.study-card__explain p')].find((el) => el.textContent.includes('\n'));
-    const code = document.querySelector('.pq-code code') || document.querySelector('.pq-code');
-    return { whiteSpace: getComputedStyle(p).whiteSpace, tabSize: getComputedStyle(code).tabSize, multiline: p.textContent.includes('\n') };
-  });
-  expect(style).toEqual({ whiteSpace: 'pre-line', tabSize: '4', multiline: true });
+
+  // Study hides today's Daily Challenge questions, so which cards are on the
+  // first page depends on the date (the first 7 seed questions have one-line
+  // explanations). Page on until a card has a multi-line explanation.
+  const multiline = page.locator('.study-card__explain p').filter({ hasText: /\S\n|\n\S/ });
+  for (let i = 0; i < 10 && !(await multiline.count()); i += 1) {
+    await expect(page.locator('#study-next')).toBeEnabled();
+    const label = await page.locator('#study-page-label').innerText();
+    await page.click('#study-next');
+    await expect(page.locator('#study-page-label')).not.toHaveText(label);
+  }
+  const p = multiline.first();
+  await expect(p).toBeVisible();
+  const style = await p.evaluate((el) => ({
+    whiteSpace: getComputedStyle(el).whiteSpace,
+    // innerText follows the rendering: the stored line breaks are kept.
+    renderedLines: el.innerText.split('\n').filter((line) => line.trim()).length,
+    tabSize: getComputedStyle(document.querySelector('.pq-code code') || document.querySelector('.pq-code')).tabSize,
+  }));
+  expect(style.whiteSpace).toBe('pre-line');
+  expect(style.renderedLines).toBeGreaterThan(1);
+  expect(style.tabSize).toBe('4');
 });
