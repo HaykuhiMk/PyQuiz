@@ -333,6 +333,9 @@
   line-height: 22px;
   padding: var(--space-4) var(--space-5);
   overflow-x: auto;
+  /* Python's usual indent width (browsers default to 8); 19 production
+     snippets are indented with tabs. */
+  tab-size: 4;
 }
 
 .pq-code:empty {
@@ -564,6 +567,8 @@
   margin: 0;
   color: var(--ink);
   max-width: none;
+  /* Explanations are several lines (one point per line). */
+  white-space: pre-line;
 }
 
 #result {
