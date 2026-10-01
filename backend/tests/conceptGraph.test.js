@@ -72,32 +72,48 @@ describe('config/conceptGraph.js', () => {
     }
   });
 
-  it('uses the renamed ids (renamed before any was stored), not the old ones', () => {
-    for (const id of [
-      'mutability.identity-equality-confusion',
-      'strings.strip-removeprefix-confusion',
-      'lists.in-place-method-returns-list',
-    ]) {
-      expect(MISCONCEPTION_IDS).toContain(id);
-    }
-    for (const id of ['mutability.is-means-equal', 'strings.strip-removes-substring', 'lists.sort-returns-list']) {
-      expect(MISCONCEPTION_IDS).not.toContain(id);
+  // Renamed or merged before any question or answer event stored an id
+  // (docs/CONCEPT_GRAPH.md, "Renamed before any id was stored").
+  const RENAMED = {
+    'mutability.is-means-equal': 'mutability.identity-equality-confusion',
+    'strings.strip-removes-substring': 'strings.strip-removeprefix-confusion',
+    'lists.sort-returns-list': 'lists.in-place-method-returns-list',
+    'mutability.augmented-assignment-rebinds': 'mutability.augmented-assignment-rebinding-confusion',
+    'mutability.rebinding-mutates': 'mutability.augmented-assignment-rebinding-confusion',
+    'scope.loop-variable-discarded': 'scope.loop-comprehension-scope-confusion',
+    'scope.comprehension-variable-leaks': 'scope.loop-comprehension-scope-confusion',
+    'numbers.slash-is-integer-division': 'numbers.true-floor-division-confusion',
+    'lists.append-extends': 'lists.append-extend-confusion',
+    'sets.empty-braces-make-set': 'sets.set-dict-braces-confusion',
+    'strings.split-space-equals-split': 'strings.split-space-confusion',
+  };
+
+  it('uses the renamed and merged ids, not the old ones', () => {
+    for (const [oldId, newId] of Object.entries(RENAMED)) {
+      expect(MISCONCEPTION_IDS).not.toContain(oldId);
+      expect(MISCONCEPTION_IDS).toContain(newId);
     }
   });
 
   it('a "-confusion" misconception describes both directions', () => {
     const confusions = MISCONCEPTIONS.filter((m) => m.id.endsWith('-confusion'));
     expect(confusions.map((m) => m.id).sort()).toEqual([
+      'lists.append-extend-confusion',
+      'mutability.augmented-assignment-rebinding-confusion',
       'mutability.identity-equality-confusion',
+      'numbers.true-floor-division-confusion',
+      'scope.loop-comprehension-scope-confusion',
+      'sets.set-dict-braces-confusion',
+      'strings.split-space-confusion',
       'strings.strip-removeprefix-confusion',
     ]);
     for (const { belief } of confusions) expect(belief).toMatch(/^Confusion, both directions: /);
   });
 
-  it('matches the approved design: 16 topics, 14 edges, 59 misconceptions, at least 2 per topic', () => {
+  it('matches the approved design: 16 topics, 14 edges, 57 misconceptions, at least 2 per topic', () => {
     expect(NODES).toHaveLength(16);
     expect(EDGES).toHaveLength(14);
-    expect(MISCONCEPTIONS).toHaveLength(59);
+    expect(MISCONCEPTIONS).toHaveLength(57);
     for (const id of NODE_IDS) {
       expect(MISCONCEPTIONS.filter((m) => m.topic === id).length).toBeGreaterThanOrEqual(2);
     }

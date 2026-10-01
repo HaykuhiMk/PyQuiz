@@ -86,16 +86,17 @@ model fixes it**, not to the topic whose syntax the example happens to use. For 
 
 **Confusions (owner's decision).** Some misconceptions are a confusion between two concepts, and
 learners make it in either direction. Such a misconception covers **both directions**, and its id
-ends in `-confusion`: `mutability.identity-equality-confusion` (`is` vs `==`) and
-`strings.strip-removeprefix-confusion` (`strip` vs `removeprefix`/`removesuffix`). Which direction
-a wrong option shows is captured by that option's own feedback text, not by the id.
+ends in `-confusion`. The pattern is applied to every misconception that fits it (8 of 57):
+`is` vs `==`, `+=` vs `= ... +`, `strip` vs `removeprefix`, `split()` vs `split(' ')`, `{}` for sets
+vs dicts, `append` vs `extend`, `/` vs `//`, and `for`-loop vs comprehension scope. Which direction a
+wrong option shows is captured by that option's own feedback text, not by the id.
 
-**All 59 were checked against the rule.** Four moved:
+**All 59 (before the merges below; 57 now) were checked against the rule.** Four moved:
 
 | Was | Now | Why |
 |---|---|---|
 | `lists.multiplication-copies-rows` | `mutability.multiplication-copies-rows` | Owner's decision. The fix is that `*` repeats references to the same object. |
-| `loops.loop-variable-discarded` | `scope.loop-variable-discarded` | Owner's decision. The fix is that a `for` loop creates no scope. |
+| `loops.loop-variable-discarded` | `scope.loop-variable-discarded` (since merged into `scope.loop-comprehension-scope-confusion`) | Owner's decision. The fix is that a `for` loop creates no scope. |
 | `functions.arguments-are-copied` | `mutability.arguments-are-copied` | The fix is the same reference model as `mutability.assignment-copies`: a parameter is one more name bound to the caller's object. Nothing about functions corrects it. |
 | `slicing.slice-copy-is-deep` | `mutability.slice-copy-is-deep` | The fix is shallow vs deep copying (inner objects are shared references). This applies equally to `list(a)` and `a.copy()`, so it isn't a slicing rule. |
 
@@ -128,8 +129,7 @@ Python pitfalls; no research is cited.
 |---|---|---|---|
 | `mutability.assignment-copies` | `b = a` makes a copy. | `a = [1, 2]; b = a; b.append(3); print(a)` → `[1, 2, 3]` | Assignment binds another name to the **same** object. Copy explicitly (`a.copy()`, `list(a)`, `a[:]`). |
 | `mutability.identity-equality-confusion` | *Confusion, both directions:* `is` and `==` are interchangeable, so `is` compares values, or `==` compares identity. | `a = [1, 2]; b = [1, 2]; print(a == b, a is b)` → `True False` | `is` tests identity (the same object); `==` tests equality of value. Equal values can be different objects. |
-| `mutability.augmented-assignment-rebinds` | `b += [2]` makes a new list, like `b = b + [2]`. | `a = [1]; b = a; b += [2]; print(a)` → `[1, 2]` | For mutable types, `+=` mutates in place (`__iadd__`), so every alias sees it. |
-| `mutability.rebinding-mutates` | Assigning a new value to a name changes the object other names refer to. | `a = [1]; b = a; b = b + [2]; print(a)` → `[1]` | `b = …` rebinds only `b`; the object `a` refers to is untouched. |
+| `mutability.augmented-assignment-rebinding-confusion` | *Confusion, both directions:* `b += x` and `b = b + x` do the same thing for a mutable `b`, so `b += [2]` makes a new list, or `b = b + [2]` changes the object other names refer to. | `a = [1]; b = a; b += [2]; c = a; c = c + [3]; print(a)` → `[1, 2]` | For a mutable object, `+=` mutates it in place (`__iadd__`), so every alias sees the change; `b = b + x` builds a new object and rebinds only `b`. |
 | `mutability.arguments-are-copied` | Passing a list to a function gives it a copy. | `def fill(lst): lst.append(0)`; `items = []; fill(items); print(items)` → `[0]` | Arguments are passed as references to the same objects; mutation inside is visible outside. |
 | `mutability.multiplication-copies-rows` | `[[0] * 2] * 2` makes two independent rows. | `grid[0][0] = 1` → `[[1, 0], [1, 0]]` | `*` repeats **references** to the same inner list; build rows with a comprehension. |
 | `mutability.slice-copy-is-deep` | `a[:]` copies nested objects too. | `a = [[1]]; b = a[:]; b[0].append(2); print(a)` → `[[1, 2]]` | A slice is a **shallow** copy: a new outer list sharing the same inner objects. |
@@ -167,7 +167,7 @@ Python pitfalls; no research is cited.
 | `strings.methods-modify-in-place` | String methods change the string. | `s = 'hi'; s.upper(); print(s)` → `hi` | Strings are immutable; methods return a **new** string that must be assigned. |
 | `strings.item-assignment` | You can change one character with `s[i] = …`. | `s = 'cat'; s[0] = 'b'` → `TypeError: 'str' object does not support item assignment` | Build a new string (`'b' + s[1:]`, `replace`, …). |
 | `strings.strip-removeprefix-confusion` | *Confusion, both directions:* `strip` and `removeprefix`/`removesuffix` do the same job, so `strip('an')` removes the substring `'an'`, or `removeprefix('~')` removes every leading `'~'`. | `print('banana'.strip('an'), '~~x'.removeprefix('~'))` → `b ~x` | `strip(chars)` removes any of the given **characters**, repeatedly, from both ends; `removeprefix`/`removesuffix` remove one exact **substring**, once. |
-| `strings.split-space-equals-split` | `split(' ')` behaves like `split()`. | `'a  b'.split(' ')` → `['a', '', 'b']`; `'a  b'.split()` → `['a', 'b']` | `split()` with no argument splits on runs of whitespace; `split(' ')` splits on every single space. |
+| `strings.split-space-confusion` | *Confusion, both directions:* `split()` and `split(' ')` do the same, so `split(' ')` merges repeated spaces, or `split()` keeps empty strings between them. | `print('a  b'.split(' '), 'a  b'.split())` → `['a', '', 'b'] ['a', 'b']` | `split()` with no argument splits on runs of whitespace and drops empty strings; `split(' ')` splits on every single space. |
 
 ### `functions`: Functions & Built-ins
 
@@ -181,7 +181,7 @@ Python pitfalls; no research is cited.
 
 | Id | Wrong belief | Example → actual output | Correct model |
 |---|---|---|---|
-| `sets.empty-braces-make-set` | `{}` is an empty set. | `type({})`, `type(set())` → `dict set` | `{}` is an empty **dict**; an empty set is `set()`. |
+| `sets.set-dict-braces-confusion` | *Confusion, both directions:* braces make sets and dicts alike, so `{}` is an empty set, or a set literal like `{0, 1, 2}` is a dict. | `print(type({}), type({0, 1}), type(set()))` → `<class 'dict'> <class 'set'> <class 'set'>` | `{}` is an empty dict. Braces with plain items make a set, braces with `key: value` pairs a dict; an empty set is `set()`. |
 | `sets.indexable` | Sets can be indexed like lists. | `{10, 20}[0]` → `TypeError: 'set' object is not subscriptable` | Sets are unordered collections without positions. |
 | `sets.add-returns-set` | `s.add(x)` returns the updated set. | `s = {1}; s = s.add(2); print(s)` → `None` | `add` mutates in place and returns `None`. |
 
@@ -190,7 +190,7 @@ Python pitfalls; no research is cited.
 | Id | Wrong belief | Example → actual output | Correct model |
 |---|---|---|---|
 | `lists.in-place-method-returns-list` | An in-place list method such as `sort()` or `append()` returns the changed list. | `print([3, 1, 2].sort(), [1].append(2))` → `None None` | In-place methods change the list and return `None`; `sorted(nums)` returns a new list. |
-| `lists.append-extends` | `append([3, 4])` adds two items. | `a = [1, 2]; a.append([3, 4])` → `[1, 2, [3, 4]]`, length 3 | `append` adds one object (here, a list); `extend` adds each item. |
+| `lists.append-extend-confusion` | *Confusion, both directions:* `append` and `extend` are interchangeable, so `append([3, 4])` adds two items, or `extend([3, 4])` adds the list as one item. | `a.append([3, 4])` and `b.extend([3, 4])` on `[1, 2]` → `[1, 2, [3, 4]] [1, 2, 3, 4]` | `append` adds one object (here, a list); `extend` adds each item of an iterable. |
 | `lists.assignment-extends` | Assigning past the end grows the list. | `a = [1]; a[3] = 2` → `IndexError: list assignment index out of range` | Indices must exist; use `append`/`extend`/`insert` to grow a list. |
 
 ### `slicing`: Indexing & Slicing
@@ -212,7 +212,7 @@ Python pitfalls; no research is cited.
 
 | Id | Wrong belief | Example → actual output | Correct model |
 |---|---|---|---|
-| `numbers.slash-is-integer-division` | `7 / 2` is `3`. | `7 / 2, 7 // 2` → `3.5 3` | In Python 3, `/` is true division and always gives a float; `//` is floor division. |
+| `numbers.true-floor-division-confusion` | *Confusion, both directions:* `/` and `//` are interchangeable, so `7 / 2` is `3`, or `7 // 2` is `3.5`. | `print(7 / 2, 7 // 2)` → `3.5 3` | In Python 3, `/` is true division and always gives a float; `//` is floor division (an `int` for two ints). |
 | `numbers.floor-division-truncates` | `-7 // 2` is `-3`. | `-7 // 2` → `-4` | `//` rounds **down** (toward negative infinity), not toward zero. |
 | `numbers.floats-are-exact` | `0.1 + 0.2 == 0.3`. | → `False 0.30000000000000004` | Binary floats can't represent most decimals exactly; compare with a tolerance (`math.isclose`). |
 | `numbers.round-half-up` | `round(2.5)` is `3`. | `round(2.5), round(3.5)` → `2 4` | `round` uses round-half-to-even ("banker's rounding"). |
@@ -241,8 +241,7 @@ Python pitfalls; no research is cited.
 | `scope.assignment-reads-global-first` | A function can read a global and assign it later in the same function. | `x = 1; def f(): print(x); x = 2`; `f()` → `UnboundLocalError` | Any assignment in a function makes the name local for the **whole** function body; use `global` to assign the global. |
 | `scope.mutation-needs-global` | `global` is needed to change a global list. | `items = []; def add(): items.append(1)`; `add(); print(items)` → `[1]` | `global` is only needed to **rebind** a name; mutating the object it refers to needs no declaration. |
 | `scope.closures-capture-values` | A lambda remembers the loop variable's value at creation. | `[lambda: i for i in range(3)]`, each called → `[2, 2, 2]` | Closures capture the **variable**, looked up when called (late binding); bind with a default (`lambda i=i: i`). |
-| `scope.comprehension-variable-leaks` | A comprehension's loop variable is still defined afterwards. | `[n * n for n in range(3)]`; `print(n)` → `NameError: name 'n' is not defined` | In Python 3, comprehensions have their own scope (unlike a `for` loop). |
-| `scope.loop-variable-discarded` | The loop variable disappears after the loop. | `for i in range(3): pass` then `print(i)` → `2` | A `for` loop doesn't create a scope; the variable keeps its last value. |
+| `scope.loop-comprehension-scope-confusion` | *Confusion, both directions:* `for` loops and comprehensions scope their loop variable the same way, so a `for` loop's variable disappears after the loop, or a comprehension's variable is still defined afterwards. | `for i in range(3): pass` then `print(i)` → `2`; `[n for n in range(3)]` then `print(n)` → `NameError: name 'n' is not defined` | A `for` loop creates no scope: its variable keeps its last value. In Python 3 a comprehension has its own scope, so its variable doesn't exist afterwards. |
 
 ### `generators`: Generators & Iterators (new)
 
@@ -261,7 +260,7 @@ Python pitfalls; no research is cited.
 | `exceptions.else-always-runs` | A `try` statement's `else` block always runs. | `1 / 0` caught; `else: print('else')` → only `caught` | `else` runs only if the `try` block raised nothing. |
 | `exceptions.caught-exception-keeps-propagating` | An error still stops the program even after it's caught. | `raise ValueError` caught, then `print('continues')` → `handled` then `continues` | A handled exception is finished; execution continues after the `try` statement. |
 
-**Totals: 59 misconceptions across 16 topics**, 2–7 per topic: `mutability` 7; `scope` 5; `dicts`, `types`, `strings`, `numbers`, `classes` and `exceptions` 4 each; `loops`, `functions`, `sets`, `lists`, `tuples`, `inheritance` and `generators` 3 each; `slicing` 2.
+**Totals: 57 misconceptions across 16 topics**, 2–6 per topic: `mutability` 6; `dicts`, `types`, `strings`, `numbers`, `classes`, `scope` and `exceptions` 4 each; `loops`, `functions`, `sets`, `lists`, `tuples`, `inheritance` and `generators` 3 each; `slicing` 2.
 
 ## 4. Diagram
 
@@ -385,13 +384,13 @@ here, pending your decision.
 ## 6. Stage 2 implementation
 
 - **The graph** lives in `backend/config/conceptGraph.js`: nodes (topic id and description),
-  edges (`from` must come first, with the reason) and the 59 misconceptions (id, topic, wrong
+  edges (`from` must come first, with the reason) and the 57 misconceptions (id, topic, wrong
   belief, correct model), generated from the tables above. The code examples stay in this
   document. `backend/tests/conceptGraph.test.js` checks that:
   - the graph is acyclic, and the check itself catches a cycle;
   - every edge refers to existing topics;
   - every misconception id is unique, belongs to an existing topic and is named after it;
-  - the counts match this document (16 topics, 14 edges, 59 misconceptions).
+  - the counts match this document (16 topics, 14 edges, 57 misconceptions).
 - **Planned topics.** Display names still live only in `backend/config/topicTaxonomy.js`. The five
   new topics are in its new `PLANNED_TOPICS` list: they are graph nodes, but questions can't use
   them yet (they are not in `TOPIC_IDS`, and `GET /api/v1/topics` doesn't list them). They move
@@ -400,7 +399,7 @@ here, pending your decision.
   `{ option, misconceptionId?, feedback? }`.
   - `option` is the exact text of a wrong option, matched the same way `answer` is. Options stay
     plain strings, so no existing API field changed shape.
-  - `misconceptionId` must be one of the 59 ids.
+  - `misconceptionId` must be one of the 57 ids.
   - `feedback` is short targeted text, at most 300 characters (`GET /validation-rules` serves the
     limit).
   - Each entry needs a misconception or feedback, can't name the correct answer, and names each
@@ -440,23 +439,15 @@ stored one (owner's decisions, Stage 3 review):
 | `mutability.is-means-equal` | `mutability.identity-equality-confusion` | A confusion: covers `is` as equality and `==` as identity. |
 | `strings.strip-removes-substring` | `strings.strip-removeprefix-confusion` | A confusion: covers `strip` as substring removal and `removeprefix` as repeated stripping. |
 | `lists.sort-returns-list` | `lists.in-place-method-returns-list` | The belief is the same for `append`, `extend`, `insert`, `remove`, … |
+| `mutability.augmented-assignment-rebinds` and `mutability.rebinding-mutates` | `mutability.augmented-assignment-rebinding-confusion` | Merged: the two directions of `b += x` vs `b = b + x`. |
+| `scope.loop-variable-discarded` and `scope.comprehension-variable-leaks` | `scope.loop-comprehension-scope-confusion` | Merged: the two directions of `for`-loop vs comprehension scope. |
+| `numbers.slash-is-integer-division` | `numbers.true-floor-division-confusion` | A confusion: covers `/` as floor division and `//` as true division. |
+| `lists.append-extends` | `lists.append-extend-confusion` | A confusion: covers `append` adding each item and `extend` adding one item. |
+| `sets.empty-braces-make-set` | `sets.set-dict-braces-confusion` | A confusion: covers `{}` as a set and a set literal as a dict. |
+| `strings.split-space-equals-split` | `strings.split-space-confusion` | A confusion: covers `split(' ')` as `split()` and the reverse. |
 
-**Other candidates for the confusion pattern (not renamed; for the owner to decide):**
-- `numbers.slash-is-integer-division`: `/` vs `//`. The other direction is "`//` gives a float
-  result like `/`".
-- `lists.append-extends`: `append` vs `extend`. The other direction is "`extend([3, 4])` adds the
-  list as one item".
-- `sets.empty-braces-make-set`: `{}` as a set. The other direction is "a non-empty set literal
-  `{0, 1, 2}` is a dict"; one seed Q31 option may fit it.
-- `strings.split-space-equals-split`: `split(' ')` vs `split()`, in either direction.
-- `mutability.augmented-assignment-rebinds` and `mutability.rebinding-mutates`: the two
-  directions of one confusion, `b += x` vs `b = b + x` for a mutable `b`. They could become one
-  `mutability.augmented-assignment-rebinding-confusion`.
-- `scope.loop-variable-discarded` and `scope.comprehension-variable-leaks`: the two directions of
-  one confusion, `for`-loop scope vs comprehension scope. They could become one
-  `scope.loop-comprehension-scope-confusion`.
-
-Merging a pair would bring the total below 59 and needs the same rename-before-storing care.
+The two merges bring the total from 59 to 57; the pattern is now applied to every misconception
+that fits it.
 
 ## Open points for review
 

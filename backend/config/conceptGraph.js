@@ -74,16 +74,12 @@ const MISCONCEPTIONS = [
     correctModel: '`is` tests identity (the same object); `==` tests equality of value. Equal values can be different objects.',
   },
   {
-    id: 'mutability.augmented-assignment-rebinds',
+    id: 'mutability.augmented-assignment-rebinding-confusion',
     topic: 'mutability',
-    belief: '`b += [2]` makes a new list, like `b = b + [2]`.',
-    correctModel: 'For mutable types, `+=` mutates in place (`__iadd__`), so every alias sees it.',
-  },
-  {
-    id: 'mutability.rebinding-mutates',
-    topic: 'mutability',
-    belief: 'Assigning a new value to a name changes the object other names refer to.',
-    correctModel: '`b = …` rebinds only `b`; the object `a` refers to is untouched.',
+    belief:
+      'Confusion, both directions: `b += x` and `b = b + x` do the same thing for a mutable `b`, so `b += [2]` makes a new list, or `b = b + [2]` changes the object other names refer to.',
+    correctModel:
+      'For a mutable object, `+=` mutates it in place (`__iadd__`), so every alias sees the change; `b = b + x` builds a new object and rebinds only `b`.',
   },
   {
     id: 'mutability.arguments-are-copied',
@@ -190,10 +186,12 @@ const MISCONCEPTIONS = [
       '`strip(chars)` removes any of the given characters, repeatedly, from both ends; `removeprefix`/`removesuffix` remove one exact substring, once.',
   },
   {
-    id: 'strings.split-space-equals-split',
+    id: 'strings.split-space-confusion',
     topic: 'strings',
-    belief: "`split(' ')` behaves like `split()`.",
-    correctModel: "`split()` with no argument splits on runs of whitespace; `split(' ')` splits on every single space.",
+    belief:
+      "Confusion, both directions: `split()` and `split(' ')` do the same, so `split(' ')` merges repeated spaces, or `split()` keeps empty strings between them.",
+    correctModel:
+      "`split()` with no argument splits on runs of whitespace and drops empty strings; `split(' ')` splits on every single space.",
   },
   {
     id: 'functions.default-argument-fresh',
@@ -214,10 +212,12 @@ const MISCONCEPTIONS = [
     correctModel: 'Without `return`, a function returns `None`.',
   },
   {
-    id: 'sets.empty-braces-make-set',
+    id: 'sets.set-dict-braces-confusion',
     topic: 'sets',
-    belief: '`{}` is an empty set.',
-    correctModel: '`{}` is an empty dict; an empty set is `set()`.',
+    belief:
+      'Confusion, both directions: braces make sets and dicts alike, so `{}` is an empty set, or a set literal like `{0, 1, 2}` is a dict.',
+    correctModel:
+      '`{}` is an empty dict. Braces with plain items make a set, braces with `key: value` pairs a dict; an empty set is `set()`.',
   },
   {
     id: 'sets.indexable',
@@ -238,10 +238,12 @@ const MISCONCEPTIONS = [
     correctModel: 'In-place methods change the list and return `None`; `sorted(nums)` returns a new list.',
   },
   {
-    id: 'lists.append-extends',
+    id: 'lists.append-extend-confusion',
     topic: 'lists',
-    belief: '`append([3, 4])` adds two items.',
-    correctModel: '`append` adds one object (here, a list); `extend` adds each item.',
+    belief:
+      'Confusion, both directions: `append` and `extend` are interchangeable, so `append([3, 4])` adds two items, or `extend([3, 4])` adds the list as one item.',
+    correctModel:
+      '`append` adds one object (here, a list); `extend` adds each item of an iterable.',
   },
   {
     id: 'lists.assignment-extends',
@@ -280,10 +282,12 @@ const MISCONCEPTIONS = [
     correctModel: '`+=` first mutates the list in place, then fails to assign back into the tuple, so the error comes after the change.',
   },
   {
-    id: 'numbers.slash-is-integer-division',
+    id: 'numbers.true-floor-division-confusion',
     topic: 'numbers',
-    belief: '`7 / 2` is `3`.',
-    correctModel: 'In Python 3, `/` is true division and always gives a float; `//` is floor division.',
+    belief:
+      'Confusion, both directions: `/` and `//` are interchangeable, so `7 / 2` is `3`, or `7 // 2` is `3.5`.',
+    correctModel:
+      'In Python 3, `/` is true division and always gives a float; `//` is floor division (an `int` for two ints).',
   },
   {
     id: 'numbers.floor-division-truncates',
@@ -364,16 +368,12 @@ const MISCONCEPTIONS = [
     correctModel: 'Closures capture the variable, looked up when called (late binding); bind with a default (`lambda i=i: i`).',
   },
   {
-    id: 'scope.comprehension-variable-leaks',
+    id: 'scope.loop-comprehension-scope-confusion',
     topic: 'scope',
-    belief: "A comprehension's loop variable is still defined afterwards.",
-    correctModel: 'In Python 3, comprehensions have their own scope (unlike a `for` loop).',
-  },
-  {
-    id: 'scope.loop-variable-discarded',
-    topic: 'scope',
-    belief: 'The loop variable disappears after the loop.',
-    correctModel: "A `for` loop doesn't create a scope; the variable keeps its last value.",
+    belief:
+      "Confusion, both directions: `for` loops and comprehensions scope their loop variable the same way, so a `for` loop's variable disappears after the loop, or a comprehension's variable is still defined afterwards.",
+    correctModel:
+      "A `for` loop creates no scope: its variable keeps its last value. In Python 3 a comprehension has its own scope, so its variable doesn't exist afterwards.",
   },
   {
     id: 'generators.reusable',
