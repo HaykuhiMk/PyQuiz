@@ -110,6 +110,7 @@ function verify({ file, requireChecked }, { env = process.env, log = console.log
       if (r.expected !== undefined) log(`      answer: ${JSON.stringify(r.expected)}`);
       if (r.actual !== undefined) log(`      actual: ${JSON.stringify(r.actual)}`);
       if (r.matchingOptions && r.matchingOptions.length) log(`      options equal to the output: ${JSON.stringify(r.matchingOptions)}`);
+      if (r.suggested && r.suggested.length) log(`      the rule allows: ${r.suggested.map((x) => JSON.stringify(x)).join(' or ')}`);
     }
   }
 

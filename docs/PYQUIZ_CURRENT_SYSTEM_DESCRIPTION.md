@@ -1103,9 +1103,14 @@ snippet runs in its own process, in an empty folder, with a timeout. The check r
 - a second option that also equals the output (an ambiguous question);
 - a snippet that times out.
 
-It accepts two conventions of the question bank: `Error: <message>` for a snippet that raises with
-exactly that message, and `Nothing` for a snippet that prints nothing. Nothing else is normalised,
-so `[ ]` written for `[]` is a mismatch.
+**The answer is everything the program shows:** its printed output in order, then the error if one
+is raised, written `<output> Error: <detail>` (the detail is the exception's message, or its type
+name when the message is empty or differs between Python versions; with no output this is the
+older `Error: <message>` form). The check also reports a wrong option equal to the output printed
+before an error. Snippets that raise without printing anything may keep the older answers (`Error`,
+or naming the exception type). `Nothing` matches a snippet that prints nothing. Nothing else is
+normalised, so `[ ]` written for `[]` is a mismatch. `docs/CONTENT_FIXES.md` lists the production
+questions that don't follow these rules yet.
 
 It finds every `python3`/`python3.N` on the `PATH` (or the interpreters listed in `PYQUIZ_PYTHONS`),
 warns when one of the reference versions in `backend/config/pythonVersion.js` (3.9 and 3.14) isn't

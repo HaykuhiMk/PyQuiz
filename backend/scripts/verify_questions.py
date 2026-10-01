@@ -12,10 +12,19 @@
 # Comparison rules (the same ones the stored answers are written to):
 #   - Output is compared with whitespace collapsed, because answers write
 #     multi-line output on one line ("P J C" for three printed lines).
-#   - If the snippet raises, the answer must be an error option: a generic
-#     "Error"/"Type error", one naming the exception type or quoting its
-#     message, or the dataset's convention "Error: <message>" with exactly
-#     the exception's message.
+#   - The answer is everything the program shows when run: its printed
+#     output in order, then the error if one is raised (owner's rule,
+#     docs/CONTENT_FIXES.md). The one format for "output, then error" is
+#         <output> Error: <detail>
+#     where <output> is the printed output (whitespace collapsed; omitted,
+#     with its space, when nothing was printed) and <detail> is the
+#     exception's message, or its type name (e.g. StopIteration) when the
+#     message is empty or differs between Python versions.
+#   - A snippet that raises without printing anything may also keep the
+#     older error forms: a generic "Error"/"Type error", or one naming the
+#     exception type or quoting its message.
+#   - A wrong option equal to the output printed before an error is
+#     reported: it is what a learner who ignores the error would pick.
 #   - The dataset's convention "Nothing" matches a snippet that prints nothing.
 #   - Nothing else is normalised: "[ ]" written for "[]" is a mismatch.
 #   - Another option that also equals the real output is reported too, since
@@ -72,8 +81,18 @@ def run_snippet(code, work_dir):
     return proc.stdout, exc, None
 
 
+def output_then_error(out, exc):
+    # The exact answers the rule allows for this run.
+    details = [exc['message']] if exc['message'] else []
+    details.append(exc['type'])
+    prefix = (out + ' ') if out else ''
+    return [norm(prefix + 'Error: ' + d) for d in details]
+
+
 def error_answer_matches(answer, exc):
     a = answer.strip()
+    if norm(a).rstrip('.') == norm('Error: ' + exc['type']):
+        return True
     if a.lower() in GENERIC_ERRORS:
         return True
     if exc['type'] in a:
@@ -101,13 +120,23 @@ def check(question, work_dir):
     if problem:
         return {'ok': False, 'reason': problem}
     if exc:
+        out = norm(stdout)
         actual = '%s: %s' % (exc['type'], exc['message'])
-        if norm(stdout):
-            actual = norm(stdout) + ' | then ' + actual
+        if out:
+            # Printed output, then an error: only the exact format counts.
+            allowed = output_then_error(out, exc)
+            echoes = [o for o in question['options'] if o != answer and norm(o) == out]
+            if norm(answer).rstrip('.') not in [a.rstrip('.') for a in allowed]:
+                return {'ok': False, 'reason': 'prints output before the error, but the answer is not "<output> Error: <detail>"',
+                        'expected': answer, 'actual': out + ' | then ' + actual, 'suggested': allowed}
+            if echoes:
+                return {'ok': False, 'reason': 'a wrong option equals the output printed before the error',
+                        'expected': answer, 'actual': out + ' | then ' + actual, 'matchingOptions': echoes}
+            return {'ok': True}
         if error_answer_matches(answer, exc):
             return {'ok': True}
         return {'ok': False, 'reason': 'raised an error, but the answer is not an error option',
-                'expected': answer, 'actual': actual}
+                'expected': answer, 'actual': actual, 'suggested': output_then_error('', exc)}
     actual = norm(stdout)
     others = [o for o in question['options'] if o != answer and output_matches(o, actual)]
     if not output_matches(answer, actual):
