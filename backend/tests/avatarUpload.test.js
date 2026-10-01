@@ -24,7 +24,14 @@ afterAll(async () => {
   await db.closeDatabase();
 });
 
-const dataUrl = (chars) => `data:image/png;base64,${'A'.repeat(chars)}`;
+// A PNG signature, then filler: `chars` base64 characters in all.
+const PNG_HEAD = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]).toString('base64');
+const dataUrl = (chars) => `data:image/png;base64,${PNG_HEAD}${'A'.repeat(chars - PNG_HEAD.length)}`;
+const SIGNATURES = {
+  'image/jpeg': [0xff, 0xd8, 0xff],
+  'image/png': [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+  'image/webp': [...Buffer.from('RIFF'), 0, 0, 0, 0, ...Buffer.from('WEBP')],
+};
 
 function uploadAvatar(session, avatar) {
   return request(app)
@@ -71,7 +78,11 @@ describe('avatar upload body limit', () => {
     'accepts a %s file of exactly the advertised maximum and rejects one byte more',
     async (mime) => {
       const session = await registerAndLogin(`edge${mime.split('/')[1]}@example.com`, { username: `edge${mime.split('/')[1]}` });
-      const encode = (bytes) => `data:${mime};base64,${Buffer.alloc(bytes, 1).toString('base64')}`;
+      const encode = (bytes) => {
+        const file = Buffer.alloc(bytes, 1);
+        Buffer.from(SIGNATURES[mime]).copy(file);
+        return `data:${mime};base64,${file.toString('base64')}`;
+      };
 
       const atLimit = await uploadAvatar(session, encode(AVATAR_MAX_FILE_BYTES));
       expect(atLimit.statusCode).toBe(200);
@@ -89,5 +100,34 @@ describe('avatar upload body limit', () => {
       maxFileBytes: AVATAR_MAX_FILE_BYTES,
       tooLargeMessage: 'Image is too large. The maximum is 366 KB.',
     });
+  });
+});
+
+describe('avatar format', () => {
+  const b64 = (bytes) => Buffer.from(bytes).toString('base64');
+
+  it.each([
+    ['a text file named .png', `data:image/png;base64,${Buffer.from('hello, not an image').toString('base64')}`],
+    ['PNG bytes declared as JPEG', `data:image/jpeg;base64,${b64(SIGNATURES['image/png'])}`],
+    ['an SVG', `data:image/svg+xml;base64,${Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>').toString('base64')}`],
+    ['a GIF', `data:image/gif;base64,${Buffer.from('GIF89a').toString('base64')}`],
+    ['a data URL that is not base64', 'data:image/png,%89PNG'],
+    ['base64 with characters outside the alphabet', `data:image/png;base64,${b64(SIGNATURES['image/png'])}<script>`],
+  ])('rejects %s and keeps the current photo', async (_, avatar) => {
+    const session = await registerAndLogin('format@example.com', { username: 'format' });
+    const good = dataUrl(1000);
+    expect((await uploadAvatar(session, good)).statusCode).toBe(200);
+
+    const res = await uploadAvatar(session, avatar);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error.message).toBe('Avatar must be a JPG, PNG or WebP image');
+    expect((await User.findOne({ email: 'format@example.com' })).avatar).toBe(good);
+  });
+
+  it('removing the photo (null) still works', async () => {
+    const session = await registerAndLogin('remove@example.com', { username: 'remove' });
+    await uploadAvatar(session, dataUrl(1000));
+    expect((await uploadAvatar(session, null)).statusCode).toBe(200);
+    expect((await User.findOne({ email: 'remove@example.com' })).avatar).toBeFalsy();
   });
 });

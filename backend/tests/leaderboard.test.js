@@ -52,7 +52,7 @@ describe('GET /api/v1/users/leaderboard', () => {
       .patch('/api/v1/users/settings/profile')
       .set('Cookie', cookieHeader)
       .set('X-CSRF-Token', csrfToken)
-      .send({ avatar: `data:image/png;base64,${'A'.repeat(100)}` });
+      .send({ avatar: `data:image/png;base64,${Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).toString('base64')}${'A'.repeat(100)}` });
 
     const res = await request(app).get('/api/v1/users/leaderboard');
     expect(res.body.data.every((row) => row.avatar === undefined)).toBe(true);
