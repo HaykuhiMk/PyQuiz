@@ -207,6 +207,9 @@ Don't reopen until every box is ticked.
   It refuses (and changes nothing) if two accounts would end up with the same email; the copy of
   2026-10-01 has none. A second run reports `Nothing to change`.
 - [ ] **Questions fixed in the admin panel.** Numbers are from the reviewed topic proposals.
+  **`docs/CONTENT_FIXES.md` has the complete list**: these, the ambiguous answers, the wrong
+  explanations and #43, each with the exact change. Open a question with **Find by id** in Manage
+  Questions.
   - [ ] `67e2f3bff5addb214fc6a82d`: option `'Box Magic'` appears twice. The admin forms refuse to
     save a question with duplicate options, and the answer is matched by text, so make every
     option different.

@@ -27,6 +27,22 @@ pushed by Claude). All three stages are done:
 Read `docs/CONCEPT_GRAPH.md` (status, §3 rules, §6–§7 implementation) and Section 5.14 of the system
 description before continuing that work.
 
+**Production conversion done (2026-10-01, by the owner): READY TO REOPEN.** Then a real-data audit
+on `pyquiz_realcopy`, a local exact copy (branch `fix/real-data-audit`, not merged, not pushed by
+Claude). It found and fixed:
+- paged lists showing an empty last page (60 users is exactly 3 pages);
+- the Classic/Survival Next and exhausted-attempts states;
+- explanation line breaks and the tab width;
+- the admin question list: its id and code columns, and find by id;
+- case-sensitive emails: now lowercase everywhere, plus `scripts/lowercaseEmails.js` for the 3
+  stored mixed-case emails, which must run before the new code serves logins (`DEPLOY_RUNBOOK.md`
+  checklist);
+- the missing favicon;
+- the verifier's rule for "output, then error".
+
+The content problems, by id, are in `docs/CONTENT_FIXES.md`. The owner fixes them in the admin
+panel.
+
 **Deployment preparation is paused** (production data migration). Read "Deployment preparation
 (paused)" below before any deploy or any work against `pyquiz_prodcopy`. Full detail, evidence and
 reasoning for every item live in `docs/AUDIT.md` (one addendum per phase). This document only
