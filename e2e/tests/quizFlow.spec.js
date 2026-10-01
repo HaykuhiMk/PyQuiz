@@ -79,3 +79,10 @@ test('Classic: a correct retry replaces the earlier "try again" message', async 
   await expect(page.locator('#result')).toContainText('Correct!');
   await expect(page.locator('#result')).not.toContainText('try again');
 });
+
+test('the answer result is announced to screen readers', async ({ page }) => {
+  await page.goto('/questions.html');
+  const result = page.locator('#result');
+  await expect(result).toHaveAttribute('role', 'status');
+  await expect(result).toHaveAttribute('aria-live', 'polite');
+});
