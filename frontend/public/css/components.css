@@ -335,7 +335,7 @@ button[type="submit"]:not(.secondary-btn):not(.danger-btn):not(.quiz-option):not
 
 .primary-btn:hover,
 button[type="submit"]:not(.secondary-btn):not(.danger-btn):not(.quiz-option):not(.link-btn):hover {
-  background: var(--fold-deep);
+  background: var(--brand-hover);
   transform: translateY(-1px);
 }
 

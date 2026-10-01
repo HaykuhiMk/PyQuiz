@@ -583,7 +583,7 @@ body.pq-with-sidebar > #mode-selection {
 }
 
 .pq-sidelink.is-active:hover {
-  background: var(--fold-deep);
+  background: var(--brand-hover);
 }
 
 .pq-side__label {
