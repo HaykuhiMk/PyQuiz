@@ -1,6 +1,7 @@
 import { api, requireAuth } from './api.js';
 import { icon, mountIcons } from './icons.js';
 import { getTopicNamer } from './topics.js';
+import { renderInlineCode } from './inlineCode.js';
 
 const PAGE_SIZE = 6;
 
@@ -45,7 +46,7 @@ function renderExplanation(answer, explanation) {
       <span class="pq-disc-mark" aria-hidden="true"></span>
       <div>
         <h3 class="study-card__answer">Answer: <code class="pq-inline">${escapeHTML(answer)}</code></h3>
-        <p>${escapeHTML(explanation || 'No explanation provided.')}</p>
+        <p>${renderInlineCode(explanation || 'No explanation provided.')}</p>
       </div>
     </div>`;
 }
