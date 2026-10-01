@@ -104,7 +104,8 @@
             <label for="edit-code"
               ><i class="fas fa-code"></i> Code Snippet (optional):</label
             >
-            <textarea id="edit-code"></textarea>
+            <p class="form-hint" id="edit-code-python-hint" data-python-author-hint hidden></p>
+            <textarea id="edit-code" aria-describedby="edit-code-python-hint"></textarea>
           </div>
 
           <div class="form-group">
@@ -171,5 +172,6 @@
     </main>
 
     <script type="module" src="js/manage-questions.js"></script>
+    <script type="module" src="/js/pythonVersionNote.js"></script>
   </body>
 </html>

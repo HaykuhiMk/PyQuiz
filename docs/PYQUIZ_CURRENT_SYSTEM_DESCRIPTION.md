@@ -212,6 +212,14 @@ and Study topic filters match a question by its primary *or* any secondary topic
 With the current data that is Numbers & Arithmetic, so **10 topics are visible**. Admins add
 questions through the admin panel, restricted to the canonical list.
 
+**Reference Python version.** Answers assume **Python 3.9 or newer** (Q20 uses
+`str.removeprefix`, added in 3.9), and every seed question's real output matches its stored answer
+on Python 3.9 and 3.14. The quiz, Study, Daily Challenge and About pages show "Answers assume Python 3.9 or
+newer, and are checked on Python 3.9 and 3.14", and the admin question forms show authors a hint
+(the answer must be the same on 3.9 and every newer version, with no version-specific error
+messages and no reliance on CPython caching). Both texts come from one constant,
+`backend/config/pythonVersion.js`, served by `GET /api/v1/python-version`.
+
 ### 5.4 Study Mode
 
 Study mode requires login. It lists questions as paginated cards showing the question, code,
@@ -531,6 +539,7 @@ Rules that must be identical in several places live in `backend/config/`:
 - mastery thresholds (`masteryConfig.js`);
 - the topic taxonomy, stable ids and display names (`topicTaxonomy.js`);
 - the concept graph: prerequisite edges and misconceptions (`conceptGraph.js`);
+- the reference Python version for question answers (`pythonVersion.js`);
 - client-facing validation rules (`validationRules.js`).
 
 Every error response, including authentication failures and rate limits, goes through one
@@ -792,7 +801,7 @@ relation to other collections.
 The table was generated from the Express router stacks of the route files in
 `backend/routes/v1/` (the purpose column comes from each route's OpenAPI summary). Full request and
 response schemas are served at `/api-docs` outside production, and `backend/tests/swagger.test.js`
-fails if the documentation and the real routes diverge. There are **42 operations on 39 paths**: 39
+fails if the documentation and the real routes diverge. There are **43 operations on 40 paths**: 40
 under `/api/v1` plus 3 operational endpoints.
 
 **Columns:**
@@ -841,6 +850,7 @@ under `/api/v1` plus 3 operational endpoints.
 | GET | `/api/v1/validation-rules` | Public | No | — | Validation rules the frontend applies client-side |
 | GET | `/api/v1/topics` | Public | No | — | The full topic taxonomy: every topic's stable id and display name |
 | GET | `/api/v1/concept-graph` | Public | No | — | The concept graph (topics, prerequisite edges, misconceptions) |
+| GET | `/api/v1/python-version` | Public | No | — | The Python version question answers assume |
 | POST | `/api/v1/admin/login` | Public | No | 20 / 15 min per IP | Log in as an admin |
 | POST | `/api/v1/admin/logout` | Public | No | — | Log out (clear the admin session cookies) |
 | GET | `/api/v1/admin/me` | Admin | No | — | Confirm the admin session and get a CSRF token |
@@ -1146,6 +1156,9 @@ No study has been run yet, and no results exist.
   - Tuples has 1 and Indexing & Slicing has 2, so both show "Not enough questions yet".
 
   A heavy user will exhaust the eligible Classic pool quickly.
+- **Python versions in between are not checked.** The questions are checked on Python 3.9 and
+  3.14 only (Section 5.3). Versions 3.10–3.13 are not run, so a behaviour change in one of them
+  would go unnoticed, although nothing in the current seed set differs between 3.9 and 3.14.
 - **Answers can be looked up.** Scoring cannot be forged, but a logged-in user can read any
   question's answer in Study mode, except today's Daily Challenge questions, before answering it in
   a quiz (Section 6.4).

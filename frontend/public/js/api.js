@@ -159,6 +159,7 @@ export const api = {
   getTopics: () => request('/api/v1/questions/topics'),
   getTopicTaxonomy: () => request('/api/v1/topics'),
   getConceptGraph: () => request('/api/v1/concept-graph'),
+  getPythonVersion: () => request('/api/v1/python-version'),
   getValidationRules: () => request('/api/v1/validation-rules'),
   getRandomQuestion: ({ topics = [], difficulty = '', excludeIds = [] } = {}) => {
     const params = new URLSearchParams();

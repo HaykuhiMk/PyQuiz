@@ -49,3 +49,9 @@
   background: var(--sun-soft);
   border-radius: var(--radius-sm);
 }
+
+/* Author hint under a field label (js/pythonVersionNote.js). */
+.form-hint {
+  color: var(--text-muted);
+  margin: 0 0 var(--space-2);
+}
