@@ -1,0 +1,493 @@
+{
+  "_comment": "Owner-approved content fixes for production questions (docs/CONTENT_FIXES.md; proposal reviewed 2026-10-01). For each question: the fields that change, with the value expected now (expect) and the new value (set). Applied by backend/scripts/applyContentFixes.js. Question content only.",
+  "fixes": [
+    {
+      "id": "67e2f3bff5addb214fc6a82d",
+      "ref": "Box Magic",
+      "reason": "The option 'Box Magic' appears twice; replace the second one with a different plausible wrong option.",
+      "expect": {
+        "options": [
+          "Box",
+          "Box2D",
+          "Box Box2D",
+          "Box2D Box",
+          "Box2D Box2D",
+          "Box Box2D Box3D",
+          "Box Box3D",
+          "Box2D Box3D",
+          "Box3D",
+          "Magic",
+          "Box Magic",
+          "Box Box2D Magic",
+          "Box Box2D Box3D Magic",
+          "Box Magic",
+          "Box2D Magic",
+          "Box3D Magic",
+          "Error",
+          "Nothing"
+        ]
+      },
+      "set": {
+        "options": [
+          "Box",
+          "Box2D",
+          "Box Box2D",
+          "Box2D Box",
+          "Box2D Box2D",
+          "Box Box2D Box3D",
+          "Box Box3D",
+          "Box2D Box3D",
+          "Box3D",
+          "Magic",
+          "Box Magic",
+          "Box Box2D Magic",
+          "Box Box2D Box3D Magic",
+          "Box2D Box3D Magic",
+          "Box2D Magic",
+          "Box3D Magic",
+          "Error",
+          "Nothing"
+        ]
+      }
+    },
+    {
+      "id": "67dd83578e2ddadc28e387f6",
+      "ref": "#2",
+      "reason": "Wrong answer: the code prints foo, then main. Add that as an option and make it the answer; main stays as a wrong option.",
+      "expect": {
+        "options": [
+          "False",
+          "foo",
+          "main",
+          "True",
+          "Error",
+          "False foo",
+          "False main",
+          "foo_main"
+        ],
+        "answer": "main",
+        "explanation": "📌 Initially, foo = False, a boolean variable.\n📌 Since foo is False, the else block executes, defining a new function foo(), shadowing the original boolean variable.\n📌 When foo() is called:\n\n🔻 foo.__name__ (which is \"foo\") is printed.\n🔻 Then, foo.__name__ is reassigned to \"main\".\n🔻 Finally, the function returns \"main\".\n\n📌 The final output is: main"
+      },
+      "set": {
+        "options": [
+          "False",
+          "foo",
+          "main",
+          "foo main",
+          "True",
+          "Error",
+          "False foo",
+          "False main",
+          "foo_main"
+        ],
+        "answer": "foo main",
+        "explanation": "📌 foo = False, so the else branch runs: def foo() rebinds the name foo, replacing the boolean.\n📌 Calling foo() first prints foo.__name__, which is foo.\n📌 It then sets foo.__name__ = \"main\" and returns it, so print(foo()) prints main.\n📌 Output: foo main"
+      }
+    },
+    {
+      "id": "67e2ba44f5addb214fc6a7ed",
+      "ref": "#54",
+      "reason": "The output contained a memory address (different on every run). Print the generator's type name instead, and write [] as Python prints it.",
+      "expect": {
+        "code": "def foo():\n    yield 1\nx = foo()\nprint(x)    \nprint(next(x))\nprint(list(x))",
+        "options": [
+          "<generator object at 0x100> 1 StopIteration",
+          "<generator object at 0x100> StopIteration",
+          "<generator object at 0x100> 1 [ ]",
+          "<generator object at 0x100> 1 [1]",
+          "StopIteration",
+          "1 StopIteration",
+          "Error",
+          "Nothing",
+          "None",
+          "Program executes infinitely.",
+          "<generator object at 0x100>"
+        ],
+        "answer": "<generator object at 0x100> 1 [ ]",
+        "explanation": "The function foo() is a generator that yields the value 1. When x = foo() is executed, x stores a generator object, which is printed as <generator object at 0x100>. The first call to next(x) retrieves the first (and only) yielded value, which is 1. When list(x) is called, it attempts to retrieve all remaining values, but since the generator has already been exhausted, it returns an empty list []."
+      },
+      "set": {
+        "code": "def foo():\n    yield 1\nx = foo()\nprint(type(x).__name__)\nprint(next(x))\nprint(list(x))",
+        "options": [
+          "generator 1 StopIteration",
+          "generator StopIteration",
+          "generator 1 []",
+          "generator 1 [1]",
+          "StopIteration",
+          "1 StopIteration",
+          "Error",
+          "Nothing",
+          "None",
+          "Program executes infinitely.",
+          "generator"
+        ],
+        "answer": "generator 1 []",
+        "explanation": "📌 foo() is a generator function: calling it returns a generator object, and type(x).__name__ is generator.\n📌 next(x) runs the body up to yield 1 and returns 1.\n📌 list(x) collects what is left; the generator has nothing more to yield, so the list is empty.\n📌 Output: generator 1 []"
+      }
+    },
+    {
+      "id": "67e2dbc0f5addb214fc6a7fc",
+      "ref": "#61",
+      "reason": "The quoted error message changed in Python 3.10 ('Test.what()'); by the answer rule, name only the exception type.",
+      "expect": {
+        "options": [
+          "what",
+          "There is no output as the pass keyword is used.",
+          "TypeError: what() takes 0 positional arguments but 1 was given.",
+          "Test"
+        ],
+        "answer": "TypeError: what() takes 0 positional arguments but 1 was given.",
+        "explanation": "The Test class defines a method what(), but it does not include a self parameter, which is necessary for instance methods in Python. When you call t.what(), Python expects the method to accept self as the first argument to refer to the instance (t). Since what() is missing the self parameter, Python raises a TypeError indicating that what() takes no positional arguments but one was given (the t instance)."
+      },
+      "set": {
+        "options": [
+          "what",
+          "There is no output as the pass keyword is used.",
+          "Error: TypeError",
+          "Test"
+        ],
+        "answer": "Error: TypeError",
+        "explanation": "The Test class defines a method what(), but it does not include a self parameter, which is necessary for instance methods in Python. When you call t.what(), Python expects the method to accept self as the first argument to refer to the instance (t). Since what() is missing the self parameter, Python raises a TypeError indicating that what() takes no positional arguments but one was given (the t instance).\n(The exact wording of the message differs between Python versions, so the answer names only the exception type.)"
+      }
+    },
+    {
+      "id": "67e2df32f5addb214fc6a806",
+      "ref": "#66",
+      "reason": "The quoted SyntaxError message changed in Python 3.12; name only the exception type. The two TypeError options become one 'Error: TypeError' so the answer's format doesn't stand out.",
+      "expect": {
+        "options": [
+          "1 1",
+          "2 2",
+          "4 5",
+          "1 5",
+          "4 1",
+          "TypeError: print_all() takes 0 positional arguments but 1 was given",
+          "TypeError: __init__() takes 3 positional arguments but 2 was given",
+          "SyntaxError: non-default argument follows default argument"
+        ],
+        "answer": "SyntaxError: non-default argument follows default argument",
+        "explanation": "The code will result in a SyntaxError: non-default argument follows default argument. In Python, when defining a function (or the __init__ method), all non-default arguments must come before any default arguments. In the provided code, arg2 has no default value but comes after arg1, which does have a default value. This is not allowed, and Python will raise a syntax error."
+      },
+      "set": {
+        "options": [
+          "1 1",
+          "2 2",
+          "4 5",
+          "1 5",
+          "4 1",
+          "Error: TypeError",
+          "Error: SyntaxError"
+        ],
+        "answer": "Error: SyntaxError",
+        "explanation": "📌 Python rejects the definition before anything runs: a parameter without a default (arg2) can't follow one with a default (arg1=4).\n📌 So the code raises a SyntaxError when it is compiled, and nothing is printed.\n📌 (The message's wording differs between Python versions, so the answer names only the exception type.)"
+      }
+    },
+    {
+      "id": "67e04c89be7a85e233ca8163",
+      "ref": "#21",
+      "reason": "Write the lists as Python prints them ([(1, 2)], not [ (1, 2) ]), in the answer and in the options written the same way.",
+      "expect": {
+        "options": [
+          "[ (1, 2) ] [ 'Python', (1, 2) ] [ (1, 2) ]",
+          "[ (1, 2) ] [ 'Python', (1, 2) ] [ (1, 2), (1, 2) ]",
+          "[ (1, 2) ] [ 'Python', (1, 2) ] [ 'Python', (1, 2), (1, 2) ]",
+          "AttributeError: 'str' object has no attribute 'append'",
+          "Error"
+        ],
+        "answer": "[ (1, 2) ] [ 'Python', (1, 2) ] [ (1, 2), (1, 2) ]"
+      },
+      "set": {
+        "options": [
+          "[(1, 2)] ['Python', (1, 2)] [(1, 2)]",
+          "[(1, 2)] ['Python', (1, 2)] [(1, 2), (1, 2)]",
+          "[(1, 2)] ['Python', (1, 2)] ['Python', (1, 2), (1, 2)]",
+          "AttributeError: 'str' object has no attribute 'append'",
+          "Error"
+        ],
+        "answer": "[(1, 2)] ['Python', (1, 2)] [(1, 2), (1, 2)]"
+      }
+    },
+    {
+      "id": "67e0595cbe7a85e233ca816a",
+      "ref": "#24",
+      "reason": "Write [] as Python prints it (and [0, 2, 8] with its spaces); the explanation now says why the second list is empty (the filter was already consumed).",
+      "expect": {
+        "options": [
+          "Error",
+          "Nothing",
+          "[0, 2, 8]",
+          "[1, 3, 5, 13]",
+          "[1, 3, 5, 13] | [ ]",
+          "[1, 3, 5, 13, 0, 2, 8]",
+          "[1, 3, 5, 13] | [0,2,8]"
+        ],
+        "answer": "[1, 3, 5, 13] | [ ]",
+        "explanation": "📌 The first filter statement uses a lambda function lambda x: x % 2 != 0 to filter out the odd numbers from the list seq = [0, 1, 2, 3, 5, 8, 13]. This results in the list [1, 3, 5, 13].\n📌 The second filter statement applies a lambda function lambda x: x % 2 == 0 to the filtered list [1, 3, 5, 13], looking for even numbers. Since there are no even numbers left in the list, it returns an empty list [].\n📌 Thus, the final output is:\n     🔻[1, 3, 5, 13] from the first filter\n     🔻[] from the second filter"
+      },
+      "set": {
+        "options": [
+          "Error",
+          "Nothing",
+          "[0, 2, 8]",
+          "[1, 3, 5, 13]",
+          "[1, 3, 5, 13] | []",
+          "[1, 3, 5, 13, 0, 2, 8]",
+          "[1, 3, 5, 13] | [0, 2, 8]"
+        ],
+        "answer": "[1, 3, 5, 13] | []",
+        "explanation": "📌 The first filter keeps the odd numbers; print(list(result)) prints [1, 3, 5, 13] and, in doing so, uses up the filter.\n📌 The second filter is built on that same, already exhausted iterator, so it has nothing left to test: list(result) prints [].\n📌 (Even if it weren't exhausted, [1, 3, 5, 13] has no even numbers, so the result would be the same.)\n📌 Output: [1, 3, 5, 13] | []"
+      }
+    },
+    {
+      "id": "67e05cb0be7a85e233ca8170",
+      "ref": "#27",
+      "reason": "Write [] as Python prints it, in the answer and the options; the explanation wrongly said the first filter gives [3, 9] (3 is not in seq).",
+      "expect": {
+        "options": [
+          "Error",
+          "Nothing",
+          "<class 'filter'> | [4, 8]",
+          "<class 'list'> | [4, 8]",
+          "<class 'filter'> | [ ]",
+          "<class 'list'> | [ ]",
+          "<class 'filter'> | [9] | [ ]",
+          "<class 'filter'> | [9] | [4, 8]",
+          "<class 'list'> | [9] | [ ]",
+          "<class 'filter'> |",
+          "<class 'list'> | [9] | [4, 8]",
+          "<class 'list'> |"
+        ],
+        "answer": "<class 'filter'> | [ ]",
+        "explanation": "📌 The code first applies the filter() function to the list seq using a lambda function that selects elements divisible by 3. The result is a filter object containing only the numbers divisible by 3. These numbers are [3, 9].\n📌 However, the subsequent filter() function call filters out numbers divisible by 4 from the previous result ([3, 9]). As neither 3 nor 9 is divisible by 4, the final result is an empty list. The type(result) is still a filter object, so the printed output will be:\n     🔻 type(result) will print <class 'filter'>, since filter() returns a filter object.\n     🔻 After the second filter operation, no elements meet the condition, so it prints an empty list []."
+      },
+      "set": {
+        "options": [
+          "Error",
+          "Nothing",
+          "<class 'filter'> | [4, 8]",
+          "<class 'list'> | [4, 8]",
+          "<class 'filter'> | []",
+          "<class 'list'> | []",
+          "<class 'filter'> | [9] | []",
+          "<class 'filter'> | [9] | [4, 8]",
+          "<class 'list'> | [9] | []",
+          "<class 'filter'> |",
+          "<class 'list'> | [9] | [4, 8]",
+          "<class 'list'> |"
+        ],
+        "answer": "<class 'filter'> | []",
+        "explanation": "📌 filter() returns a lazy filter object, so print(type(result)) prints <class 'filter'>.\n📌 The first filter keeps the numbers divisible by 3: only 9 (seq has no 3).\n📌 The second filter keeps those divisible by 4; 9 isn't, so print(list(result)) prints [].\n📌 Output: <class 'filter'> | []"
+      }
+    },
+    {
+      "id": "67e04ad8be7a85e233ca815d",
+      "ref": "#18",
+      "reason": "The answer dropped the ' | ' the code prints between the two parts (also in the matching wrong option).",
+      "expect": {
+        "options": [
+          "{'name': 'James', 'age': 25}",
+          "Name: name Age: age",
+          "Name: James Age: 25",
+          "James : 25",
+          "Error"
+        ],
+        "answer": "Name: name Age: age"
+      },
+      "set": {
+        "options": [
+          "{'name': 'James', 'age': 25}",
+          "Name: name | Age: age",
+          "Name: James | Age: 25",
+          "James : 25",
+          "Error"
+        ],
+        "answer": "Name: name | Age: age"
+      }
+    },
+    {
+      "id": "67e05bfebe7a85e233ca816e",
+      "ref": "#26",
+      "reason": "The answer dropped the trailing ' |' (every print ends with ' | ', including the last).",
+      "expect": {
+        "options": [
+          "Error",
+          "Nothing",
+          "[25, 10]",
+          "[110, 36]",
+          "[25, 10] | [36, 12] | [49, 14]"
+        ],
+        "answer": "[25, 10] | [36, 12] | [49, 14]",
+        "explanation": "📌 mul(x): This function returns the square of x (i.e., x * x).\n     🔻 add(x): This function returns the sum of x + x (i.e., 2 * x).\n     🔻 functions = [mul, add]: This is a list containing the mul and add functions.\n     🔻 for i in range(5, 8): This loop will iterate over the numbers 5, 6, and 7.\n📌 Inside the loop:\n     🔻 The map(lambda x: x(i), functions) applies the functions mul and add to the current value of i.\n          📌For i = 5: mul(5) returns 25, add(5) returns 10, So, the list will be [25, 10].\n          📌For i = 6: mul(6) returns 36, add(6) returns 12, So, the list will be [36, 12].\n          📌For i = 7: mul(7) returns 49, add(7) returns 14, So, the list will be [49, 14].\n\n\n📌Final Output:\n     🔻 For each iteration, the corresponding list is printed with the values computed by mul and add for the current value of i (5, 6, 7).\n     🔻 The output will be: [25, 10] | [36, 12] | [49, 14]"
+      },
+      "set": {
+        "options": [
+          "Error",
+          "Nothing",
+          "[25, 10]",
+          "[110, 36]",
+          "[25, 10] | [36, 12] | [49, 14] |"
+        ],
+        "answer": "[25, 10] | [36, 12] | [49, 14] |",
+        "explanation": "📌 mul(x): This function returns the square of x (i.e., x * x).\n     🔻 add(x): This function returns the sum of x + x (i.e., 2 * x).\n     🔻 functions = [mul, add]: This is a list containing the mul and add functions.\n     🔻 for i in range(5, 8): This loop will iterate over the numbers 5, 6, and 7.\n📌 Inside the loop:\n     🔻 The map(lambda x: x(i), functions) applies the functions mul and add to the current value of i.\n          📌For i = 5: mul(5) returns 25, add(5) returns 10, So, the list will be [25, 10].\n          📌For i = 6: mul(6) returns 36, add(6) returns 12, So, the list will be [36, 12].\n          📌For i = 7: mul(7) returns 49, add(7) returns 14, So, the list will be [49, 14].\n\n\n📌Final Output:\n     🔻 For each iteration, the corresponding list is printed with the values computed by mul and add for the current value of i (5, 6, 7).\n     🔻 Each print ends with \" | \", including the last, so the output is: [25, 10] | [36, 12] | [49, 14] |"
+      }
+    },
+    {
+      "id": "67e2b4aef5addb214fc6a7e1",
+      "ref": "#48",
+      "reason": "The answer rule: the program prints 'after f', then raises NameError. The old wrong option 'after f' (the printed output alone) becomes the answer in the rule's format; 'Error' becomes the error without the printed part.",
+      "expect": {
+        "options": [
+          "after f after f?",
+          "after f",
+          "after f?",
+          "Error",
+          "Nothing",
+          "None"
+        ],
+        "answer": "Error",
+        "explanation": "📌 In the code, the function foo(x) attempts to call the function f(x, 4), but the function f is not defined anywhere in the code. This will cause a NameError when Python tries to execute f(x, 4).\n     🔻 f(x, 4) results in an error because f is not defined, and Python will raise a NameError.\n     🔻 The finally block (print('after f')) will execute before the program halts due to the error.\n     🔻 Since there's an error, the program will not reach the print statement print('after f?')."
+      },
+      "set": {
+        "options": [
+          "after f after f?",
+          "after f Error: name 'f' is not defined",
+          "after f?",
+          "Error: name 'f' is not defined",
+          "Nothing",
+          "None"
+        ],
+        "answer": "after f Error: name 'f' is not defined",
+        "explanation": "📌 f is not defined, so f(x, 4) raises a NameError.\n📌 The finally block still runs on the way out and prints after f; the error then propagates, so print('after f?') never runs.\n📌 The program shows its output, then the error: after f Error: name 'f' is not defined"
+      }
+    },
+    {
+      "id": "67e2d9c2f5addb214fc6a7f8",
+      "ref": "StopIteration",
+      "reason": "The answer rule: 'Before 1 After', then StopIteration (no message, so its type name). The option equal to the printed output alone is replaced; the other error options use the same format so the answer doesn't stand out.",
+      "expect": {
+        "options": [
+          "Before 1 After",
+          "Before 1 After StopIteration",
+          "Before 1",
+          "1 After",
+          "Before After",
+          "After StopIteration",
+          "1",
+          "Before",
+          "After",
+          "StopIteration",
+          "None",
+          "Nothing"
+        ],
+        "answer": "Before 1 After StopIteration",
+        "explanation": "📌 The code defines a generator function foo() that prints \"Before\" before yielding the value 1, and then prints \"After\" after the yield statement.\n🔻 The first call to next(x) starts the generator. It prints \"Before\", then yields 1. This is returned to the calling code.\n🔻 The second call to next(x) resumes the generator where it left off. It prints \"After\" and reaches the end of the generator, which causes a StopIteration exception."
+      },
+      "set": {
+        "options": [
+          "Before 1 After None",
+          "Before 1 After Error: StopIteration",
+          "Before 1",
+          "1 After",
+          "Before After",
+          "After Error: StopIteration",
+          "1",
+          "Before",
+          "After",
+          "Error: StopIteration",
+          "None",
+          "Nothing"
+        ],
+        "answer": "Before 1 After Error: StopIteration",
+        "explanation": "📌 The code defines a generator function foo() that prints \"Before\" before yielding the value 1, and then prints \"After\" after the yield statement.\n🔻 The first call to next(x) starts the generator. It prints \"Before\", then yields 1. This is returned to the calling code.\n🔻 The second call to next(x) resumes the generator where it left off. It prints \"After\" and reaches the end of the generator, which causes a StopIteration exception.\n📌 The program shows its output, then the error: Before 1 After Error: StopIteration (StopIteration has no message, so its type name is shown)."
+      }
+    },
+    {
+      "id": "67e2e007f5addb214fc6a80a",
+      "ref": "#68",
+      "reason": "Explanation wrong: += creates an instance attribute; the class attribute never changes.",
+      "expect": {
+        "explanation": "The code defines a class Test with two class attributes: attr1 and attr2. The method access() prints the value of self.attr1 and then increments it. However, since attr1 is a class attribute (not an instance attribute), the increment affects the class attribute globally, not just the instance. Therefore, the value of attr1 remains the same (12) for both instances (test and test2), and both calls to access() print 12."
+      },
+      "set": {
+        "explanation": "📌 attr1 = 12 is a class attribute.\n📌 In access(), print(self.attr1) finds no instance attribute, so it prints the class's 12.\n📌 self.attr1 += 1 then reads 12 and stores 13 as a new instance attribute on that object only; Test.attr1 stays 12.\n📌 test2 is a new instance without its own attr1, so it also prints 12. Output: 12 12"
+      }
+    },
+    {
+      "id": "67e2e816f5addb214fc6a817",
+      "ref": "#74",
+      "reason": "Explanation was copied from another question (set_height, get_width, \"output is 12\"); it now explains this code.",
+      "expect": {
+        "explanation": "📌 The code defines two classes: Box and Box2D.\n🔻 Box has a private attribute __width and two methods, get_width and set_width, for getting and setting the width.\n🔻 Box2D inherits from Box but adds its own private attribute __height with corresponding get_height and set_height methods.\n📌 When an object of Box2D is created, the constructor initializes __height to 0. The set_width(12) and set_height(11) methods modify the __width and __height values. Finally, when b.get_width() is called, it returns the width of the Box2D object, which is 12.\n📌 Thus, the output is 12 because the Box2D class inherited the get_width method from Box, and the width was set to 12."
+      },
+      "set": {
+        "explanation": "📌 Box2D defines its own __init__, so Box2D() runs only that one: it prints Box2D. Box.__init__ is never called, so Box is not printed.\n📌 b2.set_width(12) (inherited from Box) stores a width but prints nothing.\n📌 Output: Box2D"
+      }
+    },
+    {
+      "id": "67e50716f5addb214fc6a847",
+      "ref": "#96",
+      "reason": "Explanation wrong: Person.counter stays 0, so all three instances are created (p2 is not None).",
+      "expect": {
+        "explanation": "The __new__ method controls instance creation. It checks if counter <= 1 before creating an instance, otherwise returning None. Since counter is an instance variable, it starts at 0 for every new instance and isn't incremented at the class level. The first and second instances (p and p1) are created, but p2 is None. The __init__ method increments self.counter, so p.counter prints 1."
+      },
+      "set": {
+        "explanation": "📌 __new__ receives the class (named orig here) and checks orig.counter, the class attribute.\n📌 It stays 0: self.counter += 1 in __init__ creates an instance attribute and never changes the class's.\n📌 So counter <= 1 holds every time, and all three instances are created (p2 is a Person, not None).\n📌 p.counter is p's own instance attribute: 0 + 1 = 1. Output: 1"
+      }
+    },
+    {
+      "id": "67e2f133f5addb214fc6a827",
+      "ref": "#82",
+      "reason": "Explanation wrong: the error is an MRO TypeError raised when the class is defined, not a constructor problem.",
+      "expect": {
+        "explanation": "📌 In the given code, there is an issue with the inheritance structure. Specifically, the MagicBox class inherits from Box, Box2D, and Box3D in the following order: Box, Box2D, Box3D. However, the class Box2D and Box3D are already inheriting from Box, and Box3D is further inheriting from Box2D.\n📌 In Python, the method resolution order (MRO) determines the order in which classes are initialized. When multiple inheritance is used, it can create a complex inheritance hierarchy, leading to ambiguity in the order of method calls.\n📌 In this case, the MagicBox class tries to inherit from both Box2D and Box3D, which causes a conflict, as the constructors for Box2D and Box3D do not account for the Box class being called twice (once via Box2D and once via Box3D). This results in a TypeError because Python does not know which constructor to call, creating an ambiguous situation.\n📌 Therefore, the code will raise an error."
+      },
+      "set": {
+        "explanation": "📌 MagicBox lists Box before Box2D and Box3D, but both of those are subclasses of Box, so Box would have to come both before and after them in the method resolution order.\n📌 No consistent order exists, so Python raises TypeError: Cannot create a consistent method resolution order (MRO) as soon as the class MagicBox statement runs, before any object is created.\n📌 Nothing is printed. Output: Error"
+      }
+    },
+    {
+      "id": "67e2f0c3f5addb214fc6a825",
+      "ref": "#81",
+      "reason": "Explanation wrong: super().super() is valid syntax; it raises AttributeError, not TypeError.",
+      "expect": {
+        "explanation": "📌 The code defines a class hierarchy with three classes: Box, Box2D, and Box3D. The issue arises from the use of super().super() in the Box3D.__init__() method. The super() function is used to call the method of a superclass, but calling super() twice in succession (super().super()) is not valid syntax. The correct way to invoke the method of a superclass is by using super() once, and not chaining it further.\n📌 In this code, super().super() is invalid because super() returns a proxy object that allows access to the parent class's methods. Chaining two super() calls like this does not follow Python's method resolution order (MRO) and results in a TypeError.\n📌 Therefore, when the code is executed, an error will be raised, and the correct output is Error."
+      },
+      "set": {
+        "explanation": "📌 super() returns a proxy for calling the parent class's methods, and that proxy has no attribute named super.\n📌 So super().super() in Box3D.__init__ raises AttributeError: 'super' object has no attribute 'super' when Box3D() runs (the syntax itself is valid).\n📌 The error comes before any print, so nothing is printed. Output: Error"
+      }
+    },
+    {
+      "id": "67e04a20be7a85e233ca815b",
+      "ref": "#17",
+      "reason": "Explanation wrong: x is assigned; the error comes from foo being rebound to 25.",
+      "expect": {
+        "explanation": "📌 In the code, the function foo() attempts to use the global variable x and return pow(ord(x), 2). The ord(x) function returns the Unicode code point for the character x.\n📌 However, before the function is called, the global variable x is never explicitly assigned a value, but rather, the code assigns 25 to globals()['foo'].\n📌 This line is attempting to assign the value 25 to the global foo function reference in the globals() dictionary, which causeas a conflict between the name foo and the function definition. Therefore, calling foo() results in an error since foo is no longer referring to the function but instead to the integer 25.\n📌 As a result, when foo() is called, it leads to an Error because foo is overwritten with 25."
+      },
+      "set": {
+        "explanation": "📌 globals()['foo'] = 25 rebinds the global name foo, so foo is now the integer 25, not the function.\n📌 x = \" \" is assigned, but it never matters: print(foo()) tries to call 25 and raises TypeError: 'int' object is not callable.\n📌 Output: Error"
+      }
+    },
+    {
+      "id": "67e2d7def5addb214fc6a7f0",
+      "ref": "#55",
+      "reason": "Explanation confusing: the for loop already consumed 9 before breaking.",
+      "expect": {
+        "explanation": "📌 The function foo() is a generator that yields numbers from 0 to 19 that are divisible by 3. The for loop iterates over the generator, printing values until i >= 7, at which point it breaks. This means it prints 0, 3, 6 before breaking.\n📌 After breaking, print(next(x)) is executed, which continues retrieving values from the generator where it left off. The next value in the sequence after 6 is 9, so 12 is printed."
+      },
+      "set": {
+        "explanation": "📌 foo() yields 0, 3, 6, 9, 12, 15 and 18 (the multiples of 3 below 20).\n📌 The for loop prints 0, 3 and 6; it then takes 9 from the generator, sees 9 >= 7 and breaks, so 9 is used up but not printed.\n📌 next(x) resumes after 9 and returns 12. Output: 0 3 6 12"
+      }
+    },
+    {
+      "id": "67e171bdf5addb214fc6a7d3",
+      "ref": "#43",
+      "reason": "Owner's decision: keep the code and answer (a return in finally overrides the earlier return); add a note that Python 3.14 warns about it, because the behaviour is easy to misread.",
+      "expect": {
+        "explanation": "📌 The function foo() contains a try-finally block, and it demonstrates how finally affects the return value.\n     🔻 The try block executes return 1, which means the function intends to return 1.\n     🔻 However, before the function actually returns, the finally block executes.\n     🔻 The finally block contains return 2, which overrides the return 1 from the try block.\n     🔻 As a result, the function returns 2.\n📌 This behavior occurs because the finally block is always executed, even if there is a return statement in the try block."
+      },
+      "set": {
+        "explanation": "📌 The function foo() contains a try-finally block, and it demonstrates how finally affects the return value.\n     🔻 The try block executes return 1, which means the function intends to return 1.\n     🔻 However, before the function actually returns, the finally block executes.\n     🔻 The finally block contains return 2, which overrides the return 1 from the try block.\n     🔻 As a result, the function returns 2.\n📌 This behavior occurs because the finally block is always executed, even if there is a return statement in the try block.\n📌 Python 3.14 emits a SyntaxWarning ('return' in a 'finally' block) for this code, because a return inside finally silently overrides the earlier return and is easy to misread. The output is still 2."
+      }
+    }
+  ]
+}
