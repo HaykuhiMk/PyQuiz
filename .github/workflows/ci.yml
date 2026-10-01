@@ -6,7 +6,8 @@
 #   backend           lint, typecheck, Jest + Supertest, webpack build
 #   verify-questions  every seed snippet on Python 3.9 and 3.14
 #   e2e               the Playwright suite, once per browser:
-#                     Chromium, Firefox and WebKit
+#                     Chromium, Firefox and WebKit; on a failure, the HTML
+#                     report, traces and screenshots are kept as an artifact
 # MongoDB is a throwaway service container per job. The tests create their
 # own databases in it (pyquiz_test, pyquiz_e2e); the e2e backend gets
 # throwaway values for its secrets from e2e/start-backend.js, and mail is off.
@@ -117,10 +118,15 @@ jobs:
         working-directory: e2e
       - run: npx playwright test --project ${{ matrix.browser }}
         working-directory: e2e
-      - name: Keep the traces of failed tests
+      # When a test fails: the HTML report (open index.html; it links each
+      # failure's trace and screenshot) and the raw traces, screenshots and
+      # error-context files.
+      - name: Keep the Playwright report, traces and screenshots
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-${{ matrix.browser }}-results
-          path: e2e/test-results/
-          retention-days: 7
+          name: playwright-${{ matrix.browser }}
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 14

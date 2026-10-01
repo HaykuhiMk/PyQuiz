@@ -10,10 +10,13 @@ module.exports = defineConfig({
   // rate limits, and the suite is small enough that parallelism buys little.
   workers: 1,
   timeout: 30000,
-  reporter: [['list']],
+  // In CI also an HTML report (e2e/playwright-report/), uploaded with the
+  // traces and screenshots when a test fails (.github/workflows/ci.yml).
+  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: `http://localhost:${FRONTEND_PORT}`,
     trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
   },
   // Locally: the installed Google Chrome. In CI (GitHub Actions sets CI=true;
   // .github/workflows/ci.yml): Playwright's own Chromium, Firefox and WebKit,

@@ -133,7 +133,9 @@ runners only. It uses no secrets, deploys nothing, and can only read the reposit
 - **Question answers:** `npm run verify-questions -- --require-checked` with Python 3.9 and 3.14
   (exactly those two, through `PYQUIZ_PYTHONS`). It fails if either is missing.
 - **Playwright:** the full suite once per browser, in Chromium, Firefox and WebKit, each with its own
-  MongoDB service container. The traces of failed tests are kept as an artifact for 7 days.
+  MongoDB service container. When a test fails, the job keeps an artifact `playwright-<browser>` for 14 days: the HTML report
+  (`playwright-report/index.html`, with each failure's trace and screenshot) and the raw
+  `test-results/`.
 
 A newer push to the same branch cancels the older run. The tests need no `.env`: the Jest suites
 and `e2e/start-backend.js` set throwaway values for everything they use, and mail is off.
