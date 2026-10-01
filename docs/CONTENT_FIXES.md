@@ -1,5 +1,17 @@
 # Content fixes for the production questions
 
+**Status (2026-10-01): approved, and applied by script, not by hand.**
+- The exact changes for all 20 questions (current and new values) are in
+  `backend/database/contentFixes.json`, and `backend/scripts/applyContentFixes.js` applies them.
+  `docs/DEPLOY_RUNBOOK.md`, "Before reopening the site", has the steps.
+- They were reviewed as a proposal and approved, except #43, where the code and answer stay (see
+  section 4).
+- Rehearsed on a local copy of production: all 145 questions pass `npm run verify-questions` on
+  Python 3.9 and 3.14.
+
+The sections below are the list as found, kept for the record. The approved values are in the
+data file.
+
 The questions to fix in the admin panel, by id, with what is wrong and what to change. They come
 from the real-data audit of 2026-10-01 (`pyquiz_realcopy`, an exact copy of production after the
 conversion), including the 10 from the "Before reopening the site" checklist in
@@ -79,4 +91,12 @@ print something and then raise, so there are no other violations. The seed quest
 
 | Id | Problem | Change |
 |---|---|---|
-| `67e171bdf5addb214fc6a7d3` (#43) | `return 2` inside `finally` makes Python 3.14 print `SyntaxWarning: 'return' in a 'finally' block`. The output (`2`) and the answer are unchanged. | If possible, rewrite it to show the same behaviour without `return` in `finally`; low priority. |
+| `67e171bdf5addb214fc6a7d3` (#43) | `return 2` inside `finally` makes Python 3.14 print `SyntaxWarning: 'return' in a 'finally' block`. The output (`2`) and the answer are unchanged. | **Owner's decision:** keep the code and the answer (the question teaches that a `return` in `finally` overrides the earlier one), and add one sentence to the explanation saying that Python 3.14 warns about it, because the behaviour is easy to misread. The verifier accepts it: the warning goes to stderr. |
+
+## 5. For the later misconception tagging of production-only questions
+
+- `67e2f3bff5addb214fc6a82d` (Box Magic): the new wrong option `Box2D Box3D Magic` is a candidate
+  for an `inheritance` misconception about `super()`. It's what a learner gets who thinks
+  `super(Box2D, self)` starts at Box2D itself rather than at the class after it in the MRO. That's
+  close to `inheritance.super-means-parent-class`; decide when the 98 production-only questions
+  get their tag proposals.

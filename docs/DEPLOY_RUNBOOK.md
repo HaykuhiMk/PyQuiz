@@ -206,36 +206,36 @@ Don't reopen until every box is ticked.
 
   It refuses (and changes nothing) if two accounts would end up with the same email; the copy of
   2026-10-01 has none. A second run reports `Nothing to change`.
-- [ ] **Questions fixed in the admin panel.** Numbers are from the reviewed topic proposals.
-  **`docs/CONTENT_FIXES.md` has the complete list**: these, the ambiguous answers, the wrong
-  explanations and #43, each with the exact change. Open a question with **Find by id** in Manage
-  Questions.
-  - [ ] `67e2f3bff5addb214fc6a82d`: option `'Box Magic'` appears twice. The admin forms refuse to
-    save a question with duplicate options, and the answer is matched by text, so make every
-    option different.
-  - [ ] `67dd83578e2ddadc28e387f6` (#2): wrong answer. The code prints `foo` and then `main`, but
-    the stated answer is `main`, and no option matches the real output.
-  - [ ] `67e2ba44f5addb214fc6a7ed` (#54): the answer contains a memory address
-    (`<generator object at 0x100>`). A real run prints `<generator object foo at 0x…>` with a
-    different address every time, so no fixed answer can match. Change the question so its output
-    is deterministic. The answer also writes `[ ]` for `[]`.
-  - [ ] `67e2dbc0f5addb214fc6a7fc` (#61): the answer quotes an error message that changed in Python
-    3.10 (`what()` vs `Test.what()`). The site states "Answers assume Python 3.9 or newer", so make
-    the answer version-independent, e.g. name the exception type only.
-  - [ ] `67e2df32f5addb214fc6a806` (#66): the answer quotes a SyntaxError message that changed in
-    Python 3.12 ("non-default argument follows default argument" vs "parameter without a default
-    follows parameter with a default"). Same fix as #61.
-  - [ ] **The five answer-formatting cases** (`npm run verify-questions` reports them as
-    mismatches):
-    - [ ] `67e04c89be7a85e233ca8163` (#21): `[ (1, 2) ]` etc., but Python prints `[(1, 2)]`;
-    - [ ] `67e0595cbe7a85e233ca816a` (#24): `[ ]`, but Python prints `[]`;
-    - [ ] `67e05cb0be7a85e233ca8170` (#27): `[ ]`, but Python prints `[]`;
-    - [ ] `67e04ad8be7a85e233ca815d` (#18): the answer drops the ` | ` that the code prints
-      (`Name: name | Age: age`);
-    - [ ] `67e05bfebe7a85e233ca816e` (#26): the answer drops the trailing ` |` that the code prints.
-  - To re-check after editing, export the questions (content only) to a JSON file in `tmp/`, map
-    nothing (v2 stores `answer`), and run `npm run verify-questions -- --file <that file>`. Only
-    the questions above should be reported, and none once they're fixed.
+- [ ] **Content fixes applied with the script.** The owner-approved fixes for the 20 questions in
+  `docs/CONTENT_FIXES.md` (options, answers, explanations and one snippet) are in
+  `backend/database/contentFixes.json`. `backend/scripts/applyContentFixes.js` applies them.
+  - **Its rules:** it applies a question only if its current content is exactly what the fixes
+    expect, skips one that is already fixed, and refuses to change anything at all if any question
+    differs (for example, one edited in the admin panel meanwhile). Each refusal lists the id and
+    the field. It also refuses if a change would drop a misconception tag.
+  - **Run it** with the tunnel open (section 1); it's a dry run first, then apply, typing the
+    database name to confirm:
+
+    ```bash
+    cd backend
+    node scripts/applyContentFixes.js --uri "$PYQUIZ_URI"
+    #   expect: 20 content fixes: 20 to apply, 0 already applied, 0 unexpected.
+    node scripts/applyContentFixes.js --uri "$PYQUIZ_URI" --apply
+    #   expect: Applied 20 of 20 fix(es).
+    #           All 20 content fixes are in place, and every fixed question passes the v2 validators.
+    ```
+
+  - **Check afterwards:** a second dry run says `0 to apply, 20 already applied`, and the
+    runbook's dry run (`node scripts/productionMigration.js --uri "$PYQUIZ_URI"`) ends with
+    `READY TO REOPEN` and **no WARN line** (the duplicated Box Magic option was the last one).
+  - **Rehearsed** on 2026-10-01 against `pyquiz_verify`, a local copy of production taken after the
+    conversion and the email fix:
+    - the fixes changed exactly the 20 listed questions, in exactly the approved fields;
+    - `npm run verify-questions` passed 145 of 145 questions on Python 3.9 and 3.14;
+    - an API round trip over all 145 (a wrong option scores incorrect, the stored answer scores
+      correct) passed;
+    - the runbook's dry run said READY TO REOPEN with no WARN.
+
 - [ ] **v2 deployed** (`TODO(author)`: how the app is deployed and started on the server, e.g. the
   process manager):
   - code at the deployed v2 commit; `cd backend && npm ci && npm run build`; start with

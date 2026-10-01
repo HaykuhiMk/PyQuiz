@@ -205,7 +205,34 @@ never changes once set, but a display name can change freely without a data migr
 understand to answer it. A question may also have optional **secondary topics** for filtering. Quiz
 and Study topic filters match a question by its primary *or* any secondary topic.
 
-**Counts.** The bundled dataset contains **47 questions**: 25 easy, 18 medium and 4 hard.
+**Counts: the production question bank.** As of 2026-10-01, after the production conversion and
+the content fixes, production holds **145 questions**: 103 easy, 33 medium and 9 hard. All 16
+topics have at least one primary question, so all 16 are visible. There are **39 misconception
+tags**, on 18 questions; 17 of them carry feedback. The counts come from a local copy of the
+production database, counted with the question content only.
+
+| Primary topic | Questions |
+|---|---|
+| Functions & Built-ins | 25 |
+| Inheritance & MRO | 19 |
+| Classes & Objects | 17 |
+| Names, Mutability & Identity | 15 |
+| Scope & Namespaces | 13 |
+| Generators & Iterators | 11 |
+| Dictionaries | 8 |
+| Exceptions | 7 |
+| Loops & Control Flow | 7 |
+| Data Types & Conversion | 6 |
+| Strings | 5 |
+| Lists | 4 |
+| Sets | 4 |
+| Indexing & Slicing | 2 |
+| Numbers & Arithmetic | 1 |
+| Tuples | 1 |
+
+**Counts: the bundled seed dataset.** `backend/database/questions.json` seeds development and test
+databases with **47 questions**: 25 easy, 18 medium and 4 hard. 47 of the production questions
+started as these.
 
 | Primary topic | Questions |
 |---|---|
@@ -222,7 +249,8 @@ and Study topic filters match a question by its primary *or* any secondary topic
 | Numbers & Arithmetic | 0 |
 
 **Visibility.** Topics with no primary questions are hidden from filters and from the mastery list.
-With the current data that is Numbers & Arithmetic, so **10 topics are visible**. Admins add
+In production every topic has one, so all 16 are visible. With only the seed data, the five newest
+topics and Numbers & Arithmetic have none, so 10 are visible. Admins add
 questions through the admin panel, restricted to the canonical list.
 
 **Reference Python version.** Answers assume **Python 3.9 or newer** (Q20 uses
@@ -447,6 +475,7 @@ read-only `GET /api/v1/concept-graph` serves it without any question content.
   only when that one misconception explains choosing it. It is not tagged when two different
   beliefs could explain it, or when something else is the decisive reason it is wrong.
   - **Seed questions:** 39 of their 275 wrong options are tagged, on 18 of the 47 questions.
+    Production has the same 39 tags; its 98 other questions aren't tagged yet.
   - **Feedback:** only the 17 options tagged with a confusion have it, saying which direction
     they show.
 - **Recording.** Every answer event stores the chosen option's `misconceptionId` (or null) and
@@ -1265,12 +1294,11 @@ No study has been run yet, and no results exist.
 
 ## 19. Current Limitations
 
-- **Small question bank with content gaps.** There are 47 questions, only 4 of them hard. Some
-  topics are too thin for mastery:
-  - Numbers & Arithmetic has 0 primary questions, so it is hidden;
-  - Tuples has 1 and Indexing & Slicing has 2, so both show "Not enough questions yet".
-
-  A heavy user will exhaust the eligible Classic pool quickly.
+- **Small question bank with content gaps.** Production has 145 questions, only 9 of them hard
+  (Section 5.3). Some topics are too thin for mastery: Numbers & Arithmetic and Tuples have 1
+  primary question each and Indexing & Slicing has 2, so they show "Not enough questions yet".
+  Classes & Objects has 17 questions, all easy. A heavy user will exhaust the eligible Classic pool
+  quickly.
 - **Python versions in between are not checked.** The questions are checked on Python 3.9 and
   3.14 only (Section 5.3). Versions 3.10–3.13 are not run, so a behaviour change in one of them
   would go unnoticed, although nothing in the current seed set differs between 3.9 and 3.14.

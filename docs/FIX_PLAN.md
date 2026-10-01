@@ -40,8 +40,19 @@ Claude). It found and fixed:
 - the missing favicon;
 - the verifier's rule for "output, then error".
 
-The content problems, by id, are in `docs/CONTENT_FIXES.md`. The owner fixes them in the admin
-panel.
+The content problems, by id, are in `docs/CONTENT_FIXES.md`.
+
+**Content fixes by script (2026-10-01).** The owner's admin-panel edits were never saved. The fixes
+were proposed, approved, and put into `backend/database/contentFixes.json`, which
+`backend/scripts/applyContentFixes.js` applies (the owner runs it on production; steps in
+`DEPLOY_RUNBOOK.md`).
+- **Rehearsal** on `pyquiz_verify`, a local copy of production after the conversion and the email
+  fix:
+  - exactly the 20 questions changed, in exactly the approved fields, and no tag was lost;
+  - all 145 questions pass the v2 validators and `npm run verify-questions` on 3.9 and 3.14;
+  - an API round trip passed for all 145;
+  - the runbook's dry run said READY TO REOPEN with no WARN.
+- **Still open:** misconception tags for the 98 production-only questions.
 
 **Deployment preparation is paused** (production data migration). Read "Deployment preparation
 (paused)" below before any deploy or any work against `pyquiz_prodcopy`. Full detail, evidence and
