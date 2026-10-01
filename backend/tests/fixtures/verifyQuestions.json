@@ -1,0 +1,9 @@
+[
+  { "question": "correct output", "code": "print(1 + 1)", "options": ["2", "3"], "answer": "2" },
+  { "question": "wrong answer", "code": "print(2)", "options": ["2", "3"], "answer": "3" },
+  { "question": "correct error answer", "code": "[][0]", "options": ["Error", "None"], "answer": "Error" },
+  { "question": "raises, but the answer is not an error", "code": "print(1 / 0)", "options": ["inf", "Error"], "answer": "inf" },
+  { "question": "two options equal the output", "code": "print('a', 'b')", "options": ["a b", "a  b"], "answer": "a b" },
+  { "question": "never ends", "code": "while True:\n    pass", "options": ["Nothing", "Error"], "answer": "Nothing" },
+  { "question": "writes a file in its own folder", "code": "open('x.txt', 'a').write('hi')\nprint(open('x.txt').read())", "options": ["hi", "hihi"], "answer": "hi" }
+]

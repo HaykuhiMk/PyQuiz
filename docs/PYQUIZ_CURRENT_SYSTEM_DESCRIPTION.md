@@ -214,7 +214,7 @@ questions through the admin panel, restricted to the canonical list.
 
 **Reference Python version.** Answers assume **Python 3.9 or newer** (Q20 uses
 `str.removeprefix`, added in 3.9), and every seed question's real output matches its stored answer
-on Python 3.9 and 3.14. The quiz, Study, Daily Challenge and About pages show "Answers assume Python 3.9 or
+on Python 3.9 and 3.14, checked by `npm run verify-questions` (Section 13). The quiz, Study, Daily Challenge and About pages show "Answers assume Python 3.9 or
 newer, and are checked on Python 3.9 and 3.14", and the admin question forms show authors a hint
 (the answer must be the same on 3.9 and every newer version, with no version-specific error
 messages and no reliance on CPython caching). Both texts come from one constant,
@@ -1003,6 +1003,22 @@ test suite does not exercise because it runs without Redis.
 
 **Other checks.** `npm run lint` (ESLint) is clean. `npm run typecheck` passes, but it performs
 only a syntax check, not type checking (Section 19).
+
+**Automated content-quality check.** `npm run verify-questions` runs every question's code snippet
+on each available Python version and compares the real output with the stored answer
+(`backend/scripts/verifyQuestions.js` and `verify_questions.py`; it requires `python3`). Each
+snippet runs in its own process, in an empty folder, with a timeout. The check reports:
+- an output that differs from the answer;
+- a snippet that raises an error when the answer isn't an error option;
+- a second option that also equals the output (an ambiguous question);
+- a snippet that times out.
+
+It finds every `python3`/`python3.N` on the `PATH` (or the interpreters listed in `PYQUIZ_PYTHONS`),
+warns when one of the reference versions in `backend/config/pythonVersion.js` (3.9 and 3.14) isn't
+available, and fails on it with `--require-checked`. All 47 seed questions pass on CPython 3.9.6 and
+3.14.5, and `backend/tests/verifyQuestions.test.js` runs it on the seed file and on a fixture with
+one example of each kind of mismatch. It executes the snippets, so it is meant for trusted question
+data such as the seed file.
 
 **Bugs the tests caught.** Several real defects were found by tests written during this work,
 rather than by inspection:

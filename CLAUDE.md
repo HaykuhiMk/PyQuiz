@@ -15,6 +15,8 @@ Backend endpoints are validated with Zod and errors go through a centralized err
 - Frontend smoke tests: `cd e2e && npm install && npm test` (Playwright; own servers + local `pyquiz_e2e` DB)
 - Benchmark: `cd backend && npm run benchmark -- --url <local API>` (see docs/AUDIT.md Phase 5)
 - Seed local dev DB: `cd backend && npm run seed` (reads `database/questions.json`)
+- Verify question answers: `cd backend && npm run verify-questions` (runs every seed snippet on each
+  available Python, requires python3; reference versions in `config/pythonVersion.js`)
 
 ## Ground rules
 

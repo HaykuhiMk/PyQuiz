@@ -15,7 +15,8 @@
     "format": "prettier . --write",
     "typecheck": "tsc --noEmit",
     "seed": "node database/json_to_mongo.js",
-    "benchmark": "node scripts/benchmark.js"
+    "benchmark": "node scripts/benchmark.js",
+    "verify-questions": "node scripts/verifyQuestions.js"
   },
   "keywords": [],
   "author": "",

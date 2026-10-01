@@ -402,8 +402,12 @@ fixes must be applied there. Question numbers are positions in the seed file:
 - **Q42** (`sys.stdout` redirect): starts with `open('log.txt', 'w').close()`, so every run prints
   the same (it used to append to whatever `log.txt` held). The explanation is updated.
 
-Checked: every seed snippet's real output matches its stored answer on CPython 3.9.6 and 3.14.5
-(`tmp/concept-graph/check-seed.py`).
+Checked: every seed snippet's real output matches its stored answer on CPython 3.9.6 and 3.14.5,
+now with `npm run verify-questions`. For production, the 98 questions that aren't seed questions
+have never been checked this way. Export them from `pyquiz_prodcopy` to a JSON file in `tmp/` and run
+`npm run verify-questions -- --file <that file>` before the content fixes are finalised. The
+verifier reads `answer`, and production still stores `correctAnswer` until M1, so map that field in
+the export (question content only, no personal data).
 
 **Order matters for Q8, Q11, Q28 and Q42.** `migrateQuestionTopics.js` (M2) matches production
 questions to seed entries by their exact `code`, and the seed file now holds the **new** code for
