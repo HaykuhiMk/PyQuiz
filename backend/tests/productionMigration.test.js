@@ -134,8 +134,9 @@ describe('scripts/productionMigration.js', () => {
   it('--apply migrates everything, then a second run changes nothing', async () => {
     const ids = await insertLegacy();
     const res = run(['--uri', uri(), '--apply'], `${mongoose.connection.name}\n`);
-    expect(res.out).toMatch(/Migration complete; all checks passed/);
-    expect(res.code).toBe(0);
+    expect(res.out).toMatch(/Migration complete; every check passed/);
+    // Migrated, but the two colliding accounts keep it from being ready.
+    expect(res.code).toBe(2);
 
     const c = (name) => mongoose.connection.db.collection(name);
     // Questions: answer field, seed content/topics/tags, duplicate merged, mapping topics.
@@ -172,13 +173,24 @@ describe('scripts/productionMigration.js', () => {
     const names = (await c('users').indexes()).map((i) => i.name);
     expect(names).toEqual(expect.arrayContaining(['usernameLower_1', 'email_1']));
     expect((await c('quizsessions').indexes()).map((i) => i.name)).toContain('token_1');
-    expect(res.out).toMatch(/WARN every user has usernameLower: 2 without it/);
+    expect(res.out).toMatch(
+      new RegExp(`NOT READY TO REOPEN:\\n  - 2 user\\(s\\) without usernameLower \\(resolve their username collisions first\\): ${alex1._id}, ${alex2._id}`)
+    );
 
     const again = run(['--uri', uri(), '--apply'], `${mongoose.connection.name}\n`);
-    expect(again.code).toBe(0);
+    expect(again.code).toBe(2);
     for (const step of ['answer-field', 'duplicate-q25', 'seed-questions', 'other-questions', 'username-lower', 'user-defaults', 'answer-history', 'old-sessions', 'quizprogresses', 'indexes']) {
       expect(again.out).toMatch(new RegExp(`${step}\\s+done \\(0 changed\\)`));
     }
+
+    // The owner resolves the collision (renames one account); a dry run then
+    // reports the database ready to reopen.
+    await c('users').updateOne({ _id: alex2._id }, { $set: { username: 'alex2', usernameLower: 'alex2' } });
+    await c('users').updateOne({ _id: alex1._id }, { $set: { usernameLower: 'alex' } });
+    const check = run(['--uri', uri()]);
+    expect(check.code).toBe(0);
+    expect(check.out).toMatch(/READY TO REOPEN: every check passed and every user has usernameLower\./);
+    expect(check.out).not.toMatch(/NOT READY/);
   }, 120000);
 
   it('refuses before any write when a question is neither a seed question nor in the reviewed mapping', async () => {

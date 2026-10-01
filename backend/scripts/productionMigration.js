@@ -24,7 +24,8 @@
 //    8. old-sessions      delete quiz sessions from the old model (no token) (M9)
 //    9. quizprogresses    drop the old, empty collection (M10)
 //   10. indexes           build every index the v2 models define (M11)
-//   11. verify            checks the result; also runs on a dry run
+//   11. verify            checks the result and says whether the database is
+//                         READY TO REOPEN; also runs on a dry run
 // Not changed: createdBy/createdAt/updatedAt on questions are kept (M3).
 //
 // SAFETY
@@ -42,6 +43,11 @@
 //   off, so nothing is built or created as a side effect. Indexes are built
 //   only by step 10, explicitly.
 // - Prints counts and ids only, never usernames, emails or other personal data.
+//
+// Exit codes on --apply: 0 migrated and ready to reopen; 2 migrated, but not
+// ready to reopen (users without usernameLower, listed by id); 1 failed or
+// refused. A dry run exits 0 and prints the same readiness verdict, so it can
+// be re-run to check readiness after the username collisions are resolved.
 //
 // Usage (from backend/):
 //   node scripts/productionMigration.js --uri "<connection string>"           # dry run
@@ -509,7 +515,7 @@ async function verify(db) {
   const users = db.collection('users');
   check(!(await users.countDocuments({ answeredQuestions: { $exists: true } })), 'no user keeps the legacy answeredQuestions array');
   const noLower = (await users.find({ usernameLower: { $exists: false } }, { projection: { _id: 1 } }).toArray()).map((u) => String(u._id));
-  check(!noLower.length, 'every user has usernameLower', `${noLower.length} without it (username collisions to resolve): ${noLower.join(', ')}`, 'WARN');
+  results.usersWithoutUsernameLower = noLower;
   const missingDefaults = [];
   for (const path of Object.keys(USER_DEFAULTS)) {
     if (await users.countDocuments({ [path]: { $exists: false } })) missingDefaults.push(path);
@@ -523,9 +529,24 @@ async function verify(db) {
   return results;
 }
 
+// Prints the checks and the readiness verdict. The database is ready to
+// reopen only when no check FAILs and every user has usernameLower (the
+// owner resolves the username collisions before reopening).
 function printVerification(results) {
   for (const r of results) log(`  ${r.status.padEnd(4)} ${r.label}${r.status !== 'PASS' && r.detail ? `: ${r.detail}` : ''}`);
-  return results.filter((r) => r.status === 'FAIL').length;
+  const failures = results.filter((r) => r.status === 'FAIL').length;
+  const noLower = results.usersWithoutUsernameLower;
+  log();
+  if (!failures && !noLower.length) {
+    log('READY TO REOPEN: every check passed and every user has usernameLower.');
+  } else {
+    log('NOT READY TO REOPEN:');
+    if (failures) log(`  - ${failures} check(s) failed (see FAIL above).`);
+    if (noLower.length) {
+      log(`  - ${noLower.length} user(s) without usernameLower (resolve their username collisions first): ${noLower.join(', ')}`);
+    }
+  }
+  return { failures, ready: !failures && !noLower.length };
 }
 
 async function confirm(dbName) {
@@ -594,10 +615,15 @@ async function main() {
     }
     log();
     log('Verification:');
-    const failures = printVerification(await verify(db));
+    const { failures, ready } = printVerification(await verify(db));
     log();
-    log(failures ? `${failures} check(s) failed. See above.` : 'Migration complete; all checks passed (see WARN lines, if any).');
-    return failures ? 1 : 0;
+    if (failures) {
+      log(`${failures} check(s) failed. See above.`);
+      return 1;
+    }
+    log('Migration complete; every check passed (see WARN lines, if any).');
+    // Exit code 2: migrated, but not ready to reopen yet.
+    return ready ? 0 : 2;
   } finally {
     await mongoose.disconnect();
   }
