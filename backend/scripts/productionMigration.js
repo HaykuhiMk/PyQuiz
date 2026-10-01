@@ -380,11 +380,14 @@ const steps = [
     async plan(db) {
       const users = await db.collection('users').find({ answeredQuestions: { $exists: true } }, { projection: { answeredQuestions: 1 } }).toArray();
       const entries = users.reduce((n, u) => n + (u.answeredQuestions || []).length, 0);
+      const withEntries = users.filter((u) => (u.answeredQuestions || []).length).length;
       const existing = new Set((await db.collection('questions').find({}, { projection: { _id: 1 } }).toArray()).map((q) => String(q._id)));
       const dangling = users.reduce((n, u) => n + (u.answeredQuestions || []).filter((id) => !existing.has(String(id))).length, 0);
       return {
         count: users.length,
-        detail: users.length ? [`${entries} entries on ${users.length} user(s); ${dangling} refer to questions that don't exist (not migrated)`] : [],
+        detail: users.length
+          ? [`${users.length} user(s) have the array, ${withEntries} with entries: ${entries} entries; ${dangling} refer to questions that don't exist (not migrated)`]
+          : [],
       };
     },
     async apply(db) {
@@ -477,17 +480,22 @@ const steps = [
 
 // ------------------------------------------------------------------- verify
 
+// At most 12 ids per verification line (the readiness list is never cut).
+function ids(list) {
+  return list.length > 12 ? `${list.slice(0, 12).join(', ')} … and ${list.length - 12} more` : list.join(', ');
+}
+
 async function verify(db) {
   const results = [];
   const check = (ok, label, detail = '', level = 'FAIL') => results.push({ status: ok ? 'PASS' : level, label, detail });
   const questions = await db.collection('questions').find({}).toArray();
   // FAIL: what v2 needs to serve and score a question.
   const noAnswer = questions.filter((q) => typeof q.answer !== 'string' || !(q.options || []).includes(q.answer)).map((q) => String(q._id));
-  check(!noAnswer.length, 'every question has an answer that is one of its options', noAnswer.join(', '));
+  check(!noAnswer.length, 'every question has an answer that is one of its options', ids(noAnswer));
   const badTopics = questions
     .filter((q) => !TOPIC_IDS.includes(q.primaryTopic) || (q.secondaryTopics || []).some((t) => !TOPIC_IDS.includes(t)))
     .map((q) => String(q._id));
-  check(!badTopics.length, 'every question has stable topic ids', badTopics.join(', '));
+  check(!badTopics.length, 'every question has stable topic ids', ids(badTopics));
   const badTags = questions
     .filter((q) => {
       const tags = q.distractors || [];
@@ -498,13 +506,13 @@ async function verify(db) {
       );
     })
     .map((q) => String(q._id));
-  check(!badTags.length, 'every misconception tag is valid (known id, a wrong option, at most one per option)', badTags.join(', '));
+  check(!badTags.length, 'every misconception tag is valid (known id, a wrong option, at most one per option)', ids(badTags));
   // WARN: content the admin forms would reject (e.g. a duplicated option);
   // the owner fixes these in a reviewed content pass.
   const content = questions.filter((q) => !addQuestionSchema.safeParse({ ...q, code: q.code || '' }).success).map((q) => String(q._id));
-  check(!content.length, 'every question passes all v2 question validators', `${content.length} to fix in a content pass: ${content.join(', ')}`, 'WARN');
+  check(!content.length, 'every question passes all v2 question validators', `${content.length} to fix in a content pass: ${ids(content)}`, 'WARN');
   const legacy = questions.filter((q) => q.correctAnswer !== undefined || q.topics !== undefined).map((q) => String(q._id));
-  check(!legacy.length, 'no question keeps correctAnswer or topics', legacy.join(', '));
+  check(!legacy.length, 'no question keeps correctAnswer or topics', ids(legacy));
   const matchSeed = seedMatcher();
   const seedDocs = questions.filter((q) => matchSeed(q) !== undefined);
   check(new Set(seedDocs.map(matchSeed)).size === seedDocs.length, `each seed question appears once (${seedDocs.length} seed question(s) in the database)`);
