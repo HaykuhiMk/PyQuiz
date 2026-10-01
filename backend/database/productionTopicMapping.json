@@ -1,0 +1,568 @@
+{
+  "_comment": "Reviewed topic proposals (tmp/prodcopy/topic-proposals.md, approved by the owner) for the 98 production questions that are not seed questions, as stable topic ids. Question ids only; read by scripts/productionMigration.js.",
+  "questions": {
+    "67dd81ad8e2ddadc28e387f4": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "numbers",
+        "types"
+      ]
+    },
+    "67dd83578e2ddadc28e387f6": {
+      "primaryTopic": "mutability",
+      "secondaryTopics": [
+        "functions",
+        "loops"
+      ]
+    },
+    "67dd84ed8e2ddadc28e387f8": {
+      "primaryTopic": "scope",
+      "secondaryTopics": []
+    },
+    "67e038e335e5165a41bbb396": {
+      "primaryTopic": "scope",
+      "secondaryTopics": []
+    },
+    "67e0396135e5165a41bbb398": {
+      "primaryTopic": "scope",
+      "secondaryTopics": []
+    },
+    "67e039f735e5165a41bbb39a": {
+      "primaryTopic": "scope",
+      "secondaryTopics": [
+        "functions"
+      ]
+    },
+    "67e03a6c35e5165a41bbb39c": {
+      "primaryTopic": "scope",
+      "secondaryTopics": [
+        "functions"
+      ]
+    },
+    "67e03b6f35e5165a41bbb39e": {
+      "primaryTopic": "scope",
+      "secondaryTopics": [
+        "functions"
+      ]
+    },
+    "67e03c1535e5165a41bbb3a0": {
+      "primaryTopic": "scope",
+      "secondaryTopics": [
+        "functions"
+      ]
+    },
+    "67e03cef35e5165a41bbb3a2": {
+      "primaryTopic": "scope",
+      "secondaryTopics": [
+        "functions"
+      ]
+    },
+    "67e03dc235e5165a41bbb3a4": {
+      "primaryTopic": "scope",
+      "secondaryTopics": [
+        "functions"
+      ]
+    },
+    "67e03e6935e5165a41bbb3a6": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "scope",
+        "types"
+      ]
+    },
+    "67e0477abe7a85e233ca8153": {
+      "primaryTopic": "functions",
+      "secondaryTopics": []
+    },
+    "67e04817be7a85e233ca8155": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "lists"
+      ]
+    },
+    "67e04895be7a85e233ca8157": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "tuples"
+      ]
+    },
+    "67e04948be7a85e233ca8159": {
+      "primaryTopic": "scope",
+      "secondaryTopics": [
+        "strings"
+      ]
+    },
+    "67e04a20be7a85e233ca815b": {
+      "primaryTopic": "scope",
+      "secondaryTopics": [
+        "functions",
+        "strings"
+      ]
+    },
+    "67e04ad8be7a85e233ca815d": {
+      "primaryTopic": "dicts",
+      "secondaryTopics": [
+        "functions"
+      ]
+    },
+    "67e04b86be7a85e233ca815f": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "lists",
+        "slicing",
+        "tuples"
+      ]
+    },
+    "67e04c00be7a85e233ca8161": {
+      "primaryTopic": "functions",
+      "secondaryTopics": []
+    },
+    "67e04c89be7a85e233ca8163": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "mutability",
+        "lists",
+        "tuples"
+      ]
+    },
+    "67e04d9ebe7a85e233ca8165": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "strings"
+      ]
+    },
+    "67e05868be7a85e233ca8168": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "lists",
+        "strings"
+      ]
+    },
+    "67e0595cbe7a85e233ca816a": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "generators",
+        "numbers",
+        "lists"
+      ]
+    },
+    "67e05a6dbe7a85e233ca816c": {
+      "primaryTopic": "strings",
+      "secondaryTopics": [
+        "slicing",
+        "tuples",
+        "functions"
+      ]
+    },
+    "67e05bfebe7a85e233ca816e": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "lists",
+        "loops"
+      ]
+    },
+    "67e05cb0be7a85e233ca8170": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "generators",
+        "numbers"
+      ]
+    },
+    "67e05d5bbe7a85e233ca8172": {
+      "primaryTopic": "scope",
+      "secondaryTopics": [
+        "strings",
+        "functions"
+      ]
+    },
+    "67e05dedbe7a85e233ca8174": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "tuples",
+        "lists"
+      ]
+    },
+    "67e05ec6be7a85e233ca8177": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "tuples",
+        "loops"
+      ]
+    },
+    "67e05f5abe7a85e233ca8179": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "lists",
+        "types"
+      ]
+    },
+    "67e05fd9be7a85e233ca817b": {
+      "primaryTopic": "mutability",
+      "secondaryTopics": [
+        "lists",
+        "functions"
+      ]
+    },
+    "67e06074be7a85e233ca817d": {
+      "primaryTopic": "lists",
+      "secondaryTopics": [
+        "functions",
+        "mutability"
+      ]
+    },
+    "67e06143be7a85e233ca817f": {
+      "primaryTopic": "types",
+      "secondaryTopics": [
+        "functions",
+        "lists"
+      ]
+    },
+    "67e06209be7a85e233ca8181": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "types"
+      ]
+    },
+    "67e067c7be7a85e233ca8183": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "loops"
+      ]
+    },
+    "67e068d8be7a85e233ca8185": {
+      "primaryTopic": "loops",
+      "secondaryTopics": [
+        "strings",
+        "slicing",
+        "lists"
+      ]
+    },
+    "67e06998be7a85e233ca8187": {
+      "primaryTopic": "generators",
+      "secondaryTopics": [
+        "strings"
+      ]
+    },
+    "67e06a7abe7a85e233ca8189": {
+      "primaryTopic": "numbers",
+      "secondaryTopics": [
+        "lists",
+        "loops",
+        "functions"
+      ]
+    },
+    "67e06be9be7a85e233ca818c": {
+      "primaryTopic": "scope",
+      "secondaryTopics": [
+        "lists",
+        "strings"
+      ]
+    },
+    "67e06cc3be7a85e233ca818e": {
+      "primaryTopic": "dicts",
+      "secondaryTopics": [
+        "loops"
+      ]
+    },
+    "67e06d7abe7a85e233ca8190": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "lists",
+        "loops",
+        "numbers"
+      ]
+    },
+    "67e171bdf5addb214fc6a7d3": {
+      "primaryTopic": "exceptions",
+      "secondaryTopics": [
+        "functions"
+      ]
+    },
+    "67e1724bf5addb214fc6a7d5": {
+      "primaryTopic": "exceptions",
+      "secondaryTopics": []
+    },
+    "67e17359f5addb214fc6a7d9": {
+      "primaryTopic": "exceptions",
+      "secondaryTopics": [
+        "types"
+      ]
+    },
+    "67e17403f5addb214fc6a7db": {
+      "primaryTopic": "exceptions",
+      "secondaryTopics": [
+        "numbers"
+      ]
+    },
+    "67e19688f5addb214fc6a7de": {
+      "primaryTopic": "generators",
+      "secondaryTopics": []
+    },
+    "67e2b4aef5addb214fc6a7e1": {
+      "primaryTopic": "exceptions",
+      "secondaryTopics": [
+        "functions"
+      ]
+    },
+    "67e2b610f5addb214fc6a7e3": {
+      "primaryTopic": "generators",
+      "secondaryTopics": [
+        "loops",
+        "functions"
+      ]
+    },
+    "67e2b6def5addb214fc6a7e5": {
+      "primaryTopic": "exceptions",
+      "secondaryTopics": [
+        "slicing",
+        "lists"
+      ]
+    },
+    "67e2b794f5addb214fc6a7e7": {
+      "primaryTopic": "exceptions",
+      "secondaryTopics": [
+        "slicing",
+        "lists"
+      ]
+    },
+    "67e2b912f5addb214fc6a7e9": {
+      "primaryTopic": "generators",
+      "secondaryTopics": [
+        "loops"
+      ]
+    },
+    "67e2b9b7f5addb214fc6a7eb": {
+      "primaryTopic": "generators",
+      "secondaryTopics": [
+        "loops",
+        "numbers"
+      ]
+    },
+    "67e2ba44f5addb214fc6a7ed": {
+      "primaryTopic": "generators",
+      "secondaryTopics": [
+        "lists"
+      ]
+    },
+    "67e2d7def5addb214fc6a7f0": {
+      "primaryTopic": "generators",
+      "secondaryTopics": [
+        "loops",
+        "numbers"
+      ]
+    },
+    "67e2d884f5addb214fc6a7f2": {
+      "primaryTopic": "generators",
+      "secondaryTopics": [
+        "loops"
+      ]
+    },
+    "67e2d8e1f5addb214fc6a7f4": {
+      "primaryTopic": "generators",
+      "secondaryTopics": [
+        "exceptions"
+      ]
+    },
+    "67e2d958f5addb214fc6a7f6": {
+      "primaryTopic": "generators",
+      "secondaryTopics": []
+    },
+    "67e2d9c2f5addb214fc6a7f8": {
+      "primaryTopic": "generators",
+      "secondaryTopics": [
+        "exceptions"
+      ]
+    },
+    "67e2db24f5addb214fc6a7fa": {
+      "primaryTopic": "mutability",
+      "secondaryTopics": [
+        "classes"
+      ]
+    },
+    "67e2dbc0f5addb214fc6a7fc": {
+      "primaryTopic": "classes",
+      "secondaryTopics": [
+        "functions"
+      ]
+    },
+    "67e2dd0df5addb214fc6a7fe": {
+      "primaryTopic": "classes",
+      "secondaryTopics": [
+        "inheritance"
+      ]
+    },
+    "67e2dddaf5addb214fc6a800": {
+      "primaryTopic": "classes",
+      "secondaryTopics": [
+        "mutability"
+      ]
+    },
+    "67e2de4bf5addb214fc6a802": {
+      "primaryTopic": "classes",
+      "secondaryTopics": []
+    },
+    "67e2de92f5addb214fc6a804": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "classes"
+      ]
+    },
+    "67e2df32f5addb214fc6a806": {
+      "primaryTopic": "functions",
+      "secondaryTopics": [
+        "classes"
+      ]
+    },
+    "67e2df85f5addb214fc6a808": {
+      "primaryTopic": "classes",
+      "secondaryTopics": []
+    },
+    "67e2e007f5addb214fc6a80a": {
+      "primaryTopic": "classes",
+      "secondaryTopics": [
+        "mutability"
+      ]
+    },
+    "67e2e08bf5addb214fc6a80c": {
+      "primaryTopic": "classes",
+      "secondaryTopics": [
+        "mutability"
+      ]
+    },
+    "67e2e137f5addb214fc6a80e": {
+      "primaryTopic": "classes",
+      "secondaryTopics": []
+    },
+    "67e2e1bdf5addb214fc6a810": {
+      "primaryTopic": "classes",
+      "secondaryTopics": []
+    },
+    "67e2e380f5addb214fc6a812": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": [
+        "classes"
+      ]
+    },
+    "67e2e4faf5addb214fc6a814": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": [
+        "classes"
+      ]
+    },
+    "67e2e816f5addb214fc6a817": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": []
+    },
+    "67e2e978f5addb214fc6a819": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": []
+    },
+    "67e2ea8df5addb214fc6a81b": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": []
+    },
+    "67e2eb67f5addb214fc6a81d": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": []
+    },
+    "67e2ec29f5addb214fc6a81f": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": []
+    },
+    "67e2eec5f5addb214fc6a821": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": []
+    },
+    "67e2ef4bf5addb214fc6a823": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": []
+    },
+    "67e2f0c3f5addb214fc6a825": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": [
+        "exceptions"
+      ]
+    },
+    "67e2f133f5addb214fc6a827": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": [
+        "exceptions"
+      ]
+    },
+    "67e2f1c1f5addb214fc6a829": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": [
+        "classes"
+      ]
+    },
+    "67e2f30af5addb214fc6a82b": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": []
+    },
+    "67e2f3bff5addb214fc6a82d": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": []
+    },
+    "67e2f95df5addb214fc6a830": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": []
+    },
+    "67e4f3e3f5addb214fc6a834": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": []
+    },
+    "67e4f65ef5addb214fc6a836": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": [
+        "functions"
+      ]
+    },
+    "67e4f8d6f5addb214fc6a838": {
+      "primaryTopic": "classes",
+      "secondaryTopics": []
+    },
+    "67e4f9bbf5addb214fc6a83a": {
+      "primaryTopic": "classes",
+      "secondaryTopics": []
+    },
+    "67e4fa62f5addb214fc6a83c": {
+      "primaryTopic": "classes",
+      "secondaryTopics": []
+    },
+    "67e4fb8cf5addb214fc6a83e": {
+      "primaryTopic": "classes",
+      "secondaryTopics": []
+    },
+    "67e503a6f5addb214fc6a841": {
+      "primaryTopic": "classes",
+      "secondaryTopics": []
+    },
+    "67e50530f5addb214fc6a843": {
+      "primaryTopic": "classes",
+      "secondaryTopics": []
+    },
+    "67e5066ef5addb214fc6a845": {
+      "primaryTopic": "classes",
+      "secondaryTopics": [
+        "inheritance"
+      ]
+    },
+    "67e50716f5addb214fc6a847": {
+      "primaryTopic": "classes",
+      "secondaryTopics": [
+        "mutability"
+      ]
+    },
+    "67e50836f5addb214fc6a849": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": [
+        "exceptions",
+        "lists"
+      ]
+    },
+    "67e508aaf5addb214fc6a84b": {
+      "primaryTopic": "inheritance",
+      "secondaryTopics": []
+    }
+  }
+}

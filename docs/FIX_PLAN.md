@@ -250,7 +250,43 @@ addendum"):**
   - `tsc` doesn't type-check (`checkJs` off).
   - BullMQ email queue not wired up.
 
-## Deployment preparation (paused)
+## Deployment preparation (resumed 2026-10-01)
+
+**Resumed on 2026-10-01** (the production site is stopped, so no live users and no old code use the
+database). The owner runs the conversion of the real database himself, over an SSH tunnel. Claude
+runs the runbook only against local rehearsal databases.
+- **Stage 1 done:** the migration list was confirmed from the data and the server patch (below).
+- **Stage 2 done:** `backend/scripts/productionMigration.js`, one ordered runbook covering the
+  whole list, with tests in `backend/tests/productionMigration.test.js`.
+- **Next:** Stage 3, the rehearsal in a fresh `pyquiz_rehearsal`; then Stage 4,
+  `docs/DEPLOY_RUNBOOK.md`.
+
+### Server patch review (2026-10-01)
+
+`~/pyquiz-backups/pyquiz-server-changes.patch` holds the 11 modified files on top of `9b0d8b4`. It
+was read only through a redaction filter, and no value from it is in the repository.
+- **No model or schema change.** It doesn't explain `correctAnswer`, `createdBy`/timestamps or
+  `contacts`. The server's frontend `questions.js` was patched to read `correctAnswer` instead of
+  `answer`, so the questions in production were stored with `correctAnswer` by something outside
+  this code (no route in it writes that field), and the frontend was adapted to them.
+- **The old `quizsessions`** come from `9b0d8b4` itself (`models/QuizSession.js`, written by
+  `POST /start-quiz`, still present in the patched `routes/account.js`). M9 stands.
+- **Configuration v2 must keep:**
+  - the API address `https://api-pyquiz.picsartacademy.am` (v2's default `PRODUCTION_API_URL`);
+  - the backend `.env` values `MONGO_URI` (v2 reads `MONGODB_URI`, then `MONGO_URI`),
+    `CLIENT_URI` (CORS origin and reset links), `PORT` and `API_URI`.
+- **CORS:** the server removed `API_URI` from the allowed origins. v2 still allows `CLIENT_URI`,
+  `API_URI`, `http://localhost:3000` and `http://localhost:3001`. Narrowing that for production is a
+  code change, not yet made (owner to decide).
+- **Listening:** the server added `app.listen(PORT, '0.0.0.0')`. v2's `app.listen(PORT)` already
+  listens on all interfaces.
+- **Dependencies:** the server added the MongoDB driver's optional packages (`kerberos`, `snappy`,
+  `@mongodb-js/zstd`, `aws4`, `@aws-sdk/credential-providers`, `mongodb-client-encryption`,
+  `gcp-metadata`, `socks`). v2's `npm run build` reports exactly these as missing-module warnings
+  and succeeds without them. They are needed only if the production `MONGO_URI` uses one of those
+  features (compression, AWS or Kerberos authentication, encryption, a SOCKS proxy). The owner
+  checks the URI's options, without sharing the value.
+- **No change to the migration list.**
 
 Paused on 2026-09-30 at the owner's request, before any migration was applied. **Nothing has been
 applied to `pyquiz_prodcopy`** (the local copy of the production database), apart from the index
@@ -267,10 +303,8 @@ committed. Only counts, question ids and question content were used.
   use `correctAnswer`, `createdBy`, `createdAt` and `updatedAt`, and a `contacts` collection
   exists. No commit in this repository, on any branch, ever wrote `correctAnswer`, `createdBy` or
   timestamps to questions.
-- **These differences very likely come from the 11 uncommitted files.** First step when resuming:
-  get those files' diffs, and re-derive the migration list below from `9b0d8b4` plus that diff.
-  The M1–M10 list was derived from the data itself plus the closest matching commit for users and
-  sessions (`eb480a5` = `d159696^`).
+- **The 11 files don't explain them either** (see "Server patch review"). The M1–M11 list stands
+  on the data itself.
 
 ### The copy as found (counts only)
 
@@ -302,6 +336,41 @@ documents, so there's no `resetKey` → hash migration), and the new collections
 demand; indexes built at app startup). `resetFarmedPoints.js` would affect **0 users**, because
 production has no points. It isn't needed, and note that it **writes by default** (`--dry-run` is
 opt-in).
+
+### The runbook: `backend/scripts/productionMigration.js` (Stage 2)
+
+One script, in this order. Each step changes only what still needs changing, so a second run does
+nothing.
+
+| Step | Covers | What it does |
+|---|---|---|
+| 1 `answer-field` | M1 | `correctAnswer` → `answer` (146 questions) |
+| 2 `duplicate-q25` | M4 | Keep `67dd1ccbe41a42083801b230`, move the other copy's history to it (2 users gain it; 4 had both), delete `67c45ba322943ce7acd24d21` |
+| 3 `seed-questions` | M2, M4, tags | The 47 seed questions get content, topic ids and misconception tags from `database/questions.json`, matched by code or earlier code (`seedCodeHistory.json`). This includes the content fixes and Q33's stale answer, so there's no separate "fixes before M2" step. |
+| 4 `other-questions` | M2 | The 98 others get topic ids from `database/productionTopicMapping.json` (the reviewed proposals) |
+| 5 `username-lower` | M5 | 52 of 60 users; the 8 accounts in the 4 collision pairs are skipped and listed by id (M6: the owner resolves them) |
+| 6 `user-defaults` | M8 | Missing v2 user fields get their schema defaults |
+| 7 `answer-history` | M7 | 994 entries → `useransweredquestions` with `everCorrect: false` and `answeredAt` = migration time; then the array is removed |
+| 8 `old-sessions` | M9 | Delete the 247 sessions without a `token` (the backup is the archive) |
+| 9 `quizprogresses` | M10 | Drop the collection, only if it's empty |
+| 10 `indexes` | M11 | Build every v2 index explicitly (the app would otherwise build them at startup and only log failures) |
+| 11 verify | | FAIL checks: answers among options, topic ids, valid tags, no legacy fields or arrays, v2 user fields, no old sessions, every index. WARN checks: users without `usernameLower`, and questions the admin forms would reject (content to fix later). |
+
+**Safety:**
+- The connection string comes only from `--uri`; it never reads `.env`.
+- Before anything else, it prints the target host, database name, question count and user count.
+- It's a dry run by default; `--apply` asks you to type the database name.
+- It refuses before any write if it finds data it doesn't expect.
+- It uses native-driver writes, with `autoIndex` and `autoCreate` off.
+- It prints counts and ids only.
+
+**Implemented with Claude's recommended defaults; the owner hasn't confirmed them yet:**
+1. **Q25:** keep `67dd1ccbe41a42083801b230` (step 2).
+2. **M3:** keep `createdBy`, `createdAt` and `updatedAt`.
+3. **M8:** backfill the defaults (step 6).
+4. **M10:** drop `quizprogresses` (step 9).
+5. **Collisions:** skip the 8 accounts. Until each pair is resolved, the second account of the pair to save anything gets a duplicate-key error, because the model sets `usernameLower` on save. So resolve them before reopening the site.
+6. **Content fixes for production-only questions:** deferred to a later reviewed pass. Verification lists the affected questions as WARN, e.g. the duplicated `'Box Magic'` option on `67e2f3bff5addb214fc6a82d`.
 
 ### Answer-field problem (M1)
 
