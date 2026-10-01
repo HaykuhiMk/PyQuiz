@@ -133,7 +133,9 @@ describe('GET /api/v1/concept-graph', () => {
       description: expect.any(String),
       status: 'active',
     });
-    expect(nodes.find((n) => n.id === 'classes')).toMatchObject({ name: 'Classes & Objects', status: 'planned' });
+    // The five planned topics became active with the production migration.
+    expect(nodes.find((n) => n.id === 'classes')).toMatchObject({ name: 'Classes & Objects', status: 'active' });
+    expect(nodes.every((n) => n.status === 'active')).toBe(true);
     expect(edges).toContainEqual({ from: 'classes', to: 'inheritance', reason: expect.any(String) });
     expect(misconceptions.map((m) => m.id)).toEqual(MISCONCEPTION_IDS);
     expect(Object.keys(misconceptions[0]).sort()).toEqual(['belief', 'correctModel', 'id', 'topic']);

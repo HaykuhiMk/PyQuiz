@@ -5,7 +5,8 @@ const { TOPIC_IDS, topicName } = require('../config/topicTaxonomy');
 // and misconception descriptions only. It never includes question content,
 // answers or which options carry which misconception.
 // A node's status is 'active' when questions may use the topic, or 'planned'
-// when it is in the graph but not yet in the question taxonomy.
+// when it is in the graph but not yet in the question taxonomy (none are
+// planned at the moment).
 function getGraph() {
   return {
     nodes: NODES.map(({ id, description }) => ({

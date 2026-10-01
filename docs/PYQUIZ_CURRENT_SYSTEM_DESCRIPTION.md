@@ -171,7 +171,7 @@ The browser sends only the question id and the index of the chosen option.
 
 ### 5.3 Topics and Difficulty Levels
 
-**Topics.** The question bank uses a fixed taxonomy of **11 canonical topics**:
+**Topics.** The question bank uses a fixed taxonomy of **16 canonical topics**:
 - Names, Mutability & Identity
 - Loops & Control Flow
 - Dictionaries
@@ -183,9 +183,18 @@ The browser sends only the question id and the index of the chosen option.
 - Indexing & Slicing
 - Tuples
 - Numbers & Arithmetic
+- Classes & Objects
+- Inheritance & MRO
+- Scope & Namespaces
+- Generators & Iterators
+- Exceptions
+
+The last five were added with the production data migration: the bundled seed questions don't use
+them, but 67 production questions do. Quiz and Study filters list only topics that have questions.
 
 **Stable ids.** Each topic has a short, stable id (`mutability`, `loops`, `dicts`, `types`,
-`strings`, `functions`, `sets`, `lists`, `slicing`, `tuples`, `numbers`). Questions, quiz sessions,
+`strings`, `functions`, `sets`, `lists`, `slicing`, `tuples`, `numbers`, `classes`, `inheritance`,
+`scope`, `generators`, `exceptions`). Questions, quiz sessions,
 API parameters and API responses store and pass only ids. The display names above live only in
 `backend/config/topicTaxonomy.js`, and the frontend reads them from `GET /api/v1/topics`. An id
 never changes once set, but a display name can change freely without a data migration.
@@ -422,10 +431,9 @@ full design, with every edge's reason and a verified code example per misconcept
 `docs/CONCEPT_GRAPH.md`. The graph lives in `backend/config/conceptGraph.js`, and the public,
 read-only `GET /api/v1/concept-graph` serves it without any question content.
 
-- **Nodes: 16 topics.** The 11 topics of Section 5.3, plus 5 **planned** topics: Classes & Objects,
-  Inheritance & MRO, Scope & Namespaces, Generators & Iterators, and Exceptions. Planned topics are
-  in the graph but not yet accepted on questions; they join the taxonomy when questions for them
-  are migrated.
+- **Nodes: 16 topics,** the taxonomy of Section 5.3. A topic can also be **planned**: in the graph
+  but not yet accepted on questions. None is planned now; the five newest topics started that way
+  and joined the taxonomy with the production migration.
 - **Edges: 14 prerequisites.** `A → B` means A must come first, and a topic with several incoming
   edges needs all of them. The graph is acyclic, which a test checks.
 - **Misconceptions: 57**, each with a stable id `<topic>.<wrong-belief>`. Each belongs to the topic
@@ -445,7 +453,7 @@ read-only `GET /api/v1/concept-graph` serves it without any question content.
   is known to be wrong, so showing them could reveal the answer. Feedback for learners will be a
   separate feature with its own rules.
 
-Arrows point from prerequisite to dependent topic; the planned topics are highlighted.
+Arrows point from prerequisite to dependent topic; the five newest topics are highlighted.
 
 ```mermaid
 flowchart TD

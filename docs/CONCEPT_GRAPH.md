@@ -10,8 +10,8 @@ reveals*.
 
 - Stage 2 stores the graph in one config module (done, §6).
 - Stage 3 tags the 47 seed questions' wrong options with misconception ids (done, §7).
-- The ids of the 11 existing topics are **in use** (see §5). The five new topics' ids are in the
-  graph as **planned** topics; questions can use them once they join the taxonomy (§6).
+- All 16 topic ids are **in use** (see §5). The five new topics were planned at first and joined
+  the taxonomy with the production migration (§6).
 
 ## 1. Nodes
 
@@ -408,10 +408,13 @@ here, pending your decision.
   - every edge refers to existing topics;
   - every misconception id is unique, belongs to an existing topic and is named after it;
   - the counts match this document (16 topics, 14 edges, 57 misconceptions).
-- **Planned topics.** Display names still live only in `backend/config/topicTaxonomy.js`. The five
-  new topics are in its new `PLANNED_TOPICS` list: they are graph nodes, but questions can't use
-  them yet (they are not in `TOPIC_IDS`, and `GET /api/v1/topics` doesn't list them). They move
-  into `TOPICS`, with the same ids, when the paused production migration adds them.
+- **Planned topics.** Display names still live only in `backend/config/topicTaxonomy.js`. A topic
+  in its `PLANNED_TOPICS` list is a graph node that questions can't use yet (it isn't in
+  `TOPIC_IDS`, and `GET /api/v1/topics` doesn't list it).
+  - The five new topics started there.
+  - They moved into `TOPICS`, with the same ids, for the production migration, because 67
+    production questions belong to them.
+  - The list is empty now, and every node's status is `active`.
 - **Wrong-option tags.** A question has an optional `distractors` array:
   `{ option, misconceptionId?, feedback? }`.
   - `option` is the exact text of a wrong option, matched the same way `answer` is. Options stay

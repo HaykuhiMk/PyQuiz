@@ -71,6 +71,14 @@ describe('the taxonomy uses stable ids', () => {
     }
   });
 
+  it('accepts the five topics added with the production migration on questions', async () => {
+    for (const id of ['classes', 'inheritance', 'scope', 'generators', 'exceptions']) {
+      const q = await createQuestion({ primaryTopic: id });
+      expect((await Question.collection.findOne({ _id: q._id })).primaryTopic).toBe(id);
+    }
+    expect(TOPIC_IDS).toHaveLength(16);
+  });
+
   it('GET /api/v1/topics returns every topic as { id, name }, in taxonomy order', async () => {
     const res = await request(app).get('/api/v1/topics');
     expect(res.statusCode).toBe(200);

@@ -23,19 +23,20 @@ const TOPICS = [
   { id: 'slicing', name: 'Indexing & Slicing' },
   { id: 'tuples', name: 'Tuples' },
   { id: 'numbers', name: 'Numbers & Arithmetic' },
-];
-
-// Approved topics that are nodes in the concept graph (config/conceptGraph.js)
-// but not yet accepted on questions (not in TOPIC_IDS). They move into TOPICS,
-// with these ids, when the paused production migration adds them
-// (docs/FIX_PLAN.md, "Deployment preparation (paused)", M2).
-const PLANNED_TOPICS = [
+  // Approved with the production migration (docs/FIX_PLAN.md, M2): 67
+  // production questions belong to these five.
   { id: 'classes', name: 'Classes & Objects' },
   { id: 'inheritance', name: 'Inheritance & MRO' },
   { id: 'scope', name: 'Scope & Namespaces' },
   { id: 'generators', name: 'Generators & Iterators' },
   { id: 'exceptions', name: 'Exceptions' },
 ];
+
+// Topics that are nodes in the concept graph (config/conceptGraph.js) but not
+// yet accepted on questions (not in TOPIC_IDS). Empty now: the five that were
+// planned (classes, inheritance, scope, generators, exceptions) moved into
+// TOPICS with the production migration.
+const PLANNED_TOPICS = [];
 
 const TOPIC_IDS = TOPICS.map((topic) => topic.id);
 
