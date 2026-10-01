@@ -1148,6 +1148,20 @@ available, and fails on it with `--require-checked`. All 47 seed questions pass 
 one example of each kind of mismatch. It executes the snippets, so it is meant for trusted question
 data such as the seed file.
 
+**Continuous integration.** `.github/workflows/ci.yml` (GitHub Actions) runs on every push and pull
+request:
+- **Runners:** GitHub-hosted `ubuntu-latest` only, never self-hosted.
+- **Safety:** no secrets, no deployment, and read-only access to the repository.
+- **Checks:**
+  - lint, typecheck, the Jest suites and the webpack build, against a throwaway MongoDB 7.0 service
+    container;
+  - `npm run verify-questions -- --require-checked` on Python 3.9 and 3.14;
+  - the Playwright suite in **Chromium, Firefox and WebKit**, one job per browser. Locally it runs
+    in the installed Google Chrome; Playwright doesn't support Firefox or WebKit on macOS 12, the
+    owner's machine.
+- **No `.env` needed:** the test suites set throwaway values for every secret they use (JWT and
+  Daily Challenge seed), and mail is off.
+
 **Bugs the tests caught.** Several real defects were found by tests written during this work,
 rather than by inspection:
 - **Lost first-time topic increments.** The first test of per-topic statistics showed that a

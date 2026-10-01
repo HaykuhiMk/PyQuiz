@@ -1,5 +1,5 @@
 // @ts-check
-const { defineConfig } = require('@playwright/test');
+const { defineConfig, devices } = require('@playwright/test');
 
 const API_PORT = 7598;
 const FRONTEND_PORT = 3998;
@@ -13,11 +13,18 @@ module.exports = defineConfig({
   reporter: [['list']],
   use: {
     baseURL: `http://localhost:${FRONTEND_PORT}`,
-    // Uses the locally installed Google Chrome. To use Playwright's bundled
-    // Chromium instead, run `npx playwright install chromium` and remove this.
-    channel: 'chrome',
     trace: 'retain-on-failure',
   },
+  // Locally: the installed Google Chrome. In CI (GitHub Actions sets CI=true;
+  // .github/workflows/ci.yml): Playwright's own Chromium, Firefox and WebKit,
+  // one per job (`--project <name>`).
+  projects: process.env.CI
+    ? [
+        { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+        { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+        { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+      ]
+    : [{ name: 'chrome', use: { channel: 'chrome' } }],
   webServer: [
     {
       command: 'node start-backend.js',
