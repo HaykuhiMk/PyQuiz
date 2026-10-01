@@ -110,6 +110,8 @@ Backend test files live in `backend/tests/`, and browser tests in `e2e/tests/`.
 | FR-16 | An admin can read contact-form messages. | §5.12 | `adminContacts.test.js` |
 | FR-17 | A visitor can send a contact message, which is stored and emailed to the admin. | §5.13 | `contact.test.js` |
 | FR-18 | The About page shows live question and topic counts without exposing question content. | §5.13 | `publicStats.test.js`, `smoke.spec.js` |
+| FR-19 | The concept graph (topics, acyclic prerequisite edges, misconceptions) is served read-only; an admin can tag wrong options with misconceptions and feedback, which learners never see; every answer event records the chosen option's misconception. | §5.14 | `conceptGraph.test.js`, `distractors.test.js`, `syncSeedQuestions.test.js`, `distractors.spec.js` |
+| FR-20 | Every seed question's stored answer matches its snippet's real output on the reference Python versions, which the learner pages state. | §5.3 | `verifyQuestions.test.js`, `pythonVersion.test.js`, `pythonVersion.spec.js` |
 
 ### 4.2 Non-functional requirements
 
@@ -411,6 +413,77 @@ returns only those two numbers.
 - `/api-docs` (Swagger UI documenting every endpoint).
 
 Exposure in production is covered in Section 12.
+
+### 5.14 Concept Graph
+
+The flat topic taxonomy is extended into a **concept graph** for a future adaptive engine and AI
+interviewer: what a learner should learn next, and which wrong belief a wrong answer reveals. The
+full design, with every edge's reason and a verified code example per misconception, is
+`docs/CONCEPT_GRAPH.md`. The graph lives in `backend/config/conceptGraph.js`, and the public,
+read-only `GET /api/v1/concept-graph` serves it without any question content.
+
+- **Nodes: 16 topics.** The 11 topics of Section 5.3, plus 5 **planned** topics: Classes & Objects,
+  Inheritance & MRO, Scope & Namespaces, Generators & Iterators, and Exceptions. Planned topics are
+  in the graph but not yet accepted on questions; they join the taxonomy when questions for them
+  are migrated.
+- **Edges: 14 prerequisites.** `A → B` means A must come first, and a topic with several incoming
+  edges needs all of them. The graph is acyclic, which a test checks.
+- **Misconceptions: 57**, each with a stable id `<topic>.<wrong-belief>`. Each belongs to the topic
+  whose correct mental model fixes it. Eight are **confusions** between two concepts (e.g. `is` vs
+  `==`, `append` vs `extend`) that cover both directions. Their ids end in `-confusion`.
+- **Tags on wrong options.** An admin can tag each wrong option with the misconception choosing it
+  reveals, plus optional short feedback (`Question.distractors`, Section 10). The tags are matched
+  to the option's exact text, so a question's options must all be different. An option is tagged
+  only when that one misconception explains choosing it. It is not tagged when two different
+  beliefs could explain it, or when something else is the decisive reason it is wrong.
+  - **Seed questions:** 39 of their 275 wrong options are tagged, on 18 of the 47 questions.
+  - **Feedback:** only the 17 options tagged with a confusion have it, saying which direction
+    they show.
+- **Recording.** Every answer event stores the chosen option's `misconceptionId` (or null) and
+  whether it was a Blitz timeout, so misconception data accumulates from now on.
+- **Not shown to learners.** No learner-facing response contains tags or feedback: a tagged option
+  is known to be wrong, so showing them could reveal the answer. Feedback for learners will be a
+  separate feature with its own rules.
+
+Arrows point from prerequisite to dependent topic; the planned topics are highlighted.
+
+```mermaid
+flowchart TD
+  lists["Lists"]
+  loops["Loops & Control Flow"]
+  strings["Strings"]
+  functions["Functions & Built-ins"]
+  numbers["Numbers & Arithmetic"]
+  mutability["Names, Mutability & Identity"]
+  slicing["Indexing & Slicing"]
+  tuples["Tuples"]
+  sets["Sets"]
+  dicts["Dictionaries"]
+  types["Data Types & Conversion"]
+  scope["Scope & Namespaces"]
+  classes["Classes & Objects"]
+  inheritance["Inheritance & MRO"]
+  generators["Generators & Iterators"]
+  exceptions["Exceptions"]
+
+  lists --> mutability
+  lists --> slicing
+  mutability --> tuples
+  mutability --> sets
+  mutability --> dicts
+  numbers --> types
+  strings --> types
+  functions --> scope
+  functions --> classes
+  mutability --> classes
+  classes --> inheritance
+  loops --> generators
+  functions --> generators
+  functions --> exceptions
+
+  classDef newTopic fill:#fff4d6,stroke:#b8860b,stroke-width:2px;
+  class classes,inheritance,scope,generators,exceptions newTopic;
+```
 
 ## 6. Quiz Modes and Assessment Methodology
 
@@ -972,17 +1045,22 @@ allows 1 MB so that an oversized photo gets a readable "Image is too large" erro
 
 ## 13. Testing
 
-**Backend.** The backend has **265 automated tests in 33 test suites** (Jest and Supertest against a
+**Backend.** The backend has **317 automated tests in 39 test suites** (Jest and Supertest against a
 real MongoDB, via `mongodb-memory-server` or a local test database), all passing. Before this
 remediation work began, it had 89 tests in 9 suites.
 
-**Frontend.** A Playwright suite in `e2e/` has **16 browser tests**, all passing:
+**Frontend.** A Playwright suite in `e2e/` has **23 browser tests**, all passing:
 - **7 smoke tests:** guest quiz, login and logout, a Classic quiz, the Daily Challenge, the theme
   toggle, the About page, and CSRF recovery after a reload;
 - **5 tests** that the frontend's validation matches the server's;
 - **1 test** that the dashboard's two accuracy measures are labelled and filled separately;
 - **1 test** that an admin page returns to the admin login when the session ends mid-page;
-- **2 tests** that rate-limit errors reach the page with their real message.
+- **2 tests** that rate-limit errors reach the page with their real message;
+- **3 tests** that topics are sent as stable ids and shown by name, including filtering by "Names,
+  Mutability & Identity" (the comma bug);
+- **1 test** that the admin forms save, load and change misconception tags, warning before an edit
+  drops one;
+- **3 tests** that the Python version note and the author hint appear.
 
 It runs against its own backend, frontend and a disposable local database, and fails on any
 Content-Security-Policy violation or page error.
@@ -990,12 +1068,12 @@ Content-Security-Policy violation or page error.
 **Coverage** (`npm run test:coverage`, measured over all runtime backend code: everything except
 the one-off `scripts/` and `database/` tools):
 
-| | Before (commit `d8ad91e`, 89 tests) | Now (265 tests) |
+| | Before (commit `d8ad91e`, 89 tests) | Now (317 tests) |
 |---|---|---|
-| Lines | 77.69% | 90.17% |
-| Branches | 50.39% | 76.15% |
-| Statements | 77.19% | 89.87% |
-| Functions | 72.57% | 90.80% |
+| Lines | 77.69% | 90.78% |
+| Branches | 50.39% | 76.45% |
+| Statements | 77.19% | 90.55% |
+| Functions | 72.57% | 91.51% |
 
 Both columns use the same coverage configuration, so they measure the same set of files. The
 least-covered code is the unused BullMQ email queue (0%) and the Redis-only caching code, which the
@@ -1201,8 +1279,12 @@ No study has been run yet, and no results exist.
 
 These are proposals; none exists in the codebase today.
 
-- **Adaptive practice.** Use the mastery and weak-topic data (Section 5.8) and the attempt log
-  (`AnswerEvent`) to bias which questions are served.
+- **Adaptive practice.** Use the mastery and weak-topic data (Section 5.8), the attempt log
+  (`AnswerEvent`) and the concept graph (Section 5.14) to bias which questions are served, e.g.
+  toward a weak topic's prerequisites.
+- **Misconception feedback for learners.** Show the targeted feedback of a tagged wrong option
+  (Section 5.14), with rules that keep it from revealing the answer during a quiz.
+- **Tag more questions.** Only the seed questions are tagged so far.
 - **More content.** A larger question bank that closes the gaps in Section 19, plus more question
   formats (e.g. fill-in-the-blank).
 - **Asynchronous email.** Wire the existing BullMQ queue into password-reset and contact emails
@@ -1228,10 +1310,13 @@ provides:
 - live per-topic mastery computed from primary topics;
 - rule-based points, streaks and achievements;
 - a leaderboard;
+- a concept graph of topics, prerequisites and misconceptions, with the misconception behind each
+  tagged wrong answer recorded from now on;
 - account management and an admin panel.
 
-Its security measures are described in Section 12. Its behaviour is covered by 265 backend tests
-(90.17% line and 76.15% branch coverage) and 16 browser tests.
+Its security measures are described in Section 12. Its behaviour is covered by 317 backend tests
+(90.78% line and 76.45% branch coverage) and 23 browser tests, and every seed question's answer is
+checked against its snippet's real output (Section 13).
 
 Its main limitations are the small question bank, answers being readable in Study mode, a typecheck
 step that does not type-check, and an email queue that is not yet wired up (Section 19). The

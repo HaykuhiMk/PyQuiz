@@ -2,7 +2,8 @@
 
 Resumption document for the `fix/review-weaknesses` audit/remediation task, written so a fresh
 session can do the remaining work (Phase 6) without the conversation that produced Phases 0–5.
-Branch: `fix/review-weaknesses`. Last updated after the password-trimming fix (2026-09-30).
+Branch: `fix/review-weaknesses`. Last updated after the password-trimming fix (2026-09-30); the
+status below also records the concept-graph work (branch `feature/concept-graph`, 2026-10-01).
 
 ## Status so far
 
@@ -12,6 +13,19 @@ mermaid-cli, a generated endpoint table, TODO(author) placeholders for Related W
 Background, the user study and deployment details) and added `docs/evaluation/questionnaire.md`.
 **Remaining:** the Final report (instructions at the end of this document) and the author's
 TODO(author) items in those two files.
+
+**Concept graph ("foundation 2") is complete** on branch `feature/concept-graph` (not merged, not
+pushed by Claude). All three stages are done:
+- the stable topic ids;
+- the graph config and endpoint;
+- misconception tags on wrong options, recorded on every answer event, with no learner-facing
+  feedback yet;
+- the 39 seed tags, applied to the seed file and the local dev database;
+- the seed content fixes;
+- the reference Python version, with `npm run verify-questions`.
+
+Read `docs/CONCEPT_GRAPH.md` (status, §3 rules, §6–§7 implementation) and Section 5.14 of the system
+description before continuing that work.
 
 **Deployment preparation is paused** (production data migration). Read "Deployment preparation
 (paused)" below before any deploy or any work against `pyquiz_prodcopy`. Full detail, evidence and
@@ -416,6 +430,32 @@ reports them as unmatched and refuses to apply. The other fixes don't change `co
 database still has the old versions of these nine questions; they are updated together with the Stage 3 tags
 (`docs/CONCEPT_GRAPH.md`), by the same dry-run-capable script.
 
+### Misconception tags after migration
+
+Production questions carry no misconception tags. The concept-graph features need no data
+migration: `distractors` defaults to empty, and answer events written before the change simply
+have no `misconceptionId` or `timedOut`. But misconception data only accumulates for tagged
+questions, so **production questions will need tagging after the migration**:
+- **The 48 seed questions:** they get the approved tags with the seed content. Match them by code,
+  using `backend/database/seedCodeHistory.json` for the snippets whose code was fixed.
+  `backend/scripts/syncSeedQuestions.js` does exactly this for local databases. It refuses any
+  non-local host, and it overwrites every seed field. So for production, either run it against a
+  restored copy as part of the rehearsal, or write a dedicated step for the runbook that sets only
+  the approved fields.
+- **The 98 non-seed questions:** they need their own proposals, under the same rules
+  (`docs/CONCEPT_GRAPH.md` §3: placement, confusions, the tagging rule), reviewed by the owner
+  before applying. 67 of them belong to the five planned topics, whose misconceptions
+  (`classes.*`, `inheritance.*`, `scope.*`, `generators.*`, `exceptions.*`) have no tagged
+  questions yet.
+- **Check answers first:** run `npm run verify-questions` on an export of them (see above).
+
+**Found while syncing the local dev database:** four of its questions had a stored answer that
+matched none of their options (seed Q8, Q9, Q18 and Q33), so they could never be scored correct.
+The seed file was corrected in `274b2d9`, after the dev database was seeded. Production's copies are
+probably not affected: the survey found 145 of 146 production answers among their options, and the
+one exception is `67c45ba322943ce7acd24d29` (listed under M4). The verify step above would confirm
+it.
+
 ### autoIndex issue
 
 - **What happened:** the first dry runs loaded the Mongoose models with the default
@@ -447,10 +487,12 @@ and database printed before each run. Then:
    diffs.
 2. Decide M3, M8 and M10.
 3. Recompute the taxonomy counts for all 146 questions.
-4. Add the five new topic ids to the taxonomy, then write the scripts (M1, M2 mappings in ids,
-   M4, M7, M9, and M8/M10 if approved).
-5. Write `content-fixes.md` for review.
-6. Build the runbook, update the AUDIT.md checklist, and rehearse.
+4. Move the five planned topics (`PLANNED_TOPICS` in `backend/config/topicTaxonomy.js`, already
+   graph nodes) into `TOPICS`, then write the scripts (M1, M2 mappings in ids, M4, M7, M9, and
+   M8/M10 if approved). Apply the seed content fixes before M2 (see "Seed-question fixes").
+5. Misconception tagging for production questions (see "Misconception tags after migration").
+6. Write `content-fixes.md` for review.
+7. Build the runbook, update the AUDIT.md checklist, and rehearse.
 
 Local working files (gitignored, question content only, no personal data): `tmp/prodcopy/`
 (`guard.js`, `run.sh`, `unmatched-questions.json`, `topic-proposals.md`, `1-topics-dryrun.txt`, and
