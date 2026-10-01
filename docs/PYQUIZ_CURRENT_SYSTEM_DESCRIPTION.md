@@ -995,7 +995,9 @@ also refused at login.
   server refuses to derive one from an empty or missing session.
 
 **CORS.** The API allows credentialed requests only from an explicit allow-list of origins, and
-never answers with a wildcard. Because login and `/me` return the CSRF token in the body, tests pin
+never answers with a wildcard. In production the list is the frontend's origin alone
+(`CLIENT_URI`); outside production it also contains the local dev servers and `API_URI`
+(`backend/config/corsOrigins.js`). Because login and `/me` return the CSRF token in the body, tests pin
 that no other origin — including sibling subdomains — is ever granted read access.
 
 **Credentials.**

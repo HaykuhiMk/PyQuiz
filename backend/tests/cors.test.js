@@ -49,3 +49,53 @@ describe('CORS allow-list', () => {
     expect(res.headers.vary).toMatch(/Origin/);
   });
 });
+
+describe('CORS origins by environment', () => {
+  const { allowedOrigins } = require('../config/corsOrigins');
+  const ENV = { CLIENT_URI: 'https://pyquiz.picsartacademy.am', API_URI: 'https://api-pyquiz.picsartacademy.am' };
+
+  it('in production allows only the CLIENT_URI origin', () => {
+    expect(allowedOrigins({ ...ENV, NODE_ENV: 'production' })).toEqual(['https://pyquiz.picsartacademy.am']);
+  });
+
+  it('outside production also allows the localhost dev servers and API_URI', () => {
+    expect(allowedOrigins({ ...ENV, NODE_ENV: 'development' })).toEqual([
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://pyquiz.picsartacademy.am',
+      'https://api-pyquiz.picsartacademy.am',
+    ]);
+  });
+
+  describe('the production app', () => {
+    const ORIGINAL = { NODE_ENV: process.env.NODE_ENV, API_URI: process.env.API_URI };
+    let prodApp;
+    beforeAll(() => {
+      jest.resetModules();
+      Object.assign(process.env, { NODE_ENV: 'production', API_URI: ENV.API_URI });
+      prodApp = require('../app');
+    });
+    afterAll(() => {
+      for (const [key, value] of Object.entries(ORIGINAL)) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    });
+
+    it.each(['http://localhost:3000', 'http://localhost:3001', ENV.API_URI])('does not grant %s read access', async (origin) => {
+      const res = await request(prodApp).get('/api/v1/auth/me').set('Origin', origin);
+      expect(res.headers['access-control-allow-origin']).toBeUndefined();
+    });
+
+    it('grants the CLIENT_URI origin, with credentials', async () => {
+      const res = await request(prodApp).get('/api/v1/auth/me').set('Origin', ENV.CLIENT_URI);
+      expect(res.headers['access-control-allow-origin']).toBe(ENV.CLIENT_URI);
+      expect(res.headers['access-control-allow-credentials']).toBe('true');
+    });
+  });
+
+  it('the development app still grants the localhost dev server', async () => {
+    const res = await request(app).get('/api/v1/auth/me').set('Origin', 'http://localhost:3000');
+    expect(res.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+  });
+});

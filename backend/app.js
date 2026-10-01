@@ -30,6 +30,7 @@ const validationRulesV1Routes = require('./routes/v1/validationRulesRoutes');
 const topicV1Routes = require('./routes/v1/topicRoutes');
 const conceptGraphV1Routes = require('./routes/v1/conceptGraphRoutes');
 const pythonVersionV1Routes = require('./routes/v1/pythonVersionRoutes');
+const { allowedOrigins: corsAllowedOrigins } = require('./config/corsOrigins');
 
 const app = express();
 
@@ -39,12 +40,10 @@ const app = express();
 configureTrustProxy(app);
 warnAboutRateLimitBypass();
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  process.env.CLIENT_URI,
-  process.env.API_URI
-].filter(Boolean); 
+const allowedOrigins = corsAllowedOrigins();
+if (process.env.NODE_ENV === 'production' && !process.env.CLIENT_URI) {
+  logger.warn('CLIENT_URI is not set: in production no browser origin may call the API.');
+}
 
 app.use(cors({
   origin: allowedOrigins,
