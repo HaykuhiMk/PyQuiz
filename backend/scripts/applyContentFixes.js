@@ -2,8 +2,10 @@
 // production questions: options, answers, explanations, code and
 // difficulty. docs/DEPLOY_RUNBOOK.md has the steps. The fixes come from
 //   - database/contentFixes.json (the default): the first round, 20 questions;
-//   - another file in database/ named with --fixes, e.g.
-//     --fixes contentFixes2.json: the second round (v2.1 QA), 39 questions.
+//   - another file in database/ named with --fixes: the second round (v2.1
+//     QA) is split in two independent files (no question is in both):
+//       --fixes contentFixes2.json: 13 questions, to fix before reopening;
+//       --fixes contentFixes3.json: the other 26.
 // The same rules apply to every file.
 //
 // For each question the data gives every field that changes, with the value

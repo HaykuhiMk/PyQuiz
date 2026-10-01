@@ -1,0 +1,493 @@
+{
+  "_comment": "Second round of content fixes for production questions, part 2 of 2: the other 26 questions from the v2.1 QA (wording, error naming, difficulty labels, typos and weak distractors; docs/CONTENT_FIXES.md section 6). Proposed, NOT yet approved. Independent of contentFixes2.json (no question is in both). For each question: the fields that change, with the value expected now (expect, read from an exact local copy of production after the first round) and the new value (set). Applied by backend/scripts/applyContentFixes.js --fixes contentFixes3.json. Question content only.",
+  "fixes": [
+    {
+      "id": "67e2b6def5addb214fc6a7e5",
+      "ref": "C-04",
+      "reason": "The code printed the word \"Error\", which collides with the \"Error\" option meaning the program raises. It now prints \"Caught\".",
+      "expect": {
+        "code": "from typing import Iterable\ndef fetcher(obj: Iterable, index: int): print(obj[index])\n\ndef after(x): \n    try:\n        fetcher(x, 6) \n    except BaseException:\n        print(\"Error\")\n    except IndexError:\n        print(\"Bad index\")\n    finally:\n        print(\"After fetch\") \n\nls = [1, 2, 3, 4]\nafter(ls)\nprint(\"The end?\")",
+        "options": [
+          "Error",
+          "Nothing",
+          "The end?",
+          "After fetch",
+          "Error After fetch The end?",
+          "Error After fetch",
+          "After fetch The end?",
+          "Bad index After fetch The end?",
+          "Bad index After fetch",
+          "Bad index The end?",
+          "Error The end?",
+          "None"
+        ],
+        "answer": "Error After fetch The end?",
+        "explanation": "📌 The function fetcher(obj, index) attempts to access obj[index]. If the index is out of range, it raises an IndexError. However, the after function catches BaseException, which includes IndexError, before reaching the except IndexError block.\n     🔻 fetcher(ls, 6) tries to access index 6 in ls = [1, 2, 3, 4], which raises an IndexError.\n     🔻 The except BaseException: block catches this before except IndexError: can, printing \"Error\".\n     🔻 The finally: block always executes, printing \"After fetch\".\n     🔻 Execution resumes after the after(ls) function, printing \"The end?\"."
+      },
+      "set": {
+        "code": "from typing import Iterable\ndef fetcher(obj: Iterable, index: int): print(obj[index])\n\ndef after(x): \n    try:\n        fetcher(x, 6) \n    except BaseException:\n        print(\"Caught\")\n    except IndexError:\n        print(\"Bad index\")\n    finally:\n        print(\"After fetch\") \n\nls = [1, 2, 3, 4]\nafter(ls)\nprint(\"The end?\")",
+        "options": [
+          "Error",
+          "Nothing",
+          "The end?",
+          "After fetch",
+          "Caught After fetch The end?",
+          "Caught After fetch",
+          "After fetch The end?",
+          "Bad index After fetch The end?",
+          "Bad index After fetch",
+          "Bad index The end?",
+          "Caught The end?",
+          "None"
+        ],
+        "answer": "Caught After fetch The end?",
+        "explanation": "📌 The function fetcher(obj, index) attempts to access obj[index]. If the index is out of range, it raises an IndexError. However, the after function catches BaseException, which includes IndexError, before reaching the except IndexError block.\n     🔻 fetcher(ls, 6) tries to access index 6 in ls = [1, 2, 3, 4], which raises an IndexError.\n     🔻 The except BaseException: block catches this before except IndexError: can, printing \"Caught\".\n     🔻 The finally: block always executes, printing \"After fetch\".\n     🔻 Execution resumes after the after(ls) function, printing \"The end?\"."
+      }
+    },
+    {
+      "id": "67e2e978f5addb214fc6a819",
+      "ref": "C-07",
+      "reason": "The explanation called a bare super() \"incomplete syntax\"; it is valid and only creates an unused proxy.",
+      "expect": {
+        "explanation": "📌 This code defines two classes, Box and Box2D, where Box2D is a subclass of Box. The issue lies in the super() call within Box2D's constructor.\n📌 super() is called incorrectly\n🔻 The statement super() is incomplete. The correct syntax should be super().__init__(), which would explicitly call the parent class (Box) constructor.\n🔻 Because super() is not used correctly, the Box constructor (__init__) is never executed. This means \"Box \" is not printed, and self.__width is never initialized.\n📌 Constructor Execution Order\n🔻 When b2 = Box2D() is executed, it calls Box2D's constructor.\n🔻 \"Box2D \" is printed.\n🔻 Since super() does nothing in this case, the Box constructor is not executed."
+      },
+      "set": {
+        "explanation": "📌 Box2D defines its own __init__, so Box2D() runs only that one: it prints Box2D.\n📌 The bare super() on the next line is valid Python, but it only creates a proxy object for the parent class and calls nothing. Running Box's constructor would need super().__init__().\n📌 So Box.__init__ never runs and Box is not printed; b2.set_width(12), inherited from Box, prints nothing.\n📌 Output: Box2D"
+      }
+    },
+    {
+      "id": "67e2d8e1f5addb214fc6a7f4",
+      "ref": "C-08",
+      "reason": "The explanation said foo() \"is executed and immediately returns\"; calling foo() only creates the generator. (The answer form \"StopIteration: 25\" is one of the rule's older forms, valid for a snippet that prints nothing, so it stays.)",
+      "expect": {
+        "explanation": "📌 In this code, the function foo() returns a value (25) and then has a yield statement which is never executed because the return statement is encountered first. When next(foo()) is called:\n🔻 The function foo() is executed and immediately returns the value 25.\n🔻 Since the function does not yield anything (due to the return statement), calling next(foo()) will result in a StopIteration exception with the return value of 25."
+      },
+      "set": {
+        "explanation": "📌 foo() contains yield, so it is a generator function: calling foo() only creates a generator.\n📌 next() starts it, and the first statement is return 25. Returning from a generator ends it with StopIteration carrying the returned value, StopIteration(25).\n📌 Nothing was yielded, so next() raises StopIteration: 25 and print never runs. The yield 1 after the return is never reached.\n📌 Output: StopIteration: 25"
+      }
+    },
+    {
+      "id": "67e038e335e5165a41bbb396",
+      "ref": "C-10",
+      "reason": "The explanation quoted Python 3.9's UnboundLocalError message; newer versions word it differently.",
+      "expect": {
+        "explanation": "📌 num = 99 is defined globally.\n📌 Inside foo(), print(num, end=\" | \") tries to access num before it is assigned locally.\n📌 Since num = 64 is defined later in foo(), Python treats num as a local variable throughout the function.\n📌 However, Python does not allow accessing a local variable before its assignment in the same function.\n📌 This causes an UnboundLocalError at print(num, end=\" | \"):\n\nUnboundLocalError: local variable 'num' referenced before assignment"
+      },
+      "set": {
+        "explanation": "📌 num = 99 is defined globally.\n📌 Inside foo(), num = 64 assigns num, so Python treats num as a local variable throughout the whole function, including the print before the assignment.\n📌 print(num, end=\" | \") reads that local num before it has a value, which raises UnboundLocalError, so nothing is printed. (The message's wording differs between Python versions.)\n📌 Output: Error"
+      }
+    },
+    {
+      "id": "67e03cef35e5165a41bbb3a2",
+      "ref": "C-11",
+      "reason": "\"Python raises an error\" was vague: it is a SyntaxError at compile time, so nothing is printed.",
+      "expect": {
+        "explanation": "Explanation:\n📌 Key issue: The nonlocal keyword is used incorrectly.\n\nUnderstanding nonlocal Scope Rules:\nnonlocal is used to modify a variable from an enclosing (non-global) scope.\nFor nonlocal num to be valid, num must exist in an enclosing function's scope.\nStep-by-Step Analysis of the Code:\n1️⃣ Global Scope: num = 99\n2️⃣ f1() is called:\n\nf1() does NOT define num.\nf2() is defined inside f1().\n3️⃣ Inside f2():\nnonlocal num is used, but there is no num in f1()'s scope.\nPython raises an error because num is only found in the global scope, and nonlocal cannot reference global variables."
+      },
+      "set": {
+        "explanation": "📌 nonlocal num says that num belongs to an enclosing function's scope, and Python checks that when it compiles the code.\n📌 f1 doesn't define num. Only the global scope does, and nonlocal never refers to globals, so there is no binding to find.\n📌 Python raises SyntaxError: no binding for nonlocal 'num' found while compiling, before any line runs, so nothing is printed.\n📌 Output: Error"
+      }
+    },
+    {
+      "id": "67e04c00be7a85e233ca8161",
+      "ref": "C-12",
+      "reason": "The explanation did not name the error.",
+      "expect": {
+        "explanation": "📌 The function fun1 is defined with a default argument age=20 and a required argument name (without a default value).\n📌 However, in Python, when defining a function with both positional and default arguments, the default arguments must appear after the non-default arguments. Therefore, name should come before age if age has a default value.\n📌 In this case, the code will throw an Error because the argument age=20 is placed before the required name argument, which is not allowed."
+      },
+      "set": {
+        "explanation": "📌 In a function definition, a parameter with a default value (age=20) can't come before one without a default (name).\n📌 Python rejects the definition with a SyntaxError when it compiles the code, before anything runs, so fun1('Emma') is never called and nothing is printed. (The message's wording differs between Python versions.)\n📌 Output: Error"
+      }
+    },
+    {
+      "id": "67e50716f5addb214fc6a847",
+      "ref": "C-20",
+      "reason": "Combines __new__, class versus instance attributes and += shadowing.",
+      "expect": {
+        "difficulty": "easy"
+      },
+      "set": {
+        "difficulty": "hard"
+      }
+    },
+    {
+      "id": "67e5066ef5addb214fc6a845",
+      "ref": "C-21",
+      "reason": "Its own explanation calls it more advanced than basic instantiation.",
+      "expect": {
+        "difficulty": "easy"
+      },
+      "set": {
+        "difficulty": "medium"
+      }
+    },
+    {
+      "id": "67e50530f5addb214fc6a843",
+      "ref": "C-22",
+      "reason": "__new__ returning None, so __init__ never runs.",
+      "expect": {
+        "difficulty": "easy"
+      },
+      "set": {
+        "difficulty": "medium"
+      }
+    },
+    {
+      "id": "67e2eb67f5addb214fc6a81d",
+      "ref": "C-23",
+      "reason": "Same concept and answer as 67e2ec29… (hard); both medium.",
+      "expect": {
+        "difficulty": "easy"
+      },
+      "set": {
+        "difficulty": "medium"
+      }
+    },
+    {
+      "id": "67e50836f5addb214fc6a849",
+      "ref": "C-24",
+      "reason": "Plain method overriding and a list comprehension.",
+      "expect": {
+        "difficulty": "hard"
+      },
+      "set": {
+        "difficulty": "easy"
+      }
+    },
+    {
+      "id": "67e4f65ef5addb214fc6a836",
+      "ref": "C-25",
+      "reason": "One overridden method called through a function.",
+      "expect": {
+        "difficulty": "hard"
+      },
+      "set": {
+        "difficulty": "medium"
+      }
+    },
+    {
+      "id": "67e2e4faf5addb214fc6a814",
+      "ref": "C-26",
+      "reason": "Name mangling of __width across classes with this/self.",
+      "expect": {
+        "difficulty": "easy"
+      },
+      "set": {
+        "difficulty": "medium"
+      }
+    },
+    {
+      "id": "67dd83578e2ddadc28e387f6",
+      "ref": "C-27",
+      "reason": "A function rebinding its own name and setting __name__.",
+      "expect": {
+        "difficulty": "easy"
+      },
+      "set": {
+        "difficulty": "medium"
+      }
+    },
+    {
+      "id": "67e19688f5addb214fc6a7de",
+      "ref": "C-28",
+      "reason": "Missing space in an option.",
+      "expect": {
+        "options": [
+          "10 test",
+          "10 test 11",
+          "10 test 12",
+          "10",
+          "10 11",
+          "10 12",
+          "StopIteration",
+          "10 test 11StopIteration",
+          "10 test 12 StopIteration",
+          "<generator object at 0x100>",
+          "Error",
+          "Nothing",
+          "None"
+        ]
+      },
+      "set": {
+        "options": [
+          "10 test",
+          "10 test 11",
+          "10 test 12",
+          "10",
+          "10 11",
+          "10 12",
+          "StopIteration",
+          "10 test 11 StopIteration",
+          "10 test 12 StopIteration",
+          "<generator object at 0x100>",
+          "Error",
+          "Nothing",
+          "None"
+        ]
+      }
+    },
+    {
+      "id": "67e2de4bf5addb214fc6a802",
+      "ref": "C-29",
+      "reason": "The code had \"t. print_all()\" (a space after the dot).",
+      "expect": {
+        "code": "class Test:\n    def __init__(self, arg1, arg2):\n        self.a1 = arg1\n        self.a2 = arg2\n    def print_all(self):\n        print(self.a1, self.a2)\nt = Test(1, 2)\nt. print_all()"
+      },
+      "set": {
+        "code": "class Test:\n    def __init__(self, arg1, arg2):\n        self.a1 = arg1\n        self.a2 = arg2\n    def print_all(self):\n        print(self.a1, self.a2)\nt = Test(1, 2)\nt.print_all()"
+      }
+    },
+    {
+      "id": "67e2de92f5addb214fc6a804",
+      "ref": "C-29",
+      "reason": "The code had \"t. print_all()\" (a space after the dot).",
+      "expect": {
+        "code": "class Test:\n    def __init__(self, arg1=4, arg2=5):\n        self.a1 = arg1\n        self.a2 = arg2\n    def print_all(self):\n        print(self.a1, self.a2)\nt = Test(1)\nt. print_all()"
+      },
+      "set": {
+        "code": "class Test:\n    def __init__(self, arg1=4, arg2=5):\n        self.a1 = arg1\n        self.a2 = arg2\n    def print_all(self):\n        print(self.a1, self.a2)\nt = Test(1)\nt.print_all()"
+      }
+    },
+    {
+      "id": "67e2df32f5addb214fc6a806",
+      "ref": "C-29",
+      "reason": "The code had \"t. print_all()\" (a space after the dot).",
+      "expect": {
+        "code": "class Test:\n    def __init__(self, arg1=4, arg2):\n        self.a1 = arg1\n        self.a2 = arg2\n    def print_all(self):\n        print(self.a1, self.a2)\nt = Test(1)\nt. print_all()"
+      },
+      "set": {
+        "code": "class Test:\n    def __init__(self, arg1=4, arg2):\n        self.a1 = arg1\n        self.a2 = arg2\n    def print_all(self):\n        print(self.a1, self.a2)\nt = Test(1)\nt.print_all()"
+      }
+    },
+    {
+      "id": "67e05ec6be7a85e233ca8177",
+      "ref": "C-30",
+      "reason": "Distractors used \"Jade\", which is not in the code.",
+      "expect": {
+        "options": [
+          "Error",
+          "Nothing",
+          "John 2 | Jane 4 | Jade 6 | John |",
+          "(John, 2) | (Jane, 4) | (Jade,6) | (John) |",
+          "John 2 | Jane 4 | Jade 6 |",
+          "John (4, 2) | Jane (5, 4) | Jane (6, 6) |",
+          "John (2, 4) | Jane (4, 5) | Jane (6, 6) |",
+          "John (4, 2) | Jane (5, 4) | Jane (6, 6) | John (7, None) |",
+          "John (2, 4) | Jane (4, 5) | Jane (6, 6) | John (None, 7) |"
+        ]
+      },
+      "set": {
+        "options": [
+          "Error",
+          "Nothing",
+          "John 2 | Jane 4 | Jane 6 | John |",
+          "(John, 2) | (Jane, 4) | (Jane, 6) | (John) |",
+          "John 2 | Jane 4 | Jane 6 |",
+          "John (4, 2) | Jane (5, 4) | Jane (6, 6) |",
+          "John (2, 4) | Jane (4, 5) | Jane (6, 6) |",
+          "John (4, 2) | Jane (5, 4) | Jane (6, 6) | John (7, None) |",
+          "John (2, 4) | Jane (4, 5) | Jane (6, 6) | John (None, 7) |"
+        ]
+      }
+    },
+    {
+      "id": "67e04a20be7a85e233ca815b",
+      "ref": "C-31",
+      "reason": "An option contained a comment.",
+      "expect": {
+        "options": [
+          "\" \"      #space",
+          "25",
+          "625",
+          "1024",
+          "Error"
+        ]
+      },
+      "set": {
+        "options": [
+          "\" \"",
+          "25",
+          "625",
+          "1024",
+          "Error"
+        ]
+      }
+    },
+    {
+      "id": "67e04b86be7a85e233ca815f",
+      "ref": "C-32",
+      "reason": "Option \"s | [ ]\" was not a plausible output.",
+      "expect": {
+        "options": [
+          "Error",
+          "34",
+          "etc | 34",
+          "s | 34",
+          "spam | 34",
+          "34 | 34",
+          "s | [ ]"
+        ]
+      },
+      "set": {
+        "options": [
+          "Error",
+          "34",
+          "etc | 34",
+          "s | 34",
+          "spam | 34",
+          "34 | 34",
+          "p | 34"
+        ]
+      }
+    },
+    {
+      "id": "67e06209be7a85e233ca8181",
+      "ref": "C-33",
+      "reason": "Throwaway options (\"[ ]\", \"' '\", \"Random element\", \"[0, '', None, [ ]]\"); 15 options.",
+      "expect": {
+        "options": [
+          "0",
+          "' '",
+          "[ ]",
+          "42",
+          "None",
+          "'Hello'",
+          "True",
+          "False",
+          "Error",
+          "Nothing",
+          "['Hello', 42]",
+          "[0, '', None, [ ]]",
+          "Random element",
+          "[0, '', None, [], 'Hello', 42]",
+          "[False, False, False, False, True, True]"
+        ]
+      },
+      "set": {
+        "options": [
+          "0",
+          "42",
+          "None",
+          "'Hello'",
+          "True",
+          "False",
+          "Error",
+          "Nothing",
+          "['Hello', 42]",
+          "[0, '', None, [], 'Hello', 42]",
+          "[False, False, False, False, True, True]"
+        ]
+      }
+    },
+    {
+      "id": "67e2dddaf5addb214fc6a800",
+      "ref": "C-34",
+      "reason": "Options \"a\", \"b\", \"Test\" were not plausible outputs.",
+      "expect": {
+        "options": [
+          "True",
+          "False",
+          "a",
+          "b",
+          "Test"
+        ]
+      },
+      "set": {
+        "options": [
+          "True",
+          "False",
+          "None",
+          "Error"
+        ]
+      }
+    },
+    {
+      "id": "67e04d9ebe7a85e233ca8165",
+      "ref": "C-35",
+      "reason": "Options \"1234\", \"2468\", \"2345\" had nothing to do with the code.",
+      "expect": {
+        "options": [
+          "Nothing",
+          "Error",
+          "1234",
+          "2468",
+          "2345",
+          "spamspam"
+        ]
+      },
+      "set": {
+        "options": [
+          "Nothing",
+          "Error",
+          "spam",
+          "spam spam",
+          "['spam', 'spam']",
+          "spamspam"
+        ]
+      }
+    },
+    {
+      "id": "67e2b912f5addb214fc6a7e9",
+      "ref": "C-36",
+      "reason": "Three almost identical generator-address options.",
+      "expect": {
+        "options": [
+          "0 1",
+          "1 1",
+          "1 2",
+          "1 0",
+          "<generator object at 0x100> <generator object at 0x100>",
+          "1 None",
+          "1 StopIteration",
+          "StopIteration None",
+          "<generator object at 0x100>",
+          "<generator object at 0x100> <generator object at 0x104>",
+          "Error",
+          "Nothing",
+          "None",
+          "<generator object at 0x100> <generator object at 0x108>"
+        ]
+      },
+      "set": {
+        "options": [
+          "0 1",
+          "1 1",
+          "1 2",
+          "1 0",
+          "1 None",
+          "1 StopIteration",
+          "StopIteration None",
+          "<generator object at 0x100>",
+          "<generator object at 0x100> <generator object at 0x104>",
+          "Error",
+          "Nothing",
+          "None"
+        ]
+      }
+    },
+    {
+      "id": "67e508aaf5addb214fc6a84b",
+      "ref": "C-37",
+      "reason": "\"An error due to improper inheritance\" and \"None of the above\" overlapped with \"Error\".",
+      "expect": {
+        "options": [
+          "Base",
+          "Derived",
+          "An error due to improper inheritance",
+          "None of the above",
+          "Error",
+          "Nothing"
+        ]
+      },
+      "set": {
+        "options": [
+          "Base",
+          "Derived",
+          "Base Derived",
+          "Error",
+          "Nothing"
+        ]
+      }
+    }
+  ]
+}

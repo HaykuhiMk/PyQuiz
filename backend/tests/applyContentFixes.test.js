@@ -9,6 +9,7 @@ const mongoose = require('mongoose');
 const db = require('./testUtils/db');
 const { fixes } = require('../database/contentFixes.json');
 const { fixes: fixes2 } = require('../database/contentFixes2.json');
+const { fixes: fixes3 } = require('../database/contentFixes3.json');
 
 const SCRIPT = path.join(__dirname, '..', 'scripts', 'applyContentFixes.js');
 const oid = (id) => new mongoose.Types.ObjectId(id);
@@ -136,60 +137,107 @@ describe('scripts/applyContentFixes.js', () => {
   });
 });
 
-// The second round (v2.1 QA, database/contentFixes2.json), run with
-// --fixes. Same rules; it expects the state the first round leaves.
-describe('scripts/applyContentFixes.js --fixes contentFixes2.json', () => {
-  const FIXES2 = ['--fixes', 'contentFixes2.json'];
+// The second round (v2.1 QA), split in two independent files: contentFixes2
+// (to fix before reopening) and contentFixes3 (the rest), each run with
+// --fixes. Same rules; they expect the state the first round leaves.
+const SECOND_ROUND = { 'contentFixes2.json': fixes2, 'contentFixes3.json': fixes3 };
 
-  // The second-round questions as they are once the first round is applied.
-  async function insertRound2Current() {
-    await questions().insertMany(
-      fixes2.map((f) => {
-        const options = f.expect.options || f.set.options || ['a', 'b'];
-        const kept = (f.set.options || options).filter((o) => options.includes(o));
-        return {
-          _id: oid(f.id),
-          question: 'What will be the output of the following code?',
-          code: 'print(1)',
-          options,
-          answer: f.expect.answer || kept[0],
-          difficulty: 'easy',
-          primaryTopic: 'functions',
-          secondaryTopics: [],
-          explanation: 'old',
-          createdBy: 'admin',
-          ...f.expect,
-        };
-      })
-    );
-  }
+// The given second-round questions as they are once the first round is applied.
+async function insertRound2Current(list) {
+  await questions().insertMany(
+    list.map((f) => {
+      const options = f.expect.options || f.set.options || ['a', 'b'];
+      const kept = (f.set.options || options).filter((o) => options.includes(o));
+      return {
+        _id: oid(f.id),
+        question: 'What will be the output of the following code?',
+        code: 'print(1)',
+        options,
+        answer: f.expect.answer || kept[0],
+        difficulty: 'easy',
+        primaryTopic: 'functions',
+        secondaryTopics: [],
+        explanation: 'old',
+        createdBy: 'admin',
+        ...f.expect,
+      };
+    })
+  );
+}
+
+describe('the second-round files', () => {
+  it('split the 39 questions 13 / 26, with no question in both', () => {
+    expect([fixes2.length, fixes3.length]).toEqual([13, 26]);
+    const ids3 = new Set(fixes3.map((f) => f.id));
+    expect(fixes2.filter((f) => ids3.has(f.id))).toEqual([]);
+  });
+
+  it('apply in either order', async () => {
+    for (const order of [['contentFixes2.json', 'contentFixes3.json'], ['contentFixes3.json', 'contentFixes2.json']]) {
+      await insertRound2Current([...fixes2, ...fixes3]);
+      for (const name of order) {
+        const res = run(['--uri', uri(), '--fixes', name, '--apply'], `${mongoose.connection.name}\n`);
+        expect({ name, code: res.code }).toEqual({ name, code: 0 });
+      }
+      for (const name of order) expect(run(['--uri', uri(), '--fixes', name]).out).toMatch(/0 to apply, \d+ already applied, 0 unexpected/);
+      await mongoose.connection.db.dropDatabase();
+    }
+  }, 60000); // eight script runs
+});
+
+describe.each(Object.entries(SECOND_ROUND))('scripts/applyContentFixes.js --fixes %s', (name, list) => {
+  const ARGS = ['--fixes', name];
 
   it('dry run: names the fixes file, plans all of them, writes nothing', async () => {
-    await insertRound2Current();
+    await insertRound2Current(list);
     const before = await snapshot();
-    const res = run(['--uri', uri(), ...FIXES2]);
+    const res = run(['--uri', uri(), ...ARGS]);
     expect(res.code).toBe(0);
-    expect(res.out).toContain(`Fixes:       database/contentFixes2.json (${fixes2.length} questions)`);
-    expect(res.out).toContain(`${fixes2.length} content fixes: ${fixes2.length} to apply, 0 already applied, 0 unexpected.`);
+    expect(res.out).toContain(`Fixes:       database/${name} (${list.length} questions)`);
+    expect(res.out).toContain(`${list.length} content fixes: ${list.length} to apply, 0 already applied, 0 unexpected.`);
+    expect(await snapshot()).toBe(before);
+  });
+
+  it('a wrong confirmation changes nothing', async () => {
+    await insertRound2Current(list);
+    const before = await snapshot();
+    const res = run(['--uri', uri(), ...ARGS, '--apply'], 'pyquiz\n');
+    expect(res.code).toBe(1);
+    expect(res.out).toMatch(/Nothing was changed/);
     expect(await snapshot()).toBe(before);
   });
 
   it('--apply sets every new value; a second run changes nothing', async () => {
-    await insertRound2Current();
-    const res = run(['--uri', uri(), ...FIXES2, '--apply'], `${mongoose.connection.name}\n`);
-    expect(res.out).toMatch(new RegExp(`All ${fixes2.length} content fixes are in place`));
+    await insertRound2Current(list);
+    const res = run(['--uri', uri(), ...ARGS, '--apply'], `${mongoose.connection.name}\n`);
+    expect(res.out).toMatch(new RegExp(`All ${list.length} content fixes are in place`));
     expect(res.code).toBe(0);
-    for (const f of fixes2) {
+    for (const f of list) {
       const q = await questions().findOne({ _id: oid(f.id) });
       for (const [field, value] of Object.entries(f.set)) expect({ id: f.id, field, value: q[field] }).toEqual({ id: f.id, field, value });
     }
-    const again = run(['--uri', uri(), ...FIXES2, '--apply'], `${mongoose.connection.name}\n`);
+    const again = run(['--uri', uri(), ...ARGS, '--apply'], `${mongoose.connection.name}\n`);
     expect(again.code).toBe(0);
     expect(again.out).toMatch(/Nothing to change/);
   });
 
+  it('refuses everything if one question was edited meanwhile', async () => {
+    await insertRound2Current(list);
+    await questions().updateOne({ _id: oid(list[0].id) }, { $set: { [Object.keys(list[0].set)[0]]: 'edited in the admin panel' } });
+    const before = await snapshot();
+    const res = run(['--uri', uri(), ...ARGS, '--apply'], `${mongoose.connection.name}\n`);
+    expect(res.code).toBe(1);
+    expect(res.out).toContain(`${list[0].id} (${list[0].ref}): current content doesn't match the expected value of:`);
+    expect(await snapshot()).toBe(before);
+  });
+});
+
+describe('scripts/applyContentFixes.js --fixes contentFixes2.json', () => {
+  const FIXES2 = ['--fixes', 'contentFixes2.json'];
+  const insertRound2Current2 = () => insertRound2Current(fixes2);
+
   it('expects the first round to have been applied: questions still in the old state are refused', async () => {
-    await insertRound2Current();
+    await insertRound2Current2();
     // #26 (67e05bfe…) before the first round: the old options.
     const first = fixes.find((f) => f.id === '67e05bfebe7a85e233ca816e');
     await questions().updateOne({ _id: oid(first.id) }, { $set: first.expect });
@@ -201,7 +249,7 @@ describe('scripts/applyContentFixes.js --fixes contentFixes2.json', () => {
   });
 
   it('keeps every misconception-tagged option', async () => {
-    await insertRound2Current();
+    await insertRound2Current2();
     const tagged = fixes2.find((f) => f.ref.startsWith('C-14'));
     await questions().updateOne(
       { _id: oid(tagged.id) },
