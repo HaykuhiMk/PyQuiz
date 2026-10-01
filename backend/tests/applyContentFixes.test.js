@@ -8,6 +8,7 @@ const { spawnSync } = require('child_process');
 const mongoose = require('mongoose');
 const db = require('./testUtils/db');
 const { fixes } = require('../database/contentFixes.json');
+const { fixes: fixes2 } = require('../database/contentFixes2.json');
 
 const SCRIPT = path.join(__dirname, '..', 'scripts', 'applyContentFixes.js');
 const oid = (id) => new mongoose.Types.ObjectId(id);
@@ -132,5 +133,93 @@ describe('scripts/applyContentFixes.js', () => {
     const res = run(['--uri', uri()]);
     expect(res.code).toBe(1);
     expect(res.out).toContain(`${fixes[0].id} (${fixes[0].ref}): question not found`);
+  });
+});
+
+// The second round (v2.1 QA, database/contentFixes2.json), run with
+// --fixes. Same rules; it expects the state the first round leaves.
+describe('scripts/applyContentFixes.js --fixes contentFixes2.json', () => {
+  const FIXES2 = ['--fixes', 'contentFixes2.json'];
+
+  // The second-round questions as they are once the first round is applied.
+  async function insertRound2Current() {
+    await questions().insertMany(
+      fixes2.map((f) => {
+        const options = f.expect.options || f.set.options || ['a', 'b'];
+        const kept = (f.set.options || options).filter((o) => options.includes(o));
+        return {
+          _id: oid(f.id),
+          question: 'What will be the output of the following code?',
+          code: 'print(1)',
+          options,
+          answer: f.expect.answer || kept[0],
+          difficulty: 'easy',
+          primaryTopic: 'functions',
+          secondaryTopics: [],
+          explanation: 'old',
+          createdBy: 'admin',
+          ...f.expect,
+        };
+      })
+    );
+  }
+
+  it('dry run: names the fixes file, plans all of them, writes nothing', async () => {
+    await insertRound2Current();
+    const before = await snapshot();
+    const res = run(['--uri', uri(), ...FIXES2]);
+    expect(res.code).toBe(0);
+    expect(res.out).toContain(`Fixes:       database/contentFixes2.json (${fixes2.length} questions)`);
+    expect(res.out).toContain(`${fixes2.length} content fixes: ${fixes2.length} to apply, 0 already applied, 0 unexpected.`);
+    expect(await snapshot()).toBe(before);
+  });
+
+  it('--apply sets every new value; a second run changes nothing', async () => {
+    await insertRound2Current();
+    const res = run(['--uri', uri(), ...FIXES2, '--apply'], `${mongoose.connection.name}\n`);
+    expect(res.out).toMatch(new RegExp(`All ${fixes2.length} content fixes are in place`));
+    expect(res.code).toBe(0);
+    for (const f of fixes2) {
+      const q = await questions().findOne({ _id: oid(f.id) });
+      for (const [field, value] of Object.entries(f.set)) expect({ id: f.id, field, value: q[field] }).toEqual({ id: f.id, field, value });
+    }
+    const again = run(['--uri', uri(), ...FIXES2, '--apply'], `${mongoose.connection.name}\n`);
+    expect(again.code).toBe(0);
+    expect(again.out).toMatch(/Nothing to change/);
+  });
+
+  it('expects the first round to have been applied: questions still in the old state are refused', async () => {
+    await insertRound2Current();
+    // #26 (67e05bfe…) before the first round: the old options.
+    const first = fixes.find((f) => f.id === '67e05bfebe7a85e233ca816e');
+    await questions().updateOne({ _id: oid(first.id) }, { $set: first.expect });
+    const before = await snapshot();
+    const res = run(['--uri', uri(), ...FIXES2, '--apply'], `${mongoose.connection.name}\n`);
+    expect(res.code).toBe(1);
+    expect(res.out).toContain(`${first.id} (C-15): current content doesn't match the expected value of: options`);
+    expect(await snapshot()).toBe(before);
+  });
+
+  it('keeps every misconception-tagged option', async () => {
+    await insertRound2Current();
+    const tagged = fixes2.find((f) => f.ref.startsWith('C-14'));
+    await questions().updateOne(
+      { _id: oid(tagged.id) },
+      { $set: { answer: 'None | None | None |', distractors: [{ option: '{0, 1, 2}', misconceptionId: 'sets.add-returns-set' }, { option: '{0, 1, 2, 0, 1, 2}', misconceptionId: 'sets.add-returns-set' }] } }
+    );
+    // As production has them (C-14 changes the other options only).
+    const res = run(['--uri', uri(), ...FIXES2, '--apply'], `${mongoose.connection.name}\n`);
+    expect(res.out).not.toMatch(/would drop/);
+    expect(res.code).toBe(0);
+    expect((await questions().findOne({ _id: oid(tagged.id) })).distractors.map((d) => d.option)).toEqual(['{0, 1, 2}', '{0, 1, 2, 0, 1, 2}']);
+  });
+
+  it('refuses a fixes file outside database/ before connecting', () => {
+    for (const name of ['../package.json', 'questions.json', '']) {
+      const res = run(['--uri', 'mongodb://127.0.0.1:1/never', '--fixes', name]);
+      expect(res.code).toBe(1);
+      expect(res.out).toMatch(/--fixes takes a file name in database\/ like contentFixes2\.json/);
+      expect(res.out).not.toMatch(/Target host/);
+    }
   });
 });
