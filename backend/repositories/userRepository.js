@@ -6,8 +6,10 @@ const User = require('../models/user');
 // A `.select('-avatar')`-projected document can still have `avatar` set and
 // saved normally; Mongoose only omits it from what's read, not what's
 // writable.
+// Stored emails are lowercase (models/user.js; scripts/lowercaseEmails.js
+// converted the older ones), so look up the lowercased address.
 async function findByEmail(email) {
-  return User.findOne({ email }).select('-avatar');
+  return User.findOne({ email: String(email).trim().toLowerCase() }).select('-avatar');
 }
 
 async function findById(userId) {

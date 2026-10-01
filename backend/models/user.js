@@ -12,7 +12,9 @@ const userSchema = new mongoose.Schema({
     // against any existing database before relying on the constraint.
     usernameLower: { type: String, required: true, unique: true, sparse: true },
     avatar: { type: String, default: null },
-    email: { type: String, required: true, unique: true },
+    // Lowercased and trimmed on every write, so the unique index is effectively
+    // case-insensitive (validators/authValidators.js normalizes input the same way).
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     role: { type: String, default: "user" },
     banned: { type: Boolean, default: false },

@@ -52,10 +52,9 @@
 // Usage (from backend/):
 //   node scripts/productionMigration.js --uri "<connection string>"           # dry run
 //   node scripts/productionMigration.js --uri "<connection string>" --apply   # writes
-const readline = require('readline');
 const mongoose = require('mongoose');
 const { TOPIC_IDS } = require('../config/topicTaxonomy');
-const { redactMongoUri } = require('../config/mongoUri');
+const { parseArgs, describeTarget, confirmDatabaseName, MISSING_URI_MESSAGE, NO_DATABASE_MESSAGE } = require('./lib/uriScript');
 const { addQuestionSchema } = require('../validators/questionValidators');
 const { distractorProblem } = require('../utils/distractors');
 const { MISCONCEPTION_IDS } = require('../config/conceptGraph');
@@ -93,23 +92,6 @@ const USER_DEFAULTS = {
 const log = (line = '') => console.log(line);
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const oid = (id) => new mongoose.Types.ObjectId(id);
-
-function parseArgs(argv) {
-  const args = { uri: null, apply: false };
-  for (let i = 0; i < argv.length; i += 1) {
-    if (argv[i] === '--uri') args.uri = argv[(i += 1)] || null;
-    else if (argv[i] === '--apply') args.apply = true;
-    else throw new Error(`Unknown argument: ${argv[i]}`);
-  }
-  return args;
-}
-
-// Host(s) and database name, without credentials.
-function describeTarget(uri) {
-  const match = uri.match(/^(mongodb(?:\+srv)?):\/\/(?:[^@/]*@)?([^/?]+)\/([^?]*)/);
-  if (!match || !match[3]) return null;
-  return { hosts: redactMongoUri(`${match[1]}://${match[2]}`), db: decodeURIComponent(match[3]) };
-}
 
 function seedMatcher() {
   const byCode = new Map(seedQuestions.map((q, i) => [q.code || '', i]));
@@ -557,25 +539,15 @@ function printVerification(results) {
   return { failures, ready: !failures && !noLower.length };
 }
 
-async function confirm(dbName) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: process.stdin.isTTY });
-  const answer = await new Promise((resolve) => {
-    rl.question(`Type the database name (${dbName}) to apply the migration: `, resolve);
-    rl.on('close', () => resolve(null));
-  });
-  rl.close();
-  return answer !== null && answer.trim() === dbName;
-}
-
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.uri) {
-    console.error('Refusing: pass the connection string with --uri. This script never reads .env or MONGODB_URI/MONGO_URI.');
+    console.error(MISSING_URI_MESSAGE);
     return 1;
   }
   const target = describeTarget(args.uri);
   if (!target) {
-    console.error('Refusing: the --uri must name a database, e.g. mongodb://127.0.0.1:27018/<database>.');
+    console.error(NO_DATABASE_MESSAGE);
     return 1;
   }
 
@@ -612,7 +584,7 @@ async function main() {
       return 0;
     }
 
-    if (!(await confirm(db.databaseName))) {
+    if (!(await confirmDatabaseName(db.databaseName, 'apply the migration'))) {
       log('Confirmation did not match the database name. Nothing was changed.');
       return 1;
     }

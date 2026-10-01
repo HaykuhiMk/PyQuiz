@@ -193,6 +193,19 @@ error, because v2 sets `usernameLower` on save and the unique index refuses the 
 Don't reopen until every box is ticked.
 
 - [ ] **Dry run says `READY TO REOPEN`** (section 6).
+- [ ] **Lowercase the stored emails, before the new code serves logins.** Code from branch
+  `fix/real-data-audit` on normalizes emails to lowercase at registration, login and password
+  reset. 3 production accounts have capital letters in their stored email, and they couldn't log
+  in until this has run. It's a dry run first, then apply; type the database name to confirm:
+
+  ```bash
+  cd backend
+  node scripts/lowercaseEmails.js --uri "$PYQUIZ_URI"           # expect: Emails to lowercase: 3 account(s)
+  node scripts/lowercaseEmails.js --uri "$PYQUIZ_URI" --apply   # expect: Lowercased 3 account email(s)
+  ```
+
+  It refuses (and changes nothing) if two accounts would end up with the same email; the copy of
+  2026-10-01 has none. A second run reports `Nothing to change`.
 - [ ] **Questions fixed in the admin panel.** Numbers are from the reviewed topic proposals.
   - [ ] `67e2f3bff5addb214fc6a82d`: option `'Box Magic'` appears twice. The admin forms refuse to
     save a question with duplicate options, and the answer is matched by text, so make every

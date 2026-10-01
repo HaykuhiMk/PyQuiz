@@ -140,8 +140,10 @@ password change:
 - at least one of `@ $ ! % * ? & _`;
 - other characters, including spaces, are allowed.
 
-Passwords are never trimmed, so a password works exactly as typed. Registration fails if the email
-is already in use, or if the username matches an existing one ignoring case.
+Passwords are never trimmed, so a password works exactly as typed. Email addresses are trimmed and
+lowercased at registration, login and password reset, so an address works in any case. Registration
+fails if the email is already in use (ignoring case), or if the username matches an existing one
+ignoring case.
 
 **Login.** Login and the session model are described in Section 12. The frontend decides whether a
 user is logged in by asking the server (`GET /api/v1/auth/me`). On any expired or revoked session
