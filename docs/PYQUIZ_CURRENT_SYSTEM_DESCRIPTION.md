@@ -1099,6 +1099,10 @@ snippet runs in its own process, in an empty folder, with a timeout. The check r
 - a second option that also equals the output (an ambiguous question);
 - a snippet that times out.
 
+It accepts two conventions of the question bank: `Error: <message>` for a snippet that raises with
+exactly that message, and `Nothing` for a snippet that prints nothing. Nothing else is normalised,
+so `[ ]` written for `[]` is a mismatch.
+
 It finds every `python3`/`python3.N` on the `PATH` (or the interpreters listed in `PYQUIZ_PYTHONS`),
 warns when one of the reference versions in `backend/config/pythonVersion.js` (3.9 and 3.14) isn't
 available, and fails on it with `--require-checked`. All 47 seed questions pass on CPython 3.9.6 and

@@ -13,8 +13,11 @@
 #   - Output is compared with whitespace collapsed, because answers write
 #     multi-line output on one line ("P J C" for three printed lines).
 #   - If the snippet raises, the answer must be an error option: a generic
-#     "Error"/"Type error", or one naming the exception type or quoting its
-#     message.
+#     "Error"/"Type error", one naming the exception type or quoting its
+#     message, or the dataset's convention "Error: <message>" with exactly
+#     the exception's message.
+#   - The dataset's convention "Nothing" matches a snippet that prints nothing.
+#   - Nothing else is normalised: "[ ]" written for "[]" is a mismatch.
 #   - Another option that also equals the real output is reported too, since
 #     it makes the question ambiguous.
 # Must stay compatible with the minimum Python version (3.9).
@@ -77,8 +80,16 @@ def error_answer_matches(answer, exc):
         return True
     if exc['type'].replace('Error', ' error').strip().lower() == a.lower():
         return True
+    # Convention: "Error: <message>", the message exactly as raised.
+    if a.startswith('Error: ') and norm(a[len('Error: '):]).rstrip('.') == norm(exc['message']).rstrip('.'):
+        return True
     quoted = norm(a).rstrip('.')
     return bool(quoted) and quoted in exc['message']
+
+
+def output_matches(option, actual):
+    # Convention: "Nothing" is the answer for a snippet that prints nothing.
+    return norm(option) == actual or (actual == '' and option.strip() == 'Nothing')
 
 
 def check(question, work_dir):
@@ -98,8 +109,8 @@ def check(question, work_dir):
         return {'ok': False, 'reason': 'raised an error, but the answer is not an error option',
                 'expected': answer, 'actual': actual}
     actual = norm(stdout)
-    others = [o for o in question['options'] if o != answer and norm(o) == actual]
-    if norm(answer) != actual:
+    others = [o for o in question['options'] if o != answer and output_matches(o, actual)]
+    if not output_matches(answer, actual):
         return {'ok': False, 'reason': 'output differs from the answer', 'expected': answer, 'actual': actual,
                 'matchingOptions': others}
     if others:

@@ -5,5 +5,9 @@
   { "question": "raises, but the answer is not an error", "code": "print(1 / 0)", "options": ["inf", "Error"], "answer": "inf" },
   { "question": "two options equal the output", "code": "print('a', 'b')", "options": ["a b", "a  b"], "answer": "a b" },
   { "question": "never ends", "code": "while True:\n    pass", "options": ["Nothing", "Error"], "answer": "Nothing" },
-  { "question": "writes a file in its own folder", "code": "open('x.txt', 'a').write('hi')\nprint(open('x.txt').read())", "options": ["hi", "hihi"], "answer": "hi" }
+  { "question": "writes a file in its own folder", "code": "open('x.txt', 'a').write('hi')\nprint(open('x.txt').read())", "options": ["hi", "hihi"], "answer": "hi" },
+  { "question": "convention: Error: <message>", "code": "assert False, 'X too small'", "options": ["Error: X too small", "Nothing"], "answer": "Error: X too small" },
+  { "question": "convention: Nothing for no output", "code": "x = 1", "options": ["Nothing", "1"], "answer": "Nothing" },
+  { "question": "Error: with a different message", "code": "assert False, 'X too small'", "options": ["Error: X too big", "Nothing"], "answer": "Error: X too big" },
+  { "question": "[ ] is not [] (no normalisation)", "code": "print([])", "options": ["[ ]", "Error"], "answer": "[ ]" }
 ]
