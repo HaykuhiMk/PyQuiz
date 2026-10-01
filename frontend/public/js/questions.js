@@ -447,10 +447,17 @@ document.addEventListener("DOMContentLoaded", () => {
             applyOutcome(result.isCorrect, result);
         } else {
             optionsContainer.querySelectorAll(".pq-answer")[selectedOption]?.classList.add("is-wrong");
-            resultContainer.innerText = `Wrong — try again. (${attemptsRemaining} attempt${attemptsRemaining === 1 ? "" : "s"} left)`;
             selectedOption = null;
-            submitBtn.disabled = false;
-            if (attemptsRemaining <= 0) giveUpBtn.style.display = "block";
+            if (attemptsRemaining <= 0) {
+                // No attempts left: the server refuses another answer, so
+                // the only way on is to reveal the answer.
+                resultContainer.innerText = "Wrong. No attempts left — reveal the answer to continue.";
+                submitBtn.disabled = true;
+                giveUpBtn.style.display = "block";
+            } else {
+                resultContainer.innerText = `Wrong — try again. (${attemptsRemaining} attempt${attemptsRemaining === 1 ? "" : "s"} left)`;
+                submitBtn.disabled = false;
+            }
         }
     }
 
@@ -486,11 +493,11 @@ document.addEventListener("DOMContentLoaded", () => {
         nextBtn.disabled = true;
         try {
             const data = await api.getNextQuizQuestion(sessionId);
+            // resetUI() sets Next's state for the new question.
             handleSessionQuestion(data);
         } catch (error) {
             console.error("Error fetching next question:", error);
             resultContainer.innerHTML = `<p class="pq-status error" role="alert">Couldn't load the next question. ${escapeHTML(String(error.message || ""))}</p>`;
-        } finally {
             nextBtn.disabled = false;
         }
     };
@@ -507,12 +514,16 @@ document.addEventListener("DOMContentLoaded", () => {
         submitBtn.style.display = "block";
         submitBtn.disabled = false;
         nextBtn.style.display = "block";
+        // Only Blitz may move on before answering (it counts as a timeout);
+        // Classic and Survival need the question resolved first.
+        nextBtn.disabled = quizMode !== "blitz";
     }
 
     // Trusts the server's isCorrect/points/streak — the client no longer
     // computes anything that affects scoring, only local display state
     // (this run's own correct/wrong/streak tally and answer ribbon).
     function applyOutcome(isCorrect, result) {
+        nextBtn.disabled = false;
         session.answered += 1;
         session.history.push(isCorrect ? "r" : "w");
         if (isCorrect) {
