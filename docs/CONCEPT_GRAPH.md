@@ -91,6 +91,15 @@ ends in `-confusion`. The pattern is applied to every misconception that fits it
 vs dicts, `append` vs `extend`, `/` vs `//`, and `for`-loop vs comprehension scope. Which direction a
 wrong option shows is captured by that option's own feedback text, not by the id.
 
+**Tagging rule for wrong options (owner's decision, Stage 3 review).** A wrong option is tagged
+with a misconception only when that one misconception explains choosing it. **When an option could
+reflect two different wrong beliefs, it is not tagged** ("none"), even if one of them is a listed
+misconception. For example, `{0, 1, 2}.values()` printing values could come from taking the set
+literal for a dict (`sets.set-dict-braces-confusion`) or from believing sets have dict-like methods
+(not in the taxonomy). The reverse case is different: an option that needs one listed
+misconception **plus** further slips (both are needed to reach it) is tagged with that
+misconception, and the reason names the other slips.
+
 **All 59 (before the merges below; 57 now) were checked against the rule.** Four moved:
 
 | Was | Now | Why |
