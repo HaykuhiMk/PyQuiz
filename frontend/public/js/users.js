@@ -27,12 +27,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         }[match]));
     }
 
+    // Next is enabled only when the server says another page exists (a
+    // full page used to be taken as "there's more", which left an empty last
+    // page whenever the total was a multiple of the page size).
+    function updatePager() {
+        prevBtn.disabled = currentPage <= 1;
+        nextBtn.disabled = !hasNextPage;
+    }
+
     async function loadUsers() {
         tableBody.innerHTML = `<tr><td colspan="7">Loading...</td></tr>`;
         try {
-            const users = await api.getAdminUsers({ page: currentPage, limit: PAGE_SIZE });
-            hasNextPage = users.length === PAGE_SIZE;
+            const { items: users, meta } = await api.getAdminUsersPage({ page: currentPage, limit: PAGE_SIZE });
+            hasNextPage = Boolean(meta.hasNextPage);
             pageLabel.textContent = `Page ${currentPage}`;
+            updatePager();
 
             if (!users.length) {
                 tableBody.innerHTML = `<tr><td colspan="7">No users found.</td></tr>`;
@@ -75,6 +84,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
         } catch (error) {
             console.error("Error loading users:", error);
+            hasNextPage = false;
+            updatePager();
             tableBody.innerHTML = `<tr><td colspan="7">Error: ${escapeHTML(error.message)}</td></tr>`;
         }
     }

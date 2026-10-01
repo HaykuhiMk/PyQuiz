@@ -121,13 +121,15 @@ async function loadCards() {
   const { matches: filteredTopics } = matchingTopics();
 
   try {
-    const questions = await api.getStudyQuestions({
+    const { items: questions, meta } = await api.getStudyQuestionsPage({
       topics: filteredTopics.map((topic) => topic.id),
       difficulty,
       page,
       limit: PAGE_SIZE,
     });
-    hasNext = questions.length === PAGE_SIZE;
+    // The server says whether another page exists; a full page doesn't mean
+    // there's more (the total can be a multiple of the page size).
+    hasNext = Boolean(meta.hasNextPage);
     updatePager();
 
     if (!questions.length) {

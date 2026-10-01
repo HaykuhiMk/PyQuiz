@@ -61,20 +61,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         }[match]));
     }
 
+    // Next is enabled only when the server says another page exists (a
+    // full page used to be taken as "there's more", which left an empty last
+    // page whenever the total was a multiple of the page size).
+    function updatePager() {
+        prevBtn.disabled = currentPage <= 1;
+        nextBtn.disabled = !hasNextPage;
+    }
+
     async function loadQuestions() {
         tableBody.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
         try {
             const topics = filterTopic.value ? [filterTopic.value] : [];
             const difficulty = filterDifficulty.value;
-            const questions = await api.getAdminQuestions({
+            const { items: questions, meta } = await api.getAdminQuestionsPage({
                 topics,
                 difficulty,
                 page: currentPage,
                 limit: PAGE_SIZE,
             });
 
-            hasNextPage = questions.length === PAGE_SIZE;
+            hasNextPage = Boolean(meta.hasNextPage);
             pageLabel.textContent = `Page ${currentPage}`;
+            updatePager();
 
             if (!questions.length) {
                 tableBody.innerHTML = `<tr><td colspan="5">No questions found.</td></tr>`;
@@ -110,6 +119,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
         } catch (error) {
             console.error("Error loading questions:", error);
+            hasNextPage = false;
+            updatePager();
             tableBody.innerHTML = `<tr><td colspan="5">Error: ${escapeHTML(error.message)}</td></tr>`;
         }
     }
