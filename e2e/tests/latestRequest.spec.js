@@ -78,13 +78,24 @@ test('admin contacts: a late answer for an earlier page does not replace the lat
 
 test('Study: a late answer for the first, unfiltered load does not replace the filtered cards', async ({ page, request }) => {
   await logIn(page, await registerUser(request));
-  // Hold back the unfiltered load Study makes on arrival.
+  // Hold back the unfiltered load Study makes on arrival. Study makes it only
+  // after its session check, so wait until it has actually been sent (and
+  // held) before filtering: filtering earlier would make that first load
+  // itself a "hard" one.
   const held = holdBack();
+  let unfilteredSent;
+  const unfilteredHeld = new Promise((resolve) => {
+    unfilteredSent = resolve;
+  });
   await page.route('**/api/v1/questions/study?*', async (route) => {
-    if (!new URL(route.request().url()).searchParams.get('difficulty')) await held.released;
+    if (!new URL(route.request().url()).searchParams.get('difficulty')) {
+      unfilteredSent();
+      await held.released;
+    }
     await route.continue();
   });
   await page.goto('/study.html');
+  await unfilteredHeld;
   await page.selectOption('#study-difficulty', 'hard');
   const filtered = page.waitForResponse((res) => new URL(res.url()).searchParams.get('difficulty') === 'hard');
   await page.click('#study-load-btn');
