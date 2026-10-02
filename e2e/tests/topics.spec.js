@@ -53,11 +53,22 @@ test('the admin question list keeps the filtered result when an earlier, unfilte
   const held = new Promise((resolve) => {
     release = resolve;
   });
+  // The page sends that first request only after its forms are set up (the
+  // topic filter is filled earlier), so wait until it has actually been sent
+  // and held before filtering.
+  let unfilteredSent;
+  const unfilteredHeld = new Promise((resolve) => {
+    unfilteredSent = resolve;
+  });
   await page.route('**/api/v1/admin/questions?*', async (route) => {
-    if (!new URL(route.request().url()).searchParams.has('topics')) await held;
+    if (!new URL(route.request().url()).searchParams.has('topics')) {
+      unfilteredSent();
+      await held;
+    }
     await route.continue();
   });
   await page.goto('/manage-questions.html');
+  await unfilteredHeld;
   await expect(page.locator('#filter-topic option[value="mutability"]')).toBeAttached();
   await page.selectOption('#filter-topic', 'mutability');
   const filtered = page.waitForResponse((res) => new URL(res.url()).searchParams.get('topics') === 'mutability');
