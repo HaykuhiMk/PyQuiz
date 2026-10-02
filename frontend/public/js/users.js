@@ -35,10 +35,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         nextBtn.disabled = !hasNextPage;
     }
 
+    // Only the latest load may fill the table: an earlier request (the first
+    // page, loaded on arrival, or a page clicked past) can answer after a
+    // later one, and would otherwise replace it with stale rows.
+    let latestLoad = 0;
+
     async function loadUsers() {
+        const load = ++latestLoad;
         tableBody.innerHTML = `<tr><td colspan="7">Loading...</td></tr>`;
         try {
             const { items: users, meta } = await api.getAdminUsersPage({ page: currentPage, limit: PAGE_SIZE });
+            if (load !== latestLoad) return;
             hasNextPage = Boolean(meta.hasNextPage);
             pageLabel.textContent = `Page ${currentPage}`;
             updatePager();
@@ -83,6 +90,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 btn.addEventListener("click", () => handleSetBanned(btn.dataset.id, false));
             });
         } catch (error) {
+            if (load !== latestLoad) return;
             console.error("Error loading users:", error);
             hasNextPage = false;
             updatePager();
