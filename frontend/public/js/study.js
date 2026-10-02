@@ -111,7 +111,13 @@ function updatePager() {
   document.getElementById('study-next').disabled = !hasNext;
 }
 
+// Only the latest load may fill the cards: an earlier request (the first
+// page, loaded on arrival, or a page or filter changed since) can answer after
+// a later one, and would otherwise replace it with stale cards.
+let latestLoad = 0;
+
 async function loadCards() {
+  const load = ++latestLoad;
   const container = document.getElementById('study-cards');
   const feedback = document.getElementById('study-feedback');
   feedback.innerHTML = '';
@@ -128,6 +134,7 @@ async function loadCards() {
       page,
       limit: PAGE_SIZE,
     });
+    if (load !== latestLoad) return;
     // The server says whether another page exists; a full page doesn't mean
     // there's more (the total can be a multiple of the page size).
     hasNext = Boolean(meta.hasNextPage);
@@ -142,6 +149,7 @@ async function loadCards() {
     container.innerHTML = questions.map(renderCard).join('');
     if (window.Prism) Prism.highlightAllUnder(container);
   } catch (error) {
+    if (load !== latestLoad) return;
     if (error.status === 401) {
       window.location.href = '/login.html';
       return;
@@ -151,7 +159,7 @@ async function loadCards() {
     container.innerHTML = '';
     feedback.innerHTML = banner('coral', `We couldn't load study cards. ${escapeHTML(error.message)}`);
   } finally {
-    container.setAttribute('aria-busy', 'false');
+    if (load === latestLoad) container.setAttribute('aria-busy', 'false');
   }
 }
 

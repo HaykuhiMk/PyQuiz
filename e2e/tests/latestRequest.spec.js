@@ -4,7 +4,7 @@
 // clicked past); it used to replace the newer result with stale rows. Each
 // test holds one request back until a newer one is on screen, then lets it
 // answer and checks the newer result stays.
-const { test, expect, adminLogIn } = require('./fixtures');
+const { test, expect, adminLogIn, registerUser, logIn } = require('./fixtures');
 
 // A held-back response: route requests through it, call release() later.
 function holdBack() {
@@ -74,4 +74,30 @@ test('admin contacts: a late answer for an earlier page does not replace the lat
       })),
     rowText: (p) => `Page ${p} sender 0`,
   });
+});
+
+test('Study: a late answer for the first, unfiltered load does not replace the filtered cards', async ({ page, request }) => {
+  await logIn(page, await registerUser(request));
+  // Hold back the unfiltered load Study makes on arrival.
+  const held = holdBack();
+  await page.route('**/api/v1/questions/study?*', async (route) => {
+    if (!new URL(route.request().url()).searchParams.get('difficulty')) await held.released;
+    await route.continue();
+  });
+  await page.goto('/study.html');
+  await page.selectOption('#study-difficulty', 'hard');
+  const filtered = page.waitForResponse((res) => new URL(res.url()).searchParams.get('difficulty') === 'hard');
+  await page.click('#study-load-btn');
+  await filtered;
+  const badges = page.locator('#study-cards .study-card .badge');
+  await expect(badges.first()).toHaveText(/hard/i);
+
+  const late = page.waitForResponse((res) => res.url().includes('/api/v1/questions/study?') && !new URL(res.url()).searchParams.get('difficulty'));
+  held.release();
+  await late;
+  await page.waitForTimeout(300);
+  const difficulties = await badges.allInnerTexts();
+  expect(difficulties.length).toBeGreaterThan(0);
+  for (const text of difficulties) expect(text).toMatch(/hard/i);
+  await expect(page.locator('#study-cards')).toHaveAttribute('aria-busy', 'false');
 });
