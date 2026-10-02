@@ -96,6 +96,34 @@ function redirectToLoginOn401(path) {
   }
 }
 
+// When this page is being left, the browser cancels its requests that are
+// still running. Firefox and WebKit then still run this page's handlers for
+// those failures (Chromium stops the page first), which used to send the
+// browser to the login page in the middle of the navigation the user had
+// started (getSession() read the cancelled /auth/me as "logged out"),
+// render an empty list, or surface as an uncaught error. A request that
+// fails while the page is being left therefore never settles: nothing runs
+// for a page that is going away. `beforeunload` comes before the browser
+// cancels anything; if the page stays after all (a download or mailto:
+// link), the flag clears again shortly.
+let leavingPage = false;
+let leavingTimer = null;
+window.addEventListener('beforeunload', () => {
+  leavingPage = true;
+  clearTimeout(leavingTimer);
+  leavingTimer = setTimeout(() => {
+    leavingPage = false;
+  }, 3000);
+});
+window.addEventListener('pagehide', () => {
+  clearTimeout(leavingTimer);
+  leavingPage = true;
+});
+window.addEventListener('pageshow', () => {
+  leavingPage = false;
+});
+const neverSettles = () => new Promise(() => {});
+
 // withMeta: resolve to { items, meta } instead of the data alone, for paged
 // lists (meta.hasNextPage says whether another page exists).
 async function request(path, { withMeta = false, ...options } = {}) {
@@ -120,10 +148,18 @@ async function request(path, { withMeta = false, ...options } = {}) {
     });
   } catch {
     // fetch only rejects when the request never got a response.
+    if (leavingPage) return neverSettles();
     throw new Error("Couldn't reach PyQuiz. Check your connection and try again.");
   }
 
-  const payload = await response.json().catch(() => ({}));
+  let payload;
+  try {
+    payload = await response.json();
+  } catch {
+    // Cancelled while reading the body: not an empty answer.
+    if (leavingPage) return neverSettles();
+    payload = {};
+  }
   if (!response.ok) {
     if (response.status === 401) {
       redirectToLoginOn401(path);
