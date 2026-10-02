@@ -114,10 +114,17 @@ In `backend/`:
 cd e2e && npm install && npm test
 ```
 
-A minimal Playwright suite (guest quiz, login/logout, Classic quiz, Daily Challenge, theme toggle,
-About page, CSRF recovery after reload). It starts its own backend on port 7598 and frontend on
-port 3998 against a local `pyquiz_e2e` MongoDB database that it drops and re-seeds on every run, so
-it needs a local MongoDB on `127.0.0.1:27017` and never touches your dev data. Locally it
+A Playwright suite of the main flows. It needs a local MongoDB on `127.0.0.1:27017` and never
+touches your dev data: it uses a local `pyquiz_e2e` database that it drops and re-seeds on every
+run. It starts two pairs of servers on that database:
+- **Main pair** (backend on 7598, frontend on 3998): rate limits switched off. Every test runs
+  here, so the suite never spends a per-IP budget (20 registrations, logins or admin logins per 15
+  minutes) and passes in any order and at any size.
+- **Rate-limit pair** (backend on 7599, frontend on 3999): the real limits, for the
+  `<browser>-rate-limits` project only. It runs `tests/errors.spec.js`, which exhausts limits on
+  purpose.
+
+The limiters themselves are covered by the backend's Jest tests. Locally it
 uses your installed Google Chrome (the `chrome` project in `e2e/playwright.config.js`). With
 `CI=true` it has a `chromium`, `firefox` and `webkit` project instead, using Playwright's own
 browsers (`npx playwright install <browser>`); run one with `npx playwright test --project firefox`.

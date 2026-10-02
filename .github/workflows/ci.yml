@@ -116,7 +116,9 @@ jobs:
         working-directory: e2e
       - run: npx playwright install --with-deps ${{ matrix.browser }}
         working-directory: e2e
-      - run: npx playwright test --project ${{ matrix.browser }}
+      # The browser's project, and its rate-limit project (errors.spec.js on
+      # servers of its own; e2e/playwright.config.js).
+      - run: npx playwright test --project ${{ matrix.browser }} --project ${{ matrix.browser }}-rate-limits
         working-directory: e2e
       # When a test fails: the HTML report (open index.html; it links each
       # failure's trace and screenshot) and the raw traces, screenshots and
