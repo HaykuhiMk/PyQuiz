@@ -25,6 +25,16 @@ module.exports = defineConfig({
   // enough that parallelism buys little.
   workers: 1,
   timeout: 30000,
+  // CI only: one retry. In CI run #8, two Firefox tests timed out on their
+  // first page.goto although the page had fully loaded in ~200 ms: Playwright
+  // never received Firefox's load event (the trace shows no navigation commit
+  // at all; a longer timeout would not help). Both were the first navigation
+  // of a new page, from about:blank to a page sent with
+  // Cross-Origin-Opener-Policy: same-origin, where Firefox switches browsing
+  // context (unconfirmed: Firefox can't run on the owner's machine). A test
+  // that passes on its retry is reported as "flaky" in the HTML report, not
+  // hidden; one that fails twice still fails the job. Locally: no retries.
+  retries: process.env.CI ? 1 : 0,
   // In CI also an HTML report (e2e/playwright-report/), uploaded with the
   // traces and screenshots when a test fails (.github/workflows/ci.yml).
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
