@@ -28,8 +28,22 @@ test('dashboard labels per-question and per-attempt accuracy separately, each wi
     return full.options.indexOf(full.answer);
   };
 
+  // Only a topic with enough questions (MIN_QUESTIONS_FOR_MASTERY = 3, by
+  // primary topic) can be listed as weak, and the session serves questions
+  // in random order. So the session is limited to a topic whose every
+  // question (the filter matches primary or secondary topics) has such a
+  // primary topic: whichever question comes first, its topic can be weak.
+  const all = (await (await admin.get('/api/v1/admin/questions?page=1&limit=100')).json()).data;
+  const primaryCount = new Map();
+  for (const q of all) primaryCount.set(q.primaryTopic, (primaryCount.get(q.primaryTopic) || 0) + 1);
+  const servedFor = (topic) => all.filter((q) => q.primaryTopic === topic || (q.secondaryTopics || []).includes(topic));
+  const topic = [...primaryCount.keys()]
+    .filter((t) => servedFor(t).every((q) => primaryCount.get(q.primaryTopic) >= 3))
+    .sort((a, b) => servedFor(b).length - servedFor(a).length)[0];
+  expect(topic).toBeTruthy();
+
   // Starting a session also serves its first question.
-  const started = (await post('/api/v1/quiz/sessions', { mode: 'classic', topics: [] })).data;
+  const started = (await post('/api/v1/quiz/sessions', { mode: 'classic', topics: [topic] })).data;
   const { sessionId } = started;
   let question = started.question;
 
