@@ -11,16 +11,16 @@ test('an admin page redirects to the admin login when the session ends mid-page'
   // The session ends while the page is open (cookie expired or cleared).
   await context.clearCookies({ name: 'adminToken' });
 
-  const status = await page.evaluate(async () => {
-    const { api } = await import('/js/api.js');
-    try {
-      await api.getAdminUsers();
-      return 'no error';
-    } catch (error) {
-      return error.status;
-    }
+  // The next admin API call. The page navigates away as soon as it sees the
+  // 401, so the result is read from the network, not returned by evaluate:
+  // whether evaluate's return value arrives before that navigation tears the
+  // page down is engine timing (Chromium delivered it; Firefox and WebKit
+  // didn't).
+  const response = page.waitForResponse((res) => new URL(res.url()).pathname === '/api/v1/admin/users' && res.request().method() === 'GET');
+  await page.evaluate(() => {
+    import('/js/api.js').then(({ api }) => api.getAdminUsers().catch(() => {}));
   });
 
-  expect(status).toBe(401);
+  expect((await response).status()).toBe(401);
   await expect(page).toHaveURL(/\/admin_login\.html$/);
 });

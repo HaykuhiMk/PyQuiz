@@ -1,0 +1,282 @@
+{
+  "_comment": "Second round of content fixes for production questions, part 1 of 2: the 13 questions to fix BEFORE REOPENING (the v2.1 QA majors and every \"answer stands out by its format\" item; docs/CONTENT_FIXES.md section 6). Proposed, NOT yet approved. For each question: the fields that change, with the value expected now (expect, read from an exact local copy of production after the first round) and the new value (set). Applied by backend/scripts/applyContentFixes.js --fixes contentFixes2.json. Question content only.",
+  "fixes": [
+    {
+      "id": "67e2e08bf5addb214fc6a80c",
+      "ref": "C-01",
+      "reason": "The explanation says test2 prints 12; the code never prints test2. The output 12 13 is test.access() and then test's own attribute.",
+      "expect": {
+        "explanation": "In the code, attr1 is a class attribute, and the method access() tries to modify it. When access() is called on test, the modification happens on the instance of the object (test), not the class itself, because the instance (test) inherits attr1 from the class. The value of attr1 is incremented from 12 to 13 for test.\nHowever, for test2, since the class attribute attr1 is still 12, it prints 12 when accessed. The key point is that modifying self.attr1 on the instance does not affect other instances of the class unless the attribute is specifically shared among all instances (i.e., a class-level modification)."
+      },
+      "set": {
+        "explanation": "📌 attr1 = 12 is a class attribute.\n📌 test.access() prints self.attr1: test has no instance attribute yet, so it prints the class's 12.\n📌 self.attr1 += 1 then reads 12 and stores 13 as a new instance attribute on test only; Test.attr1 stays 12.\n📌 test2 is created but never printed. print(test.attr1) reads test's own attribute: 13.\n📌 Output: 12 13"
+      }
+    },
+    {
+      "id": "67e06074be7a85e233ca817d",
+      "ref": "C-02",
+      "reason": "The explanation contradicts itself (\"x.append(0) is called. This appends None\").",
+      "expect": {
+        "explanation": "📌 The function foo(i, x=[]) appends the result of x.append(i) to the list x. The key detail here is that the default value of x is an empty list [], which is mutable. When no value is provided for x, it uses the same list across all function calls. This means that every time foo is called, it modifies the same list x, rather than creating a new one.\n📌 Breakdown:\n     🔻 On the first iteration of the loop (i = 0), x.append(0) is called. This appends None to the list (since append() returns None), and then x.append(None) appends another None to the list. The list becomes [0, None].\n     🔻 On the second iteration of the loop (i = 1), x.append(1) is called. This appends None to the list (for the same reason as before), and then x.append(None) appends another None to the list. The list becomes [0, None, 1, None].\n     🔻 On the third iteration of the loop (i = 2), the same process happens again, and the list becomes [0, None, 1, None, 2, None]."
+      },
+      "set": {
+        "explanation": "📌 The default list x=[] is created once, when the function is defined, so every call that doesn't pass x uses the same list.\n📌 In x.append(x.append(i)), the inner x.append(i) runs first: it appends i and returns None. The outer x.append(...) then appends that None.\n     🔻 i = 0: the list becomes [0, None].\n     🔻 i = 1: [0, None, 1, None].\n     🔻 i = 2: [0, None, 1, None, 2, None].\n📌 y is that same list. Output: [0, None, 1, None, 2, None]"
+      }
+    },
+    {
+      "id": "67e17403f5addb214fc6a7db",
+      "ref": "C-03",
+      "reason": "Two defensible answers (\"Error\" and \"Error: X too small\"), and the answer was the only option with an Error: prefix.",
+      "expect": {
+        "options": [
+          "0.5",
+          "X too small",
+          "Error: X too small",
+          "X too small 0.5",
+          "X too small 2",
+          "2",
+          "Nothing",
+          "Error",
+          "None"
+        ]
+      },
+      "set": {
+        "options": [
+          "0.5",
+          "X too small",
+          "Error: X too small",
+          "X too small 0.5",
+          "X too small 2",
+          "2",
+          "Nothing",
+          "Error: x > y",
+          "None"
+        ]
+      }
+    },
+    {
+      "id": "67e2ec29f5addb214fc6a81f",
+      "ref": "C-05, C-23",
+      "reason": "Wrong reasoning: Box2D's constructor never runs at all, because Box3D's bare super() calls nothing. Difficulty made consistent with the same question 67e2eb67… (medium).",
+      "expect": {
+        "explanation": "In this code, the super() function is used incorrectly without calling __init__(). This results in the constructors of Box and Box2D not being executed. Normally, when super().__init__() is properly used, it ensures that parent class constructors are invoked in the correct order, initializing attributes from all inherited classes. However, since Box2D does not explicitly call super().__init__(), the constructor of Box is never executed. Similarly, Box3D calls super(), but since Box2D itself does not initialize Box, the only output comes from print(\"Box3D \"), making \"Box3D\" the final result.",
+        "difficulty": "hard"
+      },
+      "set": {
+        "explanation": "📌 Box3D.__init__ calls super() without .__init__(). That only creates a proxy object for the parent class and calls nothing, so Box2D.__init__ never runs, and neither does Box.__init__.\n📌 Only print(\"Box3D \") runs.\n📌 Output: Box3D",
+        "difficulty": "medium"
+      }
+    },
+    {
+      "id": "67e2d958f5addb214fc6a7f6",
+      "ref": "C-06",
+      "reason": "The explanation says calling next(foo()) again would reach return 25; each foo() creates a new generator.",
+      "expect": {
+        "explanation": "📌 In this code, the generator function foo() contains a yield statement followed by a return statement. Here's how the code works:\n🔻 The yield statement produces the value 1 when next(foo()) is called.\n🔻 The generator function is paused at the yield statement, and the value 1 is returned.\n🔻 After that, if next(foo()) is called again, it would proceed to the return 25, but since there are no further calls to the generator, the function ends at that point.\n📌 Therefore, the output is 1 because the first yield is executed, but the return statement is never reached until the generator is exhausted."
+      },
+      "set": {
+        "explanation": "📌 foo() contains yield, so calling it creates a generator; nothing runs yet.\n📌 next(foo()) runs that generator up to yield 1 and returns 1, which is printed.\n📌 The program ends there: the generator never resumes, so return 25 never runs.\n📌 Output: 1"
+      }
+    },
+    {
+      "id": "67c45ba322943ce7acd24d22",
+      "ref": "C-09 (seed)",
+      "reason": "The answer had no Error: prefix and was the only option quoting an error message.",
+      "expect": {
+        "options": [
+          "1 2 3",
+          "123",
+          "'int' object is not iterable.",
+          "123 times prints the number 123.",
+          "None of the mentioned."
+        ],
+        "answer": "'int' object is not iterable."
+      },
+      "set": {
+        "options": [
+          "1 2 3",
+          "123",
+          "Error: 'int' object is not iterable",
+          "Error: 'int' object is not callable",
+          "None of the mentioned."
+        ],
+        "answer": "Error: 'int' object is not iterable"
+      }
+    },
+    {
+      "id": "67c45ba322943ce7acd24d10",
+      "ref": "C-13 (seed)",
+      "reason": "Only the answer was a bracketed list.",
+      "expect": {
+        "options": [
+          "Error",
+          "1, 2, 3, 1, 3, 3, 4, 5",
+          "1, 2, 3, 4, 5",
+          "1, 2, 4, 5, 7",
+          "\"12313345\"",
+          "[1, 3, 4, 5, 7]"
+        ]
+      },
+      "set": {
+        "options": [
+          "Error",
+          "[1, 1, 3, 3, 3, 4, 5, 7]",
+          "{1, 3, 4, 5, 7}",
+          "[7, 1, 4, 3, 5]",
+          "\"12313345\"",
+          "[1, 3, 4, 5, 7]"
+        ]
+      }
+    },
+    {
+      "id": "67c45ba322943ce7acd24d28",
+      "ref": "C-14 (seed)",
+      "reason": "Only the answer had \" | \" separators. The two tagged options are kept.",
+      "expect": {
+        "options": [
+          "{0, 1, 2}",
+          "{0, 1, 2, 0, 1, 2}",
+          "None | None | None |",
+          "{0, 1, 2, None, None, None}",
+          "Error: Set changed size during iteration.",
+          "Nothing"
+        ]
+      },
+      "set": {
+        "options": [
+          "{0, 1, 2}",
+          "{0, 1, 2, 0, 1, 2}",
+          "None | None | None |",
+          "0 | 1 | 2 |",
+          "Error: Set changed size during iteration.",
+          "{0, 1, 2} | {0, 1, 2} | {0, 1, 2} |"
+        ]
+      }
+    },
+    {
+      "id": "67e05bfebe7a85e233ca816e",
+      "ref": "C-15",
+      "reason": "Only the answer had \" | \", and it was much longer than every other option.",
+      "expect": {
+        "options": [
+          "Error",
+          "Nothing",
+          "[25, 10]",
+          "[110, 36]",
+          "[25, 10] | [36, 12] | [49, 14] |"
+        ]
+      },
+      "set": {
+        "options": [
+          "Error",
+          "Nothing",
+          "[25, 10] |",
+          "[10, 25] | [12, 36] | [14, 49] |",
+          "[25, 10] | [36, 12] | [49, 14] |",
+          "[25, 36, 49] | [10, 12, 14] |"
+        ]
+      }
+    },
+    {
+      "id": "67e2dbc0f5addb214fc6a7fc",
+      "ref": "C-16",
+      "reason": "The answer was the only Error: option.",
+      "expect": {
+        "options": [
+          "what",
+          "There is no output as the pass keyword is used.",
+          "Error: TypeError",
+          "Test"
+        ]
+      },
+      "set": {
+        "options": [
+          "what",
+          "There is no output as the pass keyword is used.",
+          "Error: TypeError",
+          "Error: AttributeError",
+          "Error: SyntaxError",
+          "Test"
+        ]
+      }
+    },
+    {
+      "id": "67e2dd0df5addb214fc6a7fe",
+      "ref": "C-17",
+      "reason": "The answer was the only error option and much longer than every other option.",
+      "expect": {
+        "options": [
+          "Zinga meow",
+          "2",
+          "Zinga bark",
+          "Zinga",
+          "meow",
+          "bark",
+          "TypeError: SpecialCat() takes no arguments"
+        ]
+      },
+      "set": {
+        "options": [
+          "Zinga meow",
+          "2",
+          "Zinga bark",
+          "Zinga",
+          "meow",
+          "bark",
+          "AttributeError: 'SpecialCat' object has no attribute 'meow'",
+          "AttributeError: 'SpecialCat' object has no attribute 'name'",
+          "TypeError: SpecialCat() takes no arguments"
+        ]
+      }
+    },
+    {
+      "id": "67e05a6dbe7a85e233ca816c",
+      "ref": "C-18",
+      "reason": "The answer was the only tuple-shaped option.",
+      "expect": {
+        "options": [
+          "Error",
+          "Nothing",
+          "False",
+          "True",
+          "(False, 'WELCOME TO PYQUIZ Hello', ' PyQuiz')",
+          "<map object at 0x10bcaf7c0>"
+        ]
+      },
+      "set": {
+        "options": [
+          "Error",
+          "Nothing",
+          "(True, 'WELCOME TO PYQUIZ Hello', ' PyQuiz')",
+          "(False, 'WELCOME TO PYQUIZ Hello', 'PyQuiz')",
+          "(False, 'WELCOME TO PYQUIZ Hello', ' PyQuiz')",
+          "(False, 'WELCOME TO PYQUIZ Hello', 'o PyQuiz')",
+          "<map object at 0x10bcaf7c0>"
+        ]
+      }
+    },
+    {
+      "id": "67e06143be7a85e233ca817f",
+      "ref": "C-19",
+      "reason": "The distractors used curly quotes; only the answer used straight ones.",
+      "expect": {
+        "options": [
+          "Error",
+          "Nothing",
+          "[1, 0, 2, ‘hello’, ”, []]",
+          "[1, 2, 'hello']",
+          "[1, 0, 2, 0, ‘hello’, ”, []]"
+        ]
+      },
+      "set": {
+        "options": [
+          "Error",
+          "Nothing",
+          "[1, 0, 2, 'hello', '', []]",
+          "[1, 2, 'hello']",
+          "[1, 0, 2, 0, 'hello', '', []]"
+        ]
+      }
+    }
+  ]
+}

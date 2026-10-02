@@ -1,13 +1,45 @@
+# Continuous integration: checks every push and pull request. It runs only on
+# GitHub-hosted ubuntu-latest runners, uses no secrets, and deploys nothing
+# (README.md, "Continuous integration").
+#
+# Jobs (independent, in parallel):
+#   backend           lint, typecheck, Jest + Supertest, webpack build
+#   verify-questions  every seed snippet on Python 3.9 and 3.14
+#   e2e               the Playwright suite, once per browser:
+#                     Chromium, Firefox and WebKit; on a failure, the HTML
+#                     report, traces and screenshots are kept as an artifact
+# MongoDB is a throwaway service container per job. The tests create their
+# own databases in it (pyquiz_test, pyquiz_e2e); the e2e backend gets
+# throwaway values for its secrets from e2e/start-backend.js, and mail is off.
 name: CI
 
 on:
-  pull_request:
   push:
-    branches: [main, master]
+  pull_request:
+
+# Read the code; nothing else.
+permissions:
+  contents: read
+
+# A newer push to the same branch or pull request cancels the older run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   backend:
+    name: Backend (lint, typecheck, tests, build)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mongo:
+        image: mongo:7.0
+        ports: ['27017:27017']
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     defaults:
       run:
         working-directory: backend
@@ -20,5 +52,83 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npm run lint
-      - run: npm run test
+      - run: npm run typecheck
+      - run: npm test
       - run: npm run build
+
+  verify-questions:
+    name: Question answers (Python 3.9 and 3.14)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - id: py39
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - id: py314
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      # Exactly these two interpreters; --require-checked fails if either
+      # checked version (config/pythonVersion.js) is missing. The script uses
+      # only Node built-ins, so no npm install is needed.
+      - run: npm run verify-questions -- --require-checked
+        working-directory: backend
+        env:
+          PYQUIZ_PYTHONS: ${{ steps.py39.outputs.python-path }}:${{ steps.py314.outputs.python-path }}
+
+  e2e:
+    name: Playwright (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    services:
+      mongo:
+        image: mongo:7.0
+        ports: ['27017:27017']
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+            e2e/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - run: npm ci
+        working-directory: frontend
+      - run: npm ci
+        working-directory: e2e
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+        working-directory: e2e
+      # The browser's project, and its rate-limit project (errors.spec.js on
+      # servers of its own; e2e/playwright.config.js).
+      - run: npx playwright test --project ${{ matrix.browser }} --project ${{ matrix.browser }}-rate-limits
+        working-directory: e2e
+      # When a test fails: the HTML report (open index.html; it links each
+      # failure's trace and screenshot) and the raw traces, screenshots and
+      # error-context files.
+      - name: Keep the Playwright report, traces and screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-${{ matrix.browser }}
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 14

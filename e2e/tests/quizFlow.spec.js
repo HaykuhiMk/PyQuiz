@@ -53,3 +53,36 @@ test('Blitz: Next stays available before answering (moving on counts as a timeou
   await startQuiz(page, 'blitz');
   await expect(page.locator('#next-btn')).toBeEnabled();
 });
+
+test('Classic: a correct retry replaces the earlier "try again" message', async ({ page, request, playwright }) => {
+  await logIn(page, await registerUser(request));
+  const question = await startQuiz(page, 'classic');
+
+  const admin = await playwright.request.newContext({ baseURL: API });
+  await admin.post('/api/v1/admin/login', { data: { username: ADMIN.username, password: PASSWORD } });
+  const full = (await (await admin.get(`/api/v1/admin/questions/${question._id}`)).json()).data;
+  await admin.dispose();
+  const right = full.options.indexOf(full.answer);
+  const wrong = full.options.findIndex((o) => o !== full.answer);
+
+  const options = page.locator('#options .pq-answer');
+  await options.nth(wrong).click();
+  let answered = page.waitForResponse((r) => r.url().includes('/answer'));
+  await page.click('#submit-btn');
+  await answered;
+  await expect(page.locator('#result')).toContainText('try again');
+
+  await options.nth(right).click();
+  answered = page.waitForResponse((r) => r.url().includes('/answer'));
+  await page.click('#submit-btn');
+  await answered;
+  await expect(page.locator('#result')).toContainText('Correct!');
+  await expect(page.locator('#result')).not.toContainText('try again');
+});
+
+test('the answer result is announced to screen readers', async ({ page }) => {
+  await page.goto('/questions.html');
+  const result = page.locator('#result');
+  await expect(result).toHaveAttribute('role', 'status');
+  await expect(result).toHaveAttribute('aria-live', 'polite');
+});

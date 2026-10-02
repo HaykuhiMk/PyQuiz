@@ -170,7 +170,7 @@ wasn't specified in the instructions.
 | Topic mastery source | Computed live from `UserAnsweredQuestion` and `AnswerEvent` (chosen over a recompute script) | Owner |
 | Classic exclusion scope | Only first-attempt-correct (`everCorrect`) questions; "Practice again (no points)" and "Widen filters" when the pool is exhausted | Owner |
 | Case-insensitive usernames | Enforced (`usernameLower`, unique); backfill and duplicate-report scripts written, not run on real data | Owner |
-| General `/api` limiter | Keyed by user (300/15 min) and by guest IP (1000/15 min) | Owner |
+| General `/api` limiter | Keyed by user and by guest IP, 1000/15 min each (the per-user budget was 300 until v2.1 QA, finding F-01) | Owner |
 | `TRUST_PROXY` | Exact hop count; startup warning if set to `true` | Owner |
 | Thin-attempt accuracy | A "measuring" level below 3 attempts (`MIN_ACCURACY_EVENTS = 3`) | Owner |
 | Taxonomy | 11 canonical topics; one required primary plus optional secondary; filters match either; mastery uses the primary only | Owner |

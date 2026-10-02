@@ -93,7 +93,8 @@ test('avatar picker refuses a file over the server limit before uploading, and a
   await page.setInputFiles('#avatar-input', {
     name: 'just-fits.png',
     mimeType: 'image/png',
-    buffer: Buffer.alloc(avatar.maxFileBytes, 1),
+    // The server checks the format by the first bytes: a PNG signature.
+    buffer: Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(avatar.maxFileBytes - 8, 1)]),
   });
   await expect(page.locator('#avatar-status')).toHaveText('Photo updated.');
   expect(profilePatches).toBe(1);
@@ -122,4 +123,17 @@ test('a password with leading and trailing spaces works exactly as typed through
   await page.fill('#password', spaced);
   await page.click('#login-form button[type="submit"]');
   await expect(page).toHaveURL(/\/account\.html$/);
+});
+
+test('forgot password accepts every address registration accepts ("+" and a long top-level domain)', async ({ page, request }) => {
+  const suffix = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
+  const email = `fp+${suffix}@example.science`;
+  expect((await request.post(`${API}/api/v1/auth/register`, { data: { username: `fp${suffix}`, email, password: PASSWORD } })).status()).toBe(201);
+
+  await page.goto('/forgot_password.html');
+  await page.fill('#email', email);
+  const sent = page.waitForRequest((req) => req.url().endsWith('/api/v1/auth/forgot-password'), { timeout: 5000 });
+  await page.click('#forgot-password-form button[type="submit"]');
+  expect(JSON.parse((await sent).postData() || '{}').email).toBe(email);
+  await expect(page.locator('#helper-text')).not.toHaveText('Please enter a valid email address.');
 });

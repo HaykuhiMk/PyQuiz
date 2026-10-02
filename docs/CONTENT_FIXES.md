@@ -9,6 +9,13 @@
 - Rehearsed on a local copy of production: all 145 questions pass `npm run verify-questions` on
   Python 3.9 and 3.14.
 
+**Second round (v2.1 QA, 2026-10-01): proposed, NOT approved yet.** 39 more questions in two
+files, each applied with `applyContentFixes.js --fixes <file>`:
+- `backend/database/contentFixes2.json`: the **13 to fix before reopening**;
+- `backend/database/contentFixes3.json`: the other 26.
+
+See section 6.
+
 The sections below are the list as found, kept for the record. The approved values are in the
 data file.
 
@@ -100,3 +107,119 @@ print something and then raise, so there are no other violations. The seed quest
   `super(Box2D, self)` starts at Box2D itself rather than at the class after it in the MRO. That's
   close to `inheritance.super-means-parent-class`; decide when the 98 production-only questions
   get their tag proposals.
+
+## 6. Second round: the v2.1 QA content findings (proposed, not approved)
+
+**Source:** the content findings C-01 to C-37 of the v2.1 QA. They were found on `pyquiz_qa`, an
+exact local copy of production after the first round.
+
+**Status:** proposed. Nothing has been applied to production or to any database that is kept.
+
+**The data:** two files in the first round's format, each approved and applied on its own. No
+question is in both, so they can be applied in either order.
+
+| File | Questions | What |
+|---|---|---|
+| `backend/database/contentFixes2.json` | 13 | **To fix before reopening:** the 5 majors (C-01, C-02, C-03, C-05, C-06) and every "answer stands out by its format" item (C-03, C-09, C-13 to C-19). |
+| `backend/database/contentFixes3.json` | 26 | The rest: wording and error naming (C-04, C-07, C-08, C-10 to C-12), difficulty labels (C-20 to C-27), typos and weak distractors (C-28 to C-37). |
+
+`tmp/content-fixes2-review.md` (not committed) shows the 13 of `contentFixes2.json` side by side,
+for review.
+
+For each question a file gives:
+- **`expect`:** the current value of each field it changes, read from the copy, so the values left
+  by the first round;
+- **`set`:** the new value.
+
+There is one entry per question. A question with several findings has them all in one entry: C-05
+and C-23 are both on `67e2ec29…`. Since C-05 is a major, that entry is in `contentFixes2.json`,
+together with its difficulty change (C-23). The other C-23 question, `67e2eb67…`, is in
+`contentFixes3.json`.
+
+**Applying:** `applyContentFixes.js --fixes contentFixes2.json` (or `contentFixes3.json`), with the
+same safety rules as the first round:
+- `--uri` only, the target printed first, dry run by default, and the database name typed on
+  `--apply`;
+- it refuses everything if any question isn't in the expected state;
+- it refuses if a change would drop a misconception tag;
+- every write is guarded by the expected values, and every fixed question must pass the validators
+  afterwards.
+
+**Order:** the first round must already be applied (on production it is). The second round expects
+its results: 6 questions are in both rounds.
+
+**Afterwards, round 1's dry run reports 2 "unexpected" questions.** These are #26 and #61, whose
+options `contentFixes2.json` changes again (C-15 and C-16). That's expected. It only means the
+content has moved on from round 1, and the script refuses rather than writes. To check a database
+after the second round, run the dry runs of `contentFixes2.json` and `contentFixes3.json`.
+
+**Checked:**
+- **Verifier:** all 39 changed questions pass `npm run verify-questions --require-checked` on
+  Python 3.9.6 and 3.14.7.
+- **Rehearsal:** on a throwaway restore of `pyquiz-with-content-fixes.gz`, `contentFixes2.json`
+  was applied (13 of 13) and then `contentFixes3.json` (26 of 26). After each step, all **145**
+  questions pass on both versions.
+- **Tags:** none is lost (39 tag entries throughout).
+- **A second run** of either file changes nothing.
+- **The rehearsal copy** was dropped.
+
+**Before reopening: 13 questions,** the whole of `contentFixes2.json`. They are marked **Yes**
+below.
+
+**Seed questions:** 3 entries are seed questions (C-09, C-13, C-14: ids `67c45ba3…`), all in
+`contentFixes2.json`. When that file is approved, the same change goes into
+`backend/database/questions.json` in the same commit. Otherwise `scripts/syncSeedQuestions.js`
+would put the old text back in local and dev databases (production isn't affected). Not done yet.
+`contentFixes3.json` touches no seed question.
+
+**Corrections to the QA report:**
+- **C-08** (`67e2d8e1…`): its answer `StopIteration: 25` is one of the rule's older forms (it
+  names the exception and quotes its message), which stays valid for a snippet that prints nothing.
+  So only its explanation changes.
+- **C-09:** the verifier accepts its old answer for the same reason. The change is about the
+  giveaway: it makes the answer and one distractor share the `Error:` form.
+
+**Proposals to review:** every new option and explanation was written for this proposal. The
+values are in the JSON; the table summarizes them.
+
+| Id | Finding | Before reopening (file) | Fields that change | Why |
+|---|---|---|---|---|
+| `67e2e08bf5addb214fc6a80c` | C-01 | **Yes** (`contentFixes2.json`) | explanation | The explanation says test2 prints 12; the code never prints test2. The output 12 13 is test.access() and then test's own attribute. |
+| `67e06074be7a85e233ca817d` | C-02 | **Yes** (`contentFixes2.json`) | explanation | The explanation contradicts itself ("x.append(0) is called. This appends None"). |
+| `67e17403f5addb214fc6a7db` | C-03 | **Yes** (`contentFixes2.json`) | options | Two defensible answers ("Error" and "Error: X too small"), and the answer was the only option with an Error: prefix. |
+| `67e2ec29f5addb214fc6a81f` | C-05, C-23 | **Yes** (`contentFixes2.json`) | explanation, difficulty | Wrong reasoning: Box2D's constructor never runs at all, because Box3D's bare super() calls nothing. Difficulty made consistent with the same question 67e2eb67… (medium). |
+| `67e2d958f5addb214fc6a7f6` | C-06 | **Yes** (`contentFixes2.json`) | explanation | The explanation says calling next(foo()) again would reach return 25; each foo() creates a new generator. |
+| `67c45ba322943ce7acd24d22` | C-09 (seed) | **Yes** (`contentFixes2.json`) | options, answer | The answer had no Error: prefix and was the only option quoting an error message. |
+| `67c45ba322943ce7acd24d10` | C-13 (seed) | **Yes** (`contentFixes2.json`) | options | Only the answer was a bracketed list. |
+| `67c45ba322943ce7acd24d28` | C-14 (seed) | **Yes** (`contentFixes2.json`) | options | Only the answer had " \| " separators. The two tagged options are kept. |
+| `67e05bfebe7a85e233ca816e` | C-15 | **Yes** (`contentFixes2.json`) | options | Only the answer had " \| ", and it was much longer than every other option. |
+| `67e2dbc0f5addb214fc6a7fc` | C-16 | **Yes** (`contentFixes2.json`) | options | The answer was the only Error: option. |
+| `67e2dd0df5addb214fc6a7fe` | C-17 | **Yes** (`contentFixes2.json`) | options | The answer was the only error option and much longer than every other option. |
+| `67e05a6dbe7a85e233ca816c` | C-18 | **Yes** (`contentFixes2.json`) | options | The answer was the only tuple-shaped option. |
+| `67e06143be7a85e233ca817f` | C-19 | **Yes** (`contentFixes2.json`) | options | The distractors used curly quotes; only the answer used straight ones. |
+| `67e2b6def5addb214fc6a7e5` | C-04 | no (`contentFixes3.json`) | code, options, answer, explanation | The code printed the word "Error", which collides with the "Error" option meaning the program raises. It now prints "Caught". |
+| `67e2e978f5addb214fc6a819` | C-07 | no (`contentFixes3.json`) | explanation | The explanation called a bare super() "incomplete syntax"; it is valid and only creates an unused proxy. |
+| `67e2d8e1f5addb214fc6a7f4` | C-08 | no (`contentFixes3.json`) | explanation | The explanation said foo() "is executed and immediately returns"; calling foo() only creates the generator. (The answer form "StopIteration: 25" is one of the rule's older forms, valid for a snippet that prints nothing, so it stays.) |
+| `67e038e335e5165a41bbb396` | C-10 | no (`contentFixes3.json`) | explanation | The explanation quoted Python 3.9's UnboundLocalError message; newer versions word it differently. |
+| `67e03cef35e5165a41bbb3a2` | C-11 | no (`contentFixes3.json`) | explanation | "Python raises an error" was vague: it is a SyntaxError at compile time, so nothing is printed. |
+| `67e04c00be7a85e233ca8161` | C-12 | no (`contentFixes3.json`) | explanation | The explanation did not name the error. |
+| `67e50716f5addb214fc6a847` | C-20 | no (`contentFixes3.json`) | difficulty | Combines __new__, class versus instance attributes and += shadowing. |
+| `67e5066ef5addb214fc6a845` | C-21 | no (`contentFixes3.json`) | difficulty | Its own explanation calls it more advanced than basic instantiation. |
+| `67e50530f5addb214fc6a843` | C-22 | no (`contentFixes3.json`) | difficulty | __new__ returning None, so __init__ never runs. |
+| `67e2eb67f5addb214fc6a81d` | C-23 | no (`contentFixes3.json`) | difficulty | Same concept and answer as 67e2ec29… (hard); both medium. |
+| `67e50836f5addb214fc6a849` | C-24 | no (`contentFixes3.json`) | difficulty | Plain method overriding and a list comprehension. |
+| `67e4f65ef5addb214fc6a836` | C-25 | no (`contentFixes3.json`) | difficulty | One overridden method called through a function. |
+| `67e2e4faf5addb214fc6a814` | C-26 | no (`contentFixes3.json`) | difficulty | Name mangling of __width across classes with this/self. |
+| `67dd83578e2ddadc28e387f6` | C-27 | no (`contentFixes3.json`) | difficulty | A function rebinding its own name and setting __name__. |
+| `67e19688f5addb214fc6a7de` | C-28 | no (`contentFixes3.json`) | options | Missing space in an option. |
+| `67e2de4bf5addb214fc6a802` | C-29 | no (`contentFixes3.json`) | code | The code had "t. print_all()" (a space after the dot). |
+| `67e2de92f5addb214fc6a804` | C-29 | no (`contentFixes3.json`) | code | The code had "t. print_all()" (a space after the dot). |
+| `67e2df32f5addb214fc6a806` | C-29 | no (`contentFixes3.json`) | code | The code had "t. print_all()" (a space after the dot). |
+| `67e05ec6be7a85e233ca8177` | C-30 | no (`contentFixes3.json`) | options | Distractors used "Jade", which is not in the code. |
+| `67e04a20be7a85e233ca815b` | C-31 | no (`contentFixes3.json`) | options | An option contained a comment. |
+| `67e04b86be7a85e233ca815f` | C-32 | no (`contentFixes3.json`) | options | Option "s \| [ ]" was not a plausible output. |
+| `67e06209be7a85e233ca8181` | C-33 | no (`contentFixes3.json`) | options | Throwaway options ("[ ]", "' '", "Random element", "[0, '', None, [ ]]"); 15 options. |
+| `67e2dddaf5addb214fc6a800` | C-34 | no (`contentFixes3.json`) | options | Options "a", "b", "Test" were not plausible outputs. |
+| `67e04d9ebe7a85e233ca8165` | C-35 | no (`contentFixes3.json`) | options | Options "1234", "2468", "2345" had nothing to do with the code. |
+| `67e2b912f5addb214fc6a7e9` | C-36 | no (`contentFixes3.json`) | options | Three almost identical generator-address options. |
+| `67e508aaf5addb214fc6a84b` | C-37 | no (`contentFixes3.json`) | options | "An error due to improper inheritance" and "None of the above" overlapped with "Error". |

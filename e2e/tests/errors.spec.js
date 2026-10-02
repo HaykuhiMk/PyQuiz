@@ -27,11 +27,13 @@ test('the contact form shows the real rate-limit message on the sixth submission
 
 test('the general /api rate limit reaches the page as its real message', async ({ page, request }) => {
   // This limiter used to answer with plain text, which api.js could not
-  // parse, so users saw "Request failed (429)".
+  // parse, so users saw "Request failed (429)". The budget is 1000 per user
+  // per 15 minutes (QA finding F-01), so this takes over 1000 requests.
+  test.setTimeout(120000);
   await logIn(page, await registerUser(request));
   const message = await page.evaluate(async () => {
     const { api } = await import('/js/api.js');
-    for (let i = 0; i < 400; i += 1) {
+    for (let i = 0; i < 1100; i += 1) {
       try {
         await api.getProgress();
       } catch (error) {

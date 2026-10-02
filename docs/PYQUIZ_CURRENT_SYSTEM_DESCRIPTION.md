@@ -920,7 +920,7 @@ under `/api/v1` plus 3 operational endpoints.
 - **Auth:** *User* = regular-user session cookie; *Admin* = admin session cookie; *Guest or user* =
   works for guests, and uses the session when present.
 - **CSRF:** whether an `X-CSRF-Token` header bound to that session is required.
-- **Rate limits:** every `/api` request passes the general limiter, which allows 300 requests per 15
+- **Rate limits:** every `/api` request passes the general limiter, which allows 1000 requests per 15
   minutes per logged-in user and 1000 per 15 minutes per guest IP. Additional limits are listed per
   row.
 
@@ -1147,6 +1147,20 @@ available, and fails on it with `--require-checked`. All 47 seed questions pass 
 3.14.5, and `backend/tests/verifyQuestions.test.js` runs it on the seed file and on a fixture with
 one example of each kind of mismatch. It executes the snippets, so it is meant for trusted question
 data such as the seed file.
+
+**Continuous integration.** `.github/workflows/ci.yml` (GitHub Actions) runs on every push and pull
+request:
+- **Runners:** GitHub-hosted `ubuntu-latest` only, never self-hosted.
+- **Safety:** no secrets, no deployment, and read-only access to the repository.
+- **Checks:**
+  - lint, typecheck, the Jest suites and the webpack build, against a throwaway MongoDB 7.0 service
+    container;
+  - `npm run verify-questions -- --require-checked` on Python 3.9 and 3.14;
+  - the Playwright suite in **Chromium, Firefox and WebKit**, one job per browser. Locally it runs
+    in the installed Google Chrome; Playwright doesn't support Firefox or WebKit on macOS 12, the
+    owner's machine.
+- **No `.env` needed:** the test suites set throwaway values for every secret they use (JWT and
+  Daily Challenge seed), and mail is off.
 
 **Bugs the tests caught.** Several real defects were found by tests written during this work,
 rather than by inspection:

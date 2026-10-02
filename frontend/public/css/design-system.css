@@ -12,6 +12,10 @@
   --fold-light: #96b6dd;
   --brand: #2d6fbc;
   --on-brand: #ffffff;
+  /* Hovered brand fill under --on-brand text: 7.0:1 in both themes. (The
+     dark theme's --fold-deep is a light blue meant for text, 2.7:1 with
+     white; QA finding F-04.) */
+  --brand-hover: #2a5a93;
   --sun: #f7d35b;
   /* Text on a sun fill is light-theme ink in both themes. */
   --on-sun: #13233f;

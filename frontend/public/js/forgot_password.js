@@ -32,7 +32,9 @@ forgotPasswordForm.addEventListener('submit', function (event) {
         return;
     }
 
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    // The registration page's rule: every address it accepts must be able
+    // to request a reset ("+" in the name, top-level domains over 6 letters).
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
         showError('Please enter a valid email address.');
         return;

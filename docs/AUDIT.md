@@ -795,6 +795,10 @@ per-account) and `ip:<address>` for guests (raised to 1000/15min — this limite
 every request the app makes, not just session creation, so a shared classroom/office IP needs more
 headroom here than anywhere else).
 
+*Update (v2.1 QA, finding F-01, owner's decision):* the per-user budget is now 1000/15min as well.
+At 300, a logged-in player answering fast (about 2 requests per question) could get a 429 mid
+session; the per-user and per-IP keys are unchanged.
+
 **`TRUST_PROXY` — documented and enforced-by-warning that it must be an exact hop count, never
 `true`.** `true` trusts every hop in `X-Forwarded-For`, including whatever the client itself put
 there — a client can set that header to a different value on every request and be treated as a

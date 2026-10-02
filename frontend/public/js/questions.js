@@ -1,4 +1,5 @@
 import { api, getAchievementMeta, getSession } from "./api.js";
+import { renderInlineCode } from "./inlineCode.js";
 
 // Result-screen buttons are rendered as HTML strings; their actions are
 // handled here by delegation instead of inline onclick attributes, which
@@ -294,7 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (currentQuestion.explanation) {
             explanationContainer.innerHTML =
                 '<span class="pq-disc-mark" aria-hidden="true"></span><div><h4>Explanation</h4><p></p></div>';
-            explanationContainer.querySelector("p").textContent = currentQuestion.explanation;
+            explanationContainer.querySelector("p").innerHTML = renderInlineCode(currentQuestion.explanation);
             explanationContainer.className = "pq-explain show";
             explanationContainer.style.display = "grid";
         } else {
@@ -530,7 +531,8 @@ document.addEventListener("DOMContentLoaded", () => {
             session.correct += 1;
             session.streak += 1;
             session.bestStreak = Math.max(session.bestStreak, session.streak);
-            if (!resultContainer.innerText) resultContainer.innerText = "Correct!";
+            // Replaces any earlier "Wrong — try again" from this question.
+            resultContainer.innerText = "Correct!";
             showExplanation();
         } else {
             session.wrong += 1;

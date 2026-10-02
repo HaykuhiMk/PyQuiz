@@ -3,6 +3,14 @@
 // backend/database/questions.json, and served on E2E_API_PORT. Refuses to
 // touch anything that isn't a local *_e2e database, so it can never reset
 // development or production data.
+//
+// Two instances run (playwright.config.js), on the same database:
+//   - the main one (E2E_RATE_LIMITS=off) resets and seeds the database and
+//     serves every test with the rate limits switched off, so the suite
+//     never spends a per-IP budget (20 registrations, logins or admin logins
+//     per 15 minutes) and passes in any order and at any size;
+//   - the rate-limit one (E2E_RESET=false) keeps the real limits and serves
+//     only tests/errors.spec.js, which exhausts them on purpose.
 const path = require('path');
 const { spawnSync } = require('child_process');
 
@@ -12,6 +20,8 @@ const mongoose = require(path.join(BACKEND, 'node_modules', 'mongoose'));
 const MONGODB_URI = process.env.E2E_MONGODB_URI || 'mongodb://127.0.0.1:27017/pyquiz_e2e';
 const PORT = Number(process.env.E2E_API_PORT || 7598);
 const FRONTEND_ORIGIN = `http://localhost:${process.env.E2E_FRONTEND_PORT || 3998}`;
+const RESET = process.env.E2E_RESET !== 'false';
+const RATE_LIMITS_OFF = process.env.E2E_RATE_LIMITS === 'off';
 
 function assertSafeTarget(uri) {
   const { hostname, pathname } = new URL(uri);
@@ -22,7 +32,11 @@ function assertSafeTarget(uri) {
 
 async function main() {
   assertSafeTarget(MONGODB_URI);
+  if (RESET) await resetDatabase();
+  serve();
+}
 
+async function resetDatabase() {
   await mongoose.connect(MONGODB_URI);
   await mongoose.connection.dropDatabase();
   await mongoose.disconnect();
@@ -47,7 +61,9 @@ async function main() {
     tokenVersion: 0,
   });
   await mongoose.disconnect();
+}
 
+function serve() {
   Object.assign(process.env, {
     NODE_ENV: 'development',
     MONGODB_URI,
@@ -60,9 +76,11 @@ async function main() {
     // (dotenv does not override variables that are already set).
     EMAIL_USER: '',
     EMAIL_PASS: '',
+    // Honoured only outside production (backend/config/rateLimitBypass.js).
+    BENCHMARK_DISABLE_RATE_LIMITS: RATE_LIMITS_OFF ? 'true' : 'false',
   });
   const app = require(path.join(BACKEND, 'app'));
-  app.listen(PORT, () => console.log(`e2e backend listening on ${PORT}`));
+  app.listen(PORT, () => console.log(`e2e backend listening on ${PORT} (rate limits ${RATE_LIMITS_OFF ? 'off' : 'on'})`));
 }
 
 main().catch((error) => {

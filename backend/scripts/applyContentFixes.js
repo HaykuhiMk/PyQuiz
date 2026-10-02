@@ -1,7 +1,12 @@
-// Applies the owner-approved content fixes (database/contentFixes.json,
-// docs/CONTENT_FIXES.md) to the production questions: options, answers,
-// explanations and code of 20 questions. docs/DEPLOY_RUNBOOK.md has the
-// steps.
+// Applies the owner-approved content fixes (docs/CONTENT_FIXES.md) to the
+// production questions: options, answers, explanations, code and
+// difficulty. docs/DEPLOY_RUNBOOK.md has the steps. The fixes come from
+//   - database/contentFixes.json (the default): the first round, 20 questions;
+//   - another file in database/ named with --fixes: the second round (v2.1
+//     QA) is split in two independent files (no question is in both):
+//       --fixes contentFixes2.json: 13 questions, to fix before reopening;
+//       --fixes contentFixes3.json: the other 26.
+// The same rules apply to every file.
 //
 // For each question the data gives every field that changes, with the value
 // expected now and the new value. A question is
@@ -24,17 +29,46 @@
 // Usage (from backend/):
 //   node scripts/applyContentFixes.js --uri "<connection string>"           # dry run
 //   node scripts/applyContentFixes.js --uri "<connection string>" --apply   # writes
+//   ... --fixes contentFixes2.json                                          # another round
+const fs = require('fs');
+const path = require('path');
 const mongoose = require('mongoose');
 const { parseArgs, describeTarget, confirmDatabaseName, MISSING_URI_MESSAGE, NO_DATABASE_MESSAGE } = require('./lib/uriScript');
 const { addQuestionSchema } = require('../validators/questionValidators');
-const { fixes } = require('../database/contentFixes.json');
+
+const DATABASE_DIR = path.join(__dirname, '..', 'database');
+const DEFAULT_FIXES = 'contentFixes.json';
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const log = (line = '') => console.log(line);
 const oid = (id) => new mongoose.Types.ObjectId(id);
 
+// The fixes in database/<name>, or an error message. Only a contentFixes*.json
+// file directly in database/ is accepted.
+function loadFixes(name) {
+  if (!/^contentFixes[\w-]*\.json$/.test(name)) return { error: `--fixes takes a file name in database/ like contentFixes2.json, not "${name}".` };
+  const file = path.join(DATABASE_DIR, name);
+  if (!fs.existsSync(file)) return { error: `No such fixes file: database/${name}` };
+  const { fixes } = JSON.parse(fs.readFileSync(file, 'utf8'));
+  if (!Array.isArray(fixes) || !fixes.length) return { error: `database/${name} has no fixes.` };
+  const ids = fixes.map((f) => f.id);
+  if (new Set(ids).size !== ids.length) return { error: `database/${name} lists a question more than once.` };
+  return { fixes };
+}
+
+// Splits off --fixes <name>; the rest goes to the shared parser.
+function splitFixesArg(argv) {
+  const rest = [];
+  let name = DEFAULT_FIXES;
+  for (let i = 0; i < argv.length; i += 1) {
+    if (argv[i] === '--fixes') name = argv[(i += 1)] || '';
+    else rest.push(argv[i]);
+  }
+  return { name, rest };
+}
+
 // { apply: [...], done: [...], unexpected: [...] } for the database as it is now.
-async function plan(db) {
+async function plan(db, fixes) {
   const docs = new Map(
     (await db.collection('questions').find({ _id: { $in: fixes.map((f) => oid(f.id)) } }).toArray()).map((d) => [String(d._id), d])
   );
@@ -74,7 +108,8 @@ async function plan(db) {
 }
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2));
+  const { name, rest } = splitFixesArg(process.argv.slice(2));
+  const args = parseArgs(rest);
   if (!args.uri) {
     console.error(MISSING_URI_MESSAGE);
     return 1;
@@ -84,6 +119,11 @@ async function main() {
     console.error(NO_DATABASE_MESSAGE);
     return 1;
   }
+  const { fixes, error } = loadFixes(name);
+  if (error) {
+    console.error(error);
+    return 1;
+  }
   await mongoose.connect(args.uri, { autoIndex: false, autoCreate: false, serverSelectionTimeoutMS: 15000 });
   try {
     const db = mongoose.connection.db;
@@ -91,9 +131,10 @@ async function main() {
     log(`Database:    ${db.databaseName}`);
     log(`Questions:   ${await db.collection('questions').countDocuments()}`);
     log(`Mode:        ${args.apply ? '--apply (writes after confirmation)' : 'dry run (no writes)'}`);
+    log(`Fixes:       database/${name} (${fixes.length} questions)`);
     log();
 
-    const { apply, done, unexpected } = await plan(db);
+    const { apply, done, unexpected } = await plan(db, fixes);
     log(`${fixes.length} content fixes: ${apply.length} to apply, ${done.length} already applied, ${unexpected.length} unexpected.`);
     for (const { fix, fields } of apply) log(`  apply  ${fix.id} (${fix.ref}): ${fields.join(', ')}`);
     for (const { fix } of done) log(`  done   ${fix.id} (${fix.ref})`);
@@ -122,7 +163,7 @@ async function main() {
       written += (await db.collection('questions').updateOne(filter, { $set: fix.set })).modifiedCount;
     }
     log(`Applied ${written} of ${apply.length} fix(es).`);
-    const after = await plan(db);
+    const after = await plan(db, fixes);
     const invalid = (await db.collection('questions').find({ _id: { $in: fixes.map((f) => oid(f.id)) } }).toArray()).filter(
       (q) => !addQuestionSchema.safeParse({ ...q, code: q.code || '' }).success
     );

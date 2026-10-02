@@ -40,10 +40,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         nextBtn.disabled = !hasNextPage;
     }
 
+    // Only the latest load may fill the table: an earlier request (the first
+    // page, loaded on arrival, or a page clicked past) can answer after a
+    // later one, and would otherwise replace it with stale rows.
+    let latestLoad = 0;
+
     async function loadContacts() {
+        const load = ++latestLoad;
         tableBody.innerHTML = `<tr><td colspan="4">Loading...</td></tr>`;
         try {
             const { items: contacts, meta } = await api.getAdminContactsPage({ page: currentPage, limit: PAGE_SIZE });
+            if (load !== latestLoad) return;
             hasNextPage = Boolean(meta.hasNextPage);
             pageLabel.textContent = `Page ${currentPage}`;
             updatePager();
@@ -66,6 +73,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 )
                 .join("");
         } catch (error) {
+            if (load !== latestLoad) return;
             hasNextPage = false;
             updatePager();
             console.error("Error loading contact messages:", error);

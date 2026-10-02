@@ -218,14 +218,24 @@ async function getGlobalLeaderboard(limit = 50, viewerUserId = null) {
   }));
 }
 
+// The formats the settings page offers (JPG, PNG or WebP), recognized by
+// their first bytes, so a renamed text file or another type isn't stored.
+const AVATAR_SIGNATURES = {
+  'image/jpeg': (bytes) => bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff,
+  'image/png': (bytes) => bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+  'image/webp': (bytes) => bytes.subarray(0, 4).toString('latin1') === 'RIFF' && bytes.subarray(8, 12).toString('latin1') === 'WEBP',
+};
+const AVATAR_DATA_URL = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/;
+
 function validateAvatar(avatar) {
   if (avatar === null || avatar === '') return null;
-  if (typeof avatar !== 'string' || !avatar.startsWith('data:image/')) {
-    throw new AppError('Avatar must be a valid image file', 400);
-  }
+  const invalid = new AppError('Avatar must be a JPG, PNG or WebP image', 400);
+  if (typeof avatar !== 'string' || !avatar.startsWith('data:image/')) throw invalid;
   if (avatar.length > AVATAR_MAX_DATA_URL_LENGTH) {
     throw new AppError(AVATAR_TOO_LARGE_MESSAGE, 400);
   }
+  const match = AVATAR_DATA_URL.exec(avatar);
+  if (!match || !AVATAR_SIGNATURES[match[1]](Buffer.from(match[2].slice(0, 16), 'base64'))) throw invalid;
   return avatar;
 }
 
