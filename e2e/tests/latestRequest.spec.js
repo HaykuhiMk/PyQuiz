@@ -58,3 +58,20 @@ test('admin users: a late answer for an earlier page does not replace the latest
     rowText: (p) => `page${p}user0`,
   });
 });
+
+test('admin contacts: a late answer for an earlier page does not replace the latest page', async ({ page }) => {
+  await adminLogIn(page);
+  await pagerStaysOnLatest(page, {
+    path: '/contacts.html',
+    apiPath: '/api/v1/admin/contacts',
+    rowsFor: (p) =>
+      Array.from({ length: 20 }, (_, i) => ({
+        _id: `66000000000000000000${String(p).padStart(2, '0')}${String(i).padStart(2, '0')}`,
+        name: `Page ${p} sender ${i}`,
+        email: `page${p}sender${i}@example.com`,
+        message: `message ${i}`,
+        createdAt: '2026-10-01T12:00:00.000Z',
+      })),
+    rowText: (p) => `Page ${p} sender 0`,
+  });
+});
