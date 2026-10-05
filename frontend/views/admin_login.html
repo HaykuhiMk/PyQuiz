@@ -5,41 +5,40 @@
     <link rel="icon" href="/images/favicon.svg" type="image/svg+xml" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Login - PyQuiz</title>
+    <title>Admin sign-in - PyQuiz</title>
     <link rel="stylesheet" href="/css/design-system.css" />
     <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/header_footer.css" />
+    <link rel="stylesheet" href="/css/public.css" />
     <link rel="stylesheet" href="/css/admin_login.css" />
   </head>
-  <body>
-    <header>
-      <h1>PyQuiz Admin Login</h1>
-    </header>
-
-    <main>
-      <section id="login-section">
-        <h2>Admin Login</h2>
-        <form id="admin-login-form">
-          <label for="admin-username">Username:</label>
-          <input
-            type="text"
-            id="admin-username"
-            placeholder="Enter your username"
-            required
-          />
-
-          <label for="admin-password">Password:</label>
-          <div class="password-container">
-            <input
-              type="password"
-              id="admin-password"
-              placeholder="Enter your password"
-              required
-            />
+  <body class="admin-login-page">
+    <main class="pq-auth">
+      <section id="login-section" class="pq-auth__card" aria-labelledby="admin-login-title">
+        <div class="pq-auth__head">
+          <div class="admin-login__brand">
+            <img src="/images/pyquiz-wordmark.png" alt="PyQuiz" class="pq-wordmark" width="133" height="24" />
+            <span class="badge badge-brand">Admin</span>
           </div>
-
-          <button type="submit">Login</button>
-          <p id="login-error" class="error-message"></p>
+          <h1 id="admin-login-title">Admin sign-in</h1>
+          <p class="pq-muted">For managing questions, users and messages.</p>
+        </div>
+        <form id="admin-login-form" class="pq-form" aria-labelledby="admin-login-title" aria-describedby="login-error">
+          <div class="pq-field">
+            <label for="admin-username">Username</label>
+            <input class="pq-input" type="text" id="admin-username" autocomplete="username" required />
+          </div>
+          <div class="pq-field">
+            <label for="admin-password">Password</label>
+            <div class="pq-password">
+              <input class="pq-input" type="password" id="admin-password" autocomplete="current-password" required />
+              <button type="button" id="toggle-admin-password" class="pq-password__toggle pq-iconbtn" aria-pressed="false" aria-controls="admin-password">Show</button>
+            </div>
+          </div>
+          <p id="login-error" class="pq-form-message pq-status error-message" role="alert"></p>
+          <button type="submit" class="primary-btn pq-form__submit">Sign in</button>
         </form>
+        <p class="pq-auth__alt"><a href="/index.html">Back to PyQuiz</a></p>
       </section>
     </main>
 

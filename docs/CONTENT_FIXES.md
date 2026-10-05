@@ -25,7 +25,8 @@ conversion), including the 10 from the "Before reopening the site" checklist in
 `docs/DEPLOY_RUNBOOK.md`. Number references (#2, #54, …) are the reviewed topic proposals'
 numbers; ids are what the admin panel shows.
 
-**How to fix a question:** in **Manage Questions**, paste the id into **Find by id** and open it.
+**How to fix a question:** in **Questions**, paste the id into **Find by id** and press **Open**;
+the question opens in a side panel.
 - **Options and answer:** the answer must be exactly one of the options, so change both together.
   Options must all be different.
 - **Tags:** none of these questions has misconception tags, so no tag can be lost.

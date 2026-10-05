@@ -1,0 +1,510 @@
+/* ─── Admin pages ───
+   The admin pages use the learner app shell (header_footer.css: the
+   .pq-side sidebar, the .pq-app-topbar and its mobile drawer) and the
+   design system's cards, fields, tables and badges. This file adds the
+   admin-specific layout: the page width, form cards, the list toolbar,
+   tables that scroll inside their card on small screens, and the edit
+   panel. */
+
+/* Skip link: hidden until focused. */
+.admin-skip {
+  position: absolute;
+  left: var(--space-4);
+  top: -100px;
+  z-index: 2000;
+  padding: var(--space-2) var(--space-4);
+  background: var(--brand);
+  color: var(--on-brand);
+  font-weight: 600;
+}
+
+.admin-skip:focus {
+  top: var(--space-2);
+}
+
+.admin-main {
+  /* A flex item of the app shell's body: without min-width 0 it would grow
+     to fit a wide table instead of letting the table scroll in its card. */
+  min-width: 0;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-5) var(--space-8);
+}
+
+.admin-main--wide {
+  max-width: 1240px;
+}
+
+.admin-main:focus {
+  outline: none;
+}
+
+.admin-page .pq-page-head h1 {
+  font-size: var(--text-title);
+  line-height: 30px;
+}
+
+.admin-page .pq-page-head p {
+  margin: var(--space-1) 0 0;
+}
+
+/* Sidebar: the "Admin" tag next to the logo, and a full-width logout. */
+.admin-side__tag {
+  margin-right: auto;
+  margin-left: var(--space-2);
+}
+
+.pq-side__logout {
+  width: 100%;
+}
+
+/* ─── Forms ─── */
+.admin-form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.admin-card {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+.admin-card__title {
+  margin: 0;
+  font-size: var(--text-heading);
+  line-height: 24px;
+}
+
+.admin-page .pq-field + .pq-field {
+  margin-top: 0;
+}
+
+.admin-page .pq-field > label,
+.admin-page .pq-field > legend {
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.admin-optional {
+  margin-left: var(--space-1);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.admin-page textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.admin-page textarea.admin-textarea--short {
+  min-height: 64px;
+}
+
+.admin-mono,
+.admin-page textarea.admin-code {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  tab-size: 4;
+}
+
+.admin-page textarea.admin-code {
+  min-height: 180px;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.admin-page select[multiple] {
+  padding: var(--space-1);
+}
+
+.admin-page select[multiple] option {
+  padding: 6px var(--space-3);
+}
+
+.admin-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .admin-grid {
+    grid-template-columns: 1fr 2fr;
+    align-items: start;
+  }
+}
+
+/* Author hint under a field label (js/pythonVersionNote.js). */
+.form-hint {
+  margin: 0;
+}
+
+/* Status lines: a confirmation, or an error in red. */
+.success-message,
+.admin-status {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fold-deep);
+}
+
+.success-message:empty,
+.admin-status:empty {
+  display: none;
+}
+
+.success-message.is-error,
+.admin-status.is-error {
+  color: var(--error);
+}
+
+.admin-status {
+  margin-bottom: var(--space-4);
+}
+
+/* The form's buttons stay in reach at the bottom of a long form. */
+.admin-form__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 -8px 24px rgba(10, 14, 24, 0.08);
+}
+
+.admin-form__actions .success-message {
+  margin-right: auto;
+}
+
+/* Wrong-option misconception tags (js/distractorFields.js). */
+.distractor-fieldset {
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  background: var(--surface-sunk);
+}
+
+.distractor-fieldset > legend {
+  padding: 0 var(--space-2);
+}
+
+.distractor-fields {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.distractor-row {
+  display: grid;
+  gap: var(--space-2);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.distractor-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.distractor-row select {
+  max-width: 100%;
+}
+
+.distractor-hint {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.distractor-warning {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--sun);
+  background: var(--sun-soft);
+}
+
+/* ─── List toolbar ─── */
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+}
+
+.admin-toolbar__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.admin-toolbar select {
+  width: auto;
+  min-width: 190px;
+  padding: 0.6rem 0.9rem;
+}
+
+.admin-toolbar input[type="text"] {
+  width: 280px;
+  max-width: 100%;
+  padding: 0.6rem 0.9rem;
+}
+
+.find-question__status {
+  flex-basis: 100%;
+}
+
+.find-question__status:empty {
+  display: none;
+}
+
+/* ─── Tables ─── */
+.admin-table-card {
+  padding: 0;
+}
+
+/* The table scrolls inside its card on small screens instead of being
+   squeezed (or widening the whole page). */
+.admin-table-wrap {
+  /* Positioned, so it also clips absolutely positioned content such as the
+     visually hidden "Actions" header (.pq-sr-only); otherwise that widens
+     the whole page on a phone. */
+  position: relative;
+  overflow-x: auto;
+}
+
+.admin-table {
+  min-width: 760px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: var(--space-3);
+  vertical-align: top;
+  text-align: left;
+}
+
+.admin-table th {
+  background: var(--surface-sunk);
+}
+
+.admin-table td {
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-table tbody tr:hover td {
+  background: var(--brand-soft);
+}
+
+.admin-table .question-id,
+.admin-table .question-code-line {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.admin-table .question-id {
+  color: var(--ink-muted);
+}
+
+.admin-table .question-code-line {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: top;
+}
+
+.admin-table .question-text {
+  min-width: 150px;
+}
+
+.admin-topics {
+  display: grid;
+  gap: 2px;
+  min-width: 120px;
+}
+
+.admin-topics__secondary {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+#contact-table td:nth-child(3) {
+  min-width: 280px;
+  white-space: pre-line;
+}
+
+.admin-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.admin-actions .secondary-btn,
+.admin-actions .danger-btn {
+  min-height: 32px;
+  padding: 0.35rem 0.7rem;
+  font-size: 13px;
+}
+
+/* Difficulty badges. */
+.admin-diff--easy {
+  background: var(--sun-soft);
+  color: var(--sun-ink);
+}
+
+.admin-diff--medium {
+  background: var(--brand-soft);
+  color: var(--fold-deep);
+}
+
+.admin-diff--hard {
+  background: var(--coral-soft);
+  color: var(--coral);
+}
+
+.admin-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+#page-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+/* ─── Edit panel (Manage Questions) ───
+   Opens over the list from the right; full screen on phones. */
+.admin-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  background: rgba(10, 14, 24, 0.5);
+}
+
+.admin-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1450;
+  width: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  background: var(--ground);
+  border-left: 1px solid var(--line);
+  box-shadow: -12px 0 40px rgba(10, 14, 24, 0.25);
+  overflow-y: auto;
+}
+
+.admin-panel-backdrop[hidden],
+.admin-panel[hidden] {
+  display: none;
+}
+
+body.admin-panel-open {
+  overflow: hidden;
+}
+
+.admin-panel__head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-panel__head h2 {
+  margin: 0;
+  font-size: var(--text-heading);
+  line-height: 24px;
+}
+
+.edit-question-id {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+
+/* The panel's close button is always shown (unlike the drawer's). */
+.admin-panel__close {
+  display: inline-flex !important;
+}
+
+.admin-panel__body {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+.admin-panel__actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin: 0 calc(-1 * var(--space-5)) calc(-1 * var(--space-5));
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+.admin-panel__actions .success-message {
+  margin-right: auto;
+}
+
+@media (max-width: 640px) {
+  .admin-main {
+    padding: var(--space-5) var(--space-4) var(--space-7);
+  }
+
+  .admin-card {
+    padding: var(--space-4);
+  }
+
+  .admin-toolbar,
+  .admin-toolbar__group,
+  .admin-toolbar .pq-field {
+    width: 100%;
+  }
+
+  .admin-toolbar select,
+  .admin-toolbar input[type="text"] {
+    width: 100%;
+    min-width: 0;
+  }
+}

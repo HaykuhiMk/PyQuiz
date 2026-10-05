@@ -4,6 +4,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const loginForm = document.getElementById("admin-login-form");
     const loginError = document.getElementById("login-error");
 
+    const passwordInput = document.getElementById("admin-password");
+    const toggleButton = document.getElementById("toggle-admin-password");
+    toggleButton.addEventListener("click", () => {
+        const reveal = passwordInput.type === "password";
+        passwordInput.type = reveal ? "text" : "password";
+        toggleButton.textContent = reveal ? "Hide" : "Show";
+        toggleButton.setAttribute("aria-pressed", String(reveal));
+    });
+
     loginForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
@@ -12,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const password = document.getElementById("admin-password").value;
 
         if (!username || !password) {
-            loginError.textContent = "Username and password are required!";
+            loginError.textContent = "Enter your username and password.";
             return;
         }
 
@@ -21,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
             window.location.href = "admin_dashboard.html";
         } catch (error) {
             console.error("Login error:", error);
-            loginError.textContent = error.message || "Invalid login credentials!";
+            loginError.textContent = error.message || "Invalid username or password.";
         }
     });
 });

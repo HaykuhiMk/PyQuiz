@@ -5,149 +5,151 @@
     <link rel="icon" href="/images/favicon.svg" type="image/svg+xml" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Dashboard - PyQuiz</title>
+    <title>Add a question - PyQuiz Admin</title>
     <link rel="stylesheet" href="/css/design-system.css" />
     <link rel="stylesheet" href="/css/components.css" />
-    <link rel="stylesheet" href="/css/admin_dashboard.css" />
+    <link rel="stylesheet" href="/css/header_footer.css" />
+    <link rel="stylesheet" href="/css/admin.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
   </head>
-  <body>
-    <aside id="sidebar">
-      <h2>Admin Panel</h2>
-      <nav>
-        <ul>
-          <li>
-            <a href="admin_dashboard.html" class="active"><i class="fas fa-home"></i> Dashboard</a>
-          </li>
-          <li>
-            <a href="manage-questions.html"
-              ><i class="fas fa-question-circle"></i> Manage Questions</a
-            >
-          </li>
-          <li>
-            <a href="users.html"><i class="fas fa-users"></i> Manage Users</a>
-          </li>
-          <li>
-            <a href="contacts.html"
-              ><i class="fas fa-envelope"></i> Contact Messages</a
-            >
-          </li>
-          <li>
-            <a href="analytics.html"
-              ><i class="fas fa-chart-bar"></i> Analytics</a
-            >
-          </li>
-        </ul>
-      </nav>
-      <button id="logout-btn">
-        <i class="fas fa-sign-out-alt"></i> Logout
+  <body class="pq-with-sidebar admin-page">
+    <!-- admin-shell:start -->
+    <a class="admin-skip" href="#main-content">Skip to content</a>
+    <div class="pq-app-topbar">
+      <button id="sidebar-toggle" class="pq-drawer-toggle" type="button" aria-expanded="false" aria-controls="pq-sidebar" aria-label="Open navigation menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
       </button>
+      <a href="/admin_dashboard.html" class="pq-app-topbar__logo">
+        <img src="/images/pyquiz-wordmark.png" alt="PyQuiz admin" class="pq-wordmark" width="111" height="20" />
+      </a>
+      <span class="pq-app-topbar__title">Admin</span>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to light theme">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" /></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></svg>
+      </button>
+    </div>
+    <div class="pq-drawer-overlay" id="sidebar-overlay" hidden></div>
+    <aside class="pq-side" id="pq-sidebar" aria-label="Admin navigation">
+      <div class="pq-side__brand">
+        <a href="/admin_dashboard.html" class="pq-side__logo">
+          <img src="/images/pyquiz-wordmark.png" alt="PyQuiz admin" class="pq-wordmark" width="133" height="24" />
+        </a>
+        <span class="badge badge-brand admin-side__tag">Admin</span>
+        <button id="sidebar-close" class="pq-drawer-close" type="button" aria-label="Close navigation menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </div>
+      <nav aria-label="Admin" class="pq-side__nav">
+        <a class="pq-sidelink" href="/admin_dashboard.html" data-page="admin_dashboard.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          <span>Add a question</span>
+        </a>
+        <a class="pq-sidelink" href="/manage-questions.html" data-page="manage-questions.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h1M4 12h1M4 18h1" /></svg>
+          <span>Questions</span>
+        </a>
+        <a class="pq-sidelink" href="/users.html" data-page="users.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2.2.6 3.5 2.8 3.5 6" /></svg>
+          <span>Users</span>
+        </a>
+        <a class="pq-sidelink" href="/contacts.html" data-page="contacts.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M3 5h18v14H3z" /><path d="m3 6 9 7 9-7" /></svg>
+          <span>Messages</span>
+        </a>
+      </nav>
+      <div class="pq-side__account">
+        <a class="pq-side__identity" href="/index.html">
+          <span class="pq-side__avatar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6" /></svg>
+          </span>
+          <span>View the site</span>
+        </a>
+        <button id="logout-btn" class="secondary-btn pq-side__logout" type="button">Log out</button>
+      </div>
     </aside>
+    <!-- admin-shell:end -->
 
-    <main id="main-content">
-      <header>
-        <h1>PyQuiz Admin Dashboard</h1>
+    <main id="main-content" class="admin-main" tabindex="-1">
+      <header class="pq-page-head">
+        <div>
+          <h1>Add a question</h1>
+          <p class="pq-muted">A new question for the quiz, Study and the Daily Challenge.</p>
+        </div>
+        <a class="secondary-btn" href="/manage-questions.html">All questions</a>
       </header>
 
       <section id="question-management">
-        <h2>Add a New Question</h2>
-        <form id="question-form">
-          <div class="form-group">
-            <label for="question-text"
-              ><i class="fas fa-question"></i> Question:</label
-            >
-            <textarea
-              id="question-text"
-              placeholder="Enter the question..."
-              required
-            ></textarea>
+        <form id="question-form" class="admin-form">
+          <section class="card admin-card" aria-labelledby="add-question-heading">
+            <h2 class="admin-card__title" id="add-question-heading">Question</h2>
+            <div class="pq-field">
+              <label for="question-text">Question</label>
+              <textarea id="question-text" class="admin-textarea--short" placeholder="What will be the output of the following code?" required></textarea>
+            </div>
+            <div class="pq-field">
+              <label for="code">Code <span class="admin-optional">optional</span></label>
+              <p class="form-hint pq-help" id="code-python-hint" data-python-author-hint hidden></p>
+              <textarea id="code" class="admin-code" spellcheck="false" placeholder="print('Hello')" aria-describedby="code-python-hint"></textarea>
+            </div>
+          </section>
+
+          <section class="card admin-card" aria-labelledby="add-answers-heading">
+            <h2 class="admin-card__title" id="add-answers-heading">Answers</h2>
+            <div class="pq-field">
+              <label for="options">Options</label>
+              <p class="pq-help" id="options-help">One option per line, exactly as learners will see them.</p>
+              <textarea id="options" class="admin-mono" spellcheck="false" aria-describedby="options-help" required></textarea>
+            </div>
+            <div class="pq-field">
+              <label for="answer">Correct answer</label>
+              <p class="pq-help" id="answer-help">Must match one of the options exactly.</p>
+              <input type="text" id="answer" class="admin-mono" spellcheck="false" aria-describedby="answer-help" required />
+            </div>
+            <fieldset class="pq-field distractor-fieldset">
+              <legend>Wrong options <span class="admin-optional">optional</span></legend>
+              <p class="pq-help">The misconception each wrong option reveals, and short feedback. Admin-only; not shown to learners yet.</p>
+              <div id="distractor-fields" class="distractor-fields"></div>
+            </fieldset>
+          </section>
+
+          <section class="card admin-card" aria-labelledby="add-class-heading">
+            <h2 class="admin-card__title" id="add-class-heading">Classification and explanation</h2>
+            <div class="admin-grid">
+              <div class="pq-field">
+                <label for="difficulty">Difficulty</label>
+                <select id="difficulty" required>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+              <div class="pq-field">
+                <label for="primary-topic">Primary topic</label>
+                <select id="primary-topic" aria-describedby="primary-topic-help" required></select>
+                <p class="pq-help" id="primary-topic-help">The concept a learner must understand to answer correctly.</p>
+              </div>
+            </div>
+            <div class="pq-field">
+              <label for="secondary-topics">Secondary topics <span class="admin-optional">optional</span></label>
+              <select id="secondary-topics" multiple size="6" aria-describedby="secondary-topics-help"></select>
+              <p class="pq-help" id="secondary-topics-help">For filtering and search only. Hold Ctrl (Cmd on a Mac) to select several.</p>
+            </div>
+            <div class="pq-field">
+              <label for="explanation">Explanation</label>
+              <p class="pq-help" id="explanation-help">One point per line. Write code as `code` to show it as code.</p>
+              <textarea id="explanation" aria-describedby="explanation-help" required></textarea>
+            </div>
+          </section>
+
+          <div class="admin-form__actions">
+            <p id="question-success" class="success-message" role="status"></p>
+            <button type="submit" class="primary-btn submit-btn">Add question</button>
           </div>
-
-          <div class="form-group">
-            <label for="code"
-              ><i class="fas fa-code"></i> Code Snippet (optional):</label
-            >
-            <p class="form-hint" id="code-python-hint" data-python-author-hint hidden></p>
-            <textarea
-              id="code"
-              placeholder="Enter code snippet (if any)..."
-              aria-describedby="code-python-hint"
-            ></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="options"
-              ><i class="fas fa-list"></i> Options (Enter each option on a new
-              line):</label
-            >
-            <textarea
-              id="options"
-              placeholder="Enter options, one per line..."
-              required
-            ></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="answer"
-              ><i class="fas fa-check"></i> Correct Answer:</label
-            >
-            <input
-              type="text"
-              id="answer"
-              placeholder="Enter correct answer"
-              required
-            />
-          </div>
-
-          <fieldset class="form-group distractor-fieldset">
-            <legend><i class="fas fa-bug"></i> Wrong options (optional): the misconception each one reveals, and short feedback. Admin-only; not shown to learners yet.</legend>
-            <div id="distractor-fields" class="distractor-fields"></div>
-          </fieldset>
-
-          <div class="form-group">
-            <label for="difficulty"
-              ><i class="fas fa-signal"></i> Difficulty:</label
-            >
-            <select id="difficulty" required>
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="primary-topic"
-              ><i class="fas fa-tags"></i> Primary Topic (the concept a learner must understand to answer correctly):</label
-            >
-            <select id="primary-topic" required></select>
-          </div>
-
-          <div class="form-group">
-            <label for="secondary-topics"
-              ><i class="fas fa-tags"></i> Secondary Topics (optional, for filtering/search only — hold Ctrl/Cmd to select multiple):</label
-            >
-            <select id="secondary-topics" multiple size="6"></select>
-          </div>
-
-          <div class="form-group">
-            <label for="explanation"
-              ><i class="fas fa-info-circle"></i> Explanation:</label
-            >
-            <textarea
-              id="explanation"
-              placeholder="Provide explanation..."
-              required
-            ></textarea>
-          </div>
-
-          <button type="submit" class="submit-btn">
-            <i class="fas fa-plus"></i> Add Question
-          </button>
-          <p id="question-success" class="success-message"></p>
         </form>
       </section>
     </main>
 
+    <script type="module" src="/js/admin_shell.js"></script>
     <script type="module" src="js/admin_dashboard.js"></script>
     <script type="module" src="/js/pythonVersionNote.js"></script>
   </body>

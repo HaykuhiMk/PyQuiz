@@ -9,6 +9,13 @@ function populateTopicOptions(select, topics) {
         .join("");
 }
 
+// The form's status line, under the Add button: success or a specific error.
+function setStatus(message, isError = false) {
+    const status = document.getElementById("question-success");
+    status.textContent = message;
+    status.classList.toggle("is-error", isError);
+}
+
 function escapeTopicText(value) {
     return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
@@ -48,11 +55,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             const explanation = document.getElementById("explanation").value.trim();
             const options = optionsInput.split("\n").map(option => option.trim()).filter(option => option !== "");
             if (!options.includes(answer)) {
-                alert("Correct answer must be one of the options!");
+                setStatus("The correct answer must be one of the options.", true);
                 return;
             }
             if (new Set(options).size !== options.length) {
-                alert("Options must all be different!");
+                setStatus("The options must all be different.", true);
                 return;
             }
             if (!distractorFields.confirmDroppedTags()) return;
@@ -70,12 +77,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             };
             try {
                 await api.addQuestion(questionData);
-                document.getElementById("question-success").textContent = "Question added successfully!";
+                setStatus("Question added.");
                 questionForm.reset();
                 distractorFields.setValue([]);
             } catch (error) {
                 console.error("Error submitting question:", error);
-                alert("Error: " + (error.message || "Failed to add question"));
+                setStatus(`Couldn't add the question. ${error.message || ""}`.trim(), true);
             }
         });
     } else {

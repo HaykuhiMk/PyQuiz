@@ -1,10 +1,19 @@
 @import url('./login_styles.css');
 
-#admin-login-container {
-  width: min(420px, 92vw);
-  margin: calc(var(--nav-height) + var(--space-12)) auto;
-  padding: var(--space-8);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
+/* Admin sign-in: the learner login card (public.css .pq-auth), without the
+   public top bar, so the card sits a little higher. */
+.admin-login-page .pq-auth {
+  padding-top: var(--space-12);
+}
+
+.admin-login__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.admin-login__brand .pq-wordmark {
+  height: 24px;
+  width: auto;
 }

@@ -25,6 +25,9 @@ test('the list shows ids and first code lines; find by id opens the edit form', 
   await expect(page.locator('#edit-question-id')).toHaveText(`Editing question ${target._id}`);
   await expect(page.locator('#edit-code')).toHaveValue(target.code);
   await expect(page.locator('#edit-answer')).toHaveValue(target.answer);
+  // The edit panel covers the list; close it to use Find again.
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#edit-question-section')).toBeHidden();
 
   await page.fill('#find-question-id', 'not-an-id');
   await page.click('#find-question-form button[type="submit"]');

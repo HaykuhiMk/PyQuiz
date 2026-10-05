@@ -37,6 +37,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const editForm = document.getElementById("edit-question-form");
     const editStatus = document.getElementById("edit-status");
     const cancelEditBtn = document.getElementById("cancel-edit-btn");
+    const closeEditBtn = document.getElementById("close-edit-btn");
+    const editBackdrop = document.getElementById("edit-backdrop");
+    const listStatus = document.getElementById("list-status");
     const editPrimaryTopicSelect = document.getElementById("edit-primary-topic");
     const editSecondaryTopicsSelect = document.getElementById("edit-secondary-topics");
 
@@ -61,6 +64,45 @@ document.addEventListener("DOMContentLoaded", async () => {
         }[match]));
     }
 
+    // A status line: an error in red, otherwise a confirmation.
+    function setStatus(element, message, isError = false) {
+        element.textContent = message;
+        element.classList.toggle("is-error", isError);
+    }
+
+    // The edit form opens as a side panel over the list. Esc, Cancel, the
+    // close button or a click outside closes it without saving.
+    let returnFocusTo = null;
+
+    function openEditPanel() {
+        returnFocusTo = document.activeElement;
+        editSection.hidden = false;
+        editBackdrop.hidden = false;
+        document.body.classList.add("admin-panel-open");
+        editSection.scrollTop = 0;
+        document.getElementById("edit-question-text").focus({ preventScroll: true });
+        document.addEventListener("keydown", onPanelKeydown);
+    }
+
+    function closeEditPanel() {
+        editingId = null;
+        editForm.reset();
+        distractorFields.setValue([]);
+        editSection.hidden = true;
+        editBackdrop.hidden = true;
+        document.body.classList.remove("admin-panel-open");
+        document.removeEventListener("keydown", onPanelKeydown);
+        if (returnFocusTo && document.contains(returnFocusTo)) returnFocusTo.focus();
+        returnFocusTo = null;
+    }
+
+    function onPanelKeydown(event) {
+        if (event.key === "Escape") {
+            event.preventDefault();
+            closeEditPanel();
+        }
+    }
+
     // Next is enabled only when the server says another page exists (a
     // full page used to be taken as "there's more", which left an empty last
     // page whenever the total was a multiple of the page size).
@@ -77,7 +119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function loadQuestions() {
         const load = ++latestLoad;
-        tableBody.innerHTML = `<tr><td colspan="7">Loading...</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6">Loading...</td></tr>`;
         try {
             const topics = filterTopic.value ? [filterTopic.value] : [];
             const difficulty = filterDifficulty.value;
@@ -94,7 +136,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             updatePager();
 
             if (!questions.length) {
-                tableBody.innerHTML = `<tr><td colspan="7">No questions found.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="6">No questions found.</td></tr>`;
                 return;
             }
 
@@ -103,18 +145,20 @@ document.addEventListener("DOMContentLoaded", async () => {
                     (q) => `
                 <tr>
                     <td><code class="question-id">${escapeHTML(String(q._id))}</code></td>
-                    <td>${escapeHTML(q.question)}</td>
+                    <td class="question-text">${escapeHTML(q.question)}</td>
                     <td><code class="question-code-line" title="${escapeHTML(firstCodeLine(q.code, Infinity))}">${escapeHTML(firstCodeLine(q.code))}</code></td>
-                    <td>${escapeHTML(q.difficulty)}</td>
-                    <td>${escapeHTML(q.primaryTopic ? topicName(q.primaryTopic) : "")}</td>
-                    <td>${escapeHTML((q.secondaryTopics || []).map(topicName).join(", "))}</td>
+                    <td><span class="badge admin-diff admin-diff--${escapeHTML(q.difficulty)}">${escapeHTML(q.difficulty)}</span></td>
                     <td>
-                        <button type="button" class="secondary-btn edit-btn" data-id="${q._id}">
-                            <i class="fas fa-pen"></i> Edit
-                        </button>
-                        <button type="button" class="danger-btn delete-btn" data-id="${q._id}">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
+                        <div class="admin-topics">
+                            <span>${escapeHTML(q.primaryTopic ? topicName(q.primaryTopic) : "")}</span>
+                            ${(q.secondaryTopics || []).length ? `<span class="admin-topics__secondary">${escapeHTML(q.secondaryTopics.map(topicName).join(", "))}</span>` : ""}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="admin-actions">
+                            <button type="button" class="secondary-btn edit-btn" data-id="${q._id}">Edit</button>
+                            <button type="button" class="danger-btn delete-btn" data-id="${q._id}" aria-label="Delete question ${q._id}">Delete</button>
+                        </div>
                     </td>
                 </tr>
             `
@@ -132,7 +176,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.error("Error loading questions:", error);
             hasNextPage = false;
             updatePager();
-            tableBody.innerHTML = `<tr><td colspan="7">Error: ${escapeHTML(error.message)}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="6">Error: ${escapeHTML(error.message)}</td></tr>`;
         }
     }
 
@@ -144,8 +188,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         return text.length > max ? `${text.slice(0, max - 1)}…` : text;
     }
 
-    // Loads a question into the edit form; resolves to false (and alerts)
-    // if it can't be loaded, unless `quiet` (then the caller reports it).
+    // Loads a question into the edit panel; resolves to false (and says so
+    // above the list) if it can't be loaded, unless `quiet` (then the caller
+    // reports it).
     async function startEdit(id, { quiet = false } = {}) {
         try {
             const question = await api.getAdminQuestion(id);
@@ -163,13 +208,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
             document.getElementById("edit-explanation").value = question.explanation;
             distractorFields.setValue(question.distractors || []);
-            editStatus.textContent = "";
-            editSection.hidden = false;
-            editSection.scrollIntoView({ behavior: "smooth" });
+            setStatus(editStatus, "");
+            if (editSection.hidden) openEditPanel();
             return true;
         } catch (error) {
             if (quiet) throw error;
-            alert("Error loading question: " + error.message);
+            setStatus(listStatus, `Couldn't open the question. ${error.message}`, true);
             return false;
         }
     }
@@ -196,13 +240,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!confirm("Delete this question? This cannot be undone.")) return;
         try {
             await api.deleteQuestion(id);
-            if (editingId === id) {
-                editingId = null;
-                editSection.hidden = true;
-            }
+            if (editingId === id) closeEditPanel();
+            setStatus(listStatus, "Question deleted.");
             await loadQuestions();
         } catch (error) {
-            alert("Error deleting question: " + error.message);
+            setStatus(listStatus, `Couldn't delete the question. ${error.message}`, true);
         }
     }
 
@@ -219,11 +261,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         const answer = document.getElementById("edit-answer").value.trim();
 
         if (!options.includes(answer)) {
-            alert("Correct answer must be one of the options!");
+            setStatus(editStatus, "The correct answer must be one of the options.", true);
             return;
         }
         if (new Set(options).size !== options.length) {
-            alert("Options must all be different!");
+            setStatus(editStatus, "The options must all be different.", true);
             return;
         }
         if (!distractorFields.confirmDroppedTags()) return;
@@ -247,19 +289,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         try {
             await api.updateQuestion(editingId, payload);
-            editStatus.textContent = "Question updated successfully!";
+            setStatus(editStatus, "Changes saved.");
             await loadQuestions();
         } catch (error) {
-            alert("Error updating question: " + error.message);
+            setStatus(editStatus, `Couldn't save the changes. ${error.message}`, true);
         }
     });
 
-    cancelEditBtn.addEventListener("click", () => {
-        editingId = null;
-        editForm.reset();
-        distractorFields.setValue([]);
-        editSection.hidden = true;
-    });
+    cancelEditBtn.addEventListener("click", closeEditPanel);
+    closeEditBtn.addEventListener("click", closeEditPanel);
+    editBackdrop.addEventListener("click", closeEditPanel);
 
     filterBtn.addEventListener("click", () => {
         currentPage = 1;

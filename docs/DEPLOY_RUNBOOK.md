@@ -402,9 +402,10 @@ with `NODE_ENV=production`) starts and answers `/readyz` and the API, `/api-docs
 9. **Password reset:** request a reset for your own account. The email arrives (this proves the new
    Gmail app password) and the link opens on `CLIENT_URI`.
 10. **Admin panel:**
-    - log in; open **Manage Questions**, filter **Inheritance & MRO**;
-    - use **Find by id** on `67e2f3bff5addb214fc6a82d` (18 options, all different);
-    - open **Users**, check paging, and **Contacts**.
+    - log in; open **Questions**, filter **Inheritance & MRO**;
+    - use **Find by id** on `67e2f3bff5addb214fc6a82d` (18 options, all different); it opens in a
+      side panel;
+    - open **Users**, check paging, and **Messages**.
 11. **Security:** `curl -s -o /dev/null -w "%{http_code}" https://api-pyquiz.picsartacademy.am/api-docs` gives
     `404`, and `/metrics` without `Authorization: Bearer <METRICS_TOKEN>` gives `401`, or `404` if
     no token is set.

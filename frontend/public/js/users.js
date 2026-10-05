@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     let hasNextPage = false;
 
     const tableBody = document.getElementById("user-list-body");
+    const listStatus = document.getElementById("list-status");
     const pageLabel = document.getElementById("page-label");
     const prevBtn = document.getElementById("prev-page-btn");
     const nextBtn = document.getElementById("next-page-btn");
@@ -58,26 +59,28 @@ document.addEventListener("DOMContentLoaded", async () => {
             tableBody.innerHTML = users
                 .map((user) => {
                     const isAdmin = user.role === "admin";
-                    const statusLabel = user.banned ? "Banned" : "Active";
+                    const statusLabel = user.banned
+                        ? `<span class="badge badge-error">Banned</span>`
+                        : `<span class="badge badge-success">Active</span>`;
+                    const roleLabel = isAdmin
+                        ? `<span class="badge badge-brand">admin</span>`
+                        : escapeHTML(user.role);
+                    // Admin accounts can't be banned here.
                     const actionButton = isAdmin
-                        ? `<span class="admin-badge">Admin</span>`
+                        ? ""
                         : user.banned
-                          ? `<button type="button" class="secondary-btn unban-btn" data-id="${user._id}">
-                                <i class="fas fa-user-check"></i> Unban
-                             </button>`
-                          : `<button type="button" class="danger-btn ban-btn" data-id="${user._id}">
-                                <i class="fas fa-user-slash"></i> Ban
-                             </button>`;
+                          ? `<button type="button" class="secondary-btn unban-btn" data-id="${user._id}">Unban</button>`
+                          : `<button type="button" class="danger-btn ban-btn" data-id="${user._id}">Ban</button>`;
 
                     return `
                     <tr>
                         <td>${escapeHTML(user.username)}</td>
                         <td>${escapeHTML(user.email)}</td>
-                        <td>${escapeHTML(user.role)}</td>
+                        <td>${roleLabel}</td>
                         <td>${user.stats?.totalPoints ?? 0}</td>
                         <td>${user.stats?.totalAnswered ?? 0}</td>
                         <td>${statusLabel}</td>
-                        <td>${actionButton}</td>
+                        <td><div class="admin-actions">${actionButton}</div></td>
                     </tr>
                 `;
                 })
@@ -104,9 +107,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         try {
             await api.setUserBanned(id, banned);
+            listStatus.textContent = banned ? "Account banned." : "Account unbanned.";
+            listStatus.classList.remove("is-error");
             await loadUsers();
         } catch (error) {
-            alert(`Error updating user: ${error.message}`);
+            listStatus.textContent = `Couldn't ${action} the account. ${error.message}`;
+            listStatus.classList.add("is-error");
         }
     }
 
