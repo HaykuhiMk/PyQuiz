@@ -2,8 +2,31 @@
 
 /* Admin sign-in: the learner login card (public.css .pq-auth), without the
    public top bar, so the card sits a little higher. */
+.admin-login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Centred on the screen: there is no top bar on this page. */
 .admin-login-page .pq-auth {
-  padding-top: var(--space-12);
+  align-items: center;
+  padding: var(--space-7) var(--space-4);
+}
+
+.admin-login-page .pq-help {
+  margin: var(--space-1) 0 0;
+  font-size: 13px;
+}
+
+.admin-capslock {
+  color: var(--sun-ink);
+  font-weight: 600;
+}
+
+.admin-login-page .pq-form__submit:disabled {
+  opacity: 0.75;
+  cursor: progress;
 }
 
 .admin-login__brand {

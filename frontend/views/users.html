@@ -72,7 +72,10 @@
     <main id="main-content" class="admin-main admin-main--wide" tabindex="-1">
       <header class="pq-page-head">
         <div>
-          <h1>Users</h1>
+          <div class="admin-title-row">
+            <h1>Users</h1>
+            <span id="list-count" class="admin-count" hidden></span>
+          </div>
           <p class="pq-muted">Accounts, their progress, and banning or unbanning an account.</p>
         </div>
       </header>
@@ -87,8 +90,8 @@
                 <th scope="col">Username</th>
                 <th scope="col">Email</th>
                 <th scope="col">Role</th>
-                <th scope="col">Points</th>
-                <th scope="col">Answered</th>
+                <th scope="col" class="admin-num">Points</th>
+                <th scope="col" class="admin-num">Answered</th>
                 <th scope="col">Status</th>
                 <th scope="col"><span class="pq-sr-only">Actions</span></th>
               </tr>
@@ -100,7 +103,7 @@
         </div>
         <div id="pagination-controls" class="admin-pager">
           <button type="button" id="prev-page-btn" class="secondary-btn">Previous</button>
-          <span id="page-label">Page 1</span>
+          <span class="admin-pager__label"><span id="page-label">Page 1</span> <span id="page-total"></span></span>
           <button type="button" id="next-page-btn" class="secondary-btn">Next</button>
         </div>
       </section>

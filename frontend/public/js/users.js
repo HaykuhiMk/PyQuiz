@@ -1,4 +1,5 @@
 import { api } from "./api.js";
+import { showListCount, showPageTotal, initials } from "./adminLists.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
@@ -49,10 +50,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (load !== latestLoad) return;
             hasNextPage = Boolean(meta.hasNextPage);
             pageLabel.textContent = `Page ${currentPage}`;
+            showPageTotal(meta);
+            showListCount(meta.total, ["account", "accounts"]);
             updatePager();
 
             if (!users.length) {
-                tableBody.innerHTML = `<tr><td colspan="7">No users found.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="7"><div class="admin-empty">No accounts yet.</div></td></tr>`;
                 return;
             }
 
@@ -63,8 +66,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                         ? `<span class="badge badge-error">Banned</span>`
                         : `<span class="badge badge-success">Active</span>`;
                     const roleLabel = isAdmin
-                        ? `<span class="badge badge-brand">admin</span>`
-                        : escapeHTML(user.role);
+                        ? `<span class="badge badge-brand">Admin</span>`
+                        : `<span class="badge">Learner</span>`;
                     // Admin accounts can't be banned here.
                     const actionButton = isAdmin
                         ? ""
@@ -74,11 +77,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                     return `
                     <tr>
-                        <td>${escapeHTML(user.username)}</td>
-                        <td>${escapeHTML(user.email)}</td>
+                        <td><div class="admin-person"><span class="admin-avatar${isAdmin ? " is-admin" : ""}" aria-hidden="true">${escapeHTML(initials(user.username))}</span><span class="admin-person__name">${escapeHTML(user.username)}</span></div></td>
+                        <td class="admin-muted-cell">${escapeHTML(user.email)}</td>
                         <td>${roleLabel}</td>
-                        <td>${user.stats?.totalPoints ?? 0}</td>
-                        <td>${user.stats?.totalAnswered ?? 0}</td>
+                        <td class="admin-num">${(user.stats?.totalPoints ?? 0).toLocaleString()}</td>
+                        <td class="admin-num">${(user.stats?.totalAnswered ?? 0).toLocaleString()}</td>
                         <td>${statusLabel}</td>
                         <td><div class="admin-actions">${actionButton}</div></td>
                     </tr>
@@ -97,7 +100,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.error("Error loading users:", error);
             hasNextPage = false;
             updatePager();
-            tableBody.innerHTML = `<tr><td colspan="7">Error: ${escapeHTML(error.message)}</td></tr>`;
+            showListCount(null);
+            tableBody.innerHTML = `<tr><td colspan="7"><div class="admin-empty is-error">Couldn't load the accounts: ${escapeHTML(error.message)}</div></td></tr>`;
         }
     }
 

@@ -64,6 +64,8 @@ test('Manage Questions edits in a side panel that Esc, Cancel and a click outsid
   await expect(panel).toBeHidden();
 
   await firstEdit.click();
+  // The panel opens once the question has loaded; click outside only then.
+  await expect(panel).toBeVisible();
   await page.mouse.click(20, 400); // on the backdrop, left of the panel
   await expect(panel).toBeHidden();
   await expect(page.locator('#edit-backdrop')).toBeHidden();

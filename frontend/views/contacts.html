@@ -72,7 +72,10 @@
     <main id="main-content" class="admin-main admin-main--wide" tabindex="-1">
       <header class="pq-page-head">
         <div>
-          <h1>Messages</h1>
+          <div class="admin-title-row">
+            <h1>Messages</h1>
+            <span id="list-count" class="admin-count" hidden></span>
+          </div>
           <p class="pq-muted">Messages sent through the contact form, newest first.</p>
         </div>
       </header>
@@ -97,7 +100,7 @@
         </div>
         <div id="pagination-controls" class="admin-pager">
           <button type="button" id="prev-page-btn" class="secondary-btn">Previous</button>
-          <span id="page-label">Page 1</span>
+          <span class="admin-pager__label"><span id="page-label">Page 1</span> <span id="page-total"></span></span>
           <button type="button" id="next-page-btn" class="secondary-btn">Next</button>
         </div>
       </section>

@@ -13,6 +13,17 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleButton.setAttribute("aria-pressed", String(reveal));
     });
 
+    // A Caps Lock warning while typing the password.
+    const capsNote = document.getElementById("caps-lock-note");
+    const updateCaps = (event) => {
+        if (typeof event.getModifierState === "function") capsNote.hidden = !event.getModifierState("CapsLock");
+    };
+    passwordInput.addEventListener("keydown", updateCaps);
+    passwordInput.addEventListener("keyup", updateCaps);
+    passwordInput.addEventListener("blur", () => { capsNote.hidden = true; });
+
+    const submitButton = loginForm.querySelector('button[type="submit"]');
+
     loginForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
@@ -25,12 +36,17 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        loginError.textContent = "";
+        submitButton.disabled = true;
+        submitButton.textContent = "Signing in…";
         try {
             await api.adminLogin({ username, password });
             window.location.href = "admin_dashboard.html";
         } catch (error) {
             console.error("Login error:", error);
             loginError.textContent = error.message || "Invalid username or password.";
+            submitButton.disabled = false;
+            submitButton.textContent = "Sign in";
         }
     });
 });

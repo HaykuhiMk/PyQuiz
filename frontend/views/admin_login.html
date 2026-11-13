@@ -26,7 +26,8 @@
         <form id="admin-login-form" class="pq-form" aria-labelledby="admin-login-title" aria-describedby="login-error">
           <div class="pq-field">
             <label for="admin-username">Username</label>
-            <input class="pq-input" type="text" id="admin-username" autocomplete="username" required />
+            <input class="pq-input" type="text" id="admin-username" autocomplete="username" aria-describedby="admin-username-help" autofocus required />
+            <p class="pq-help" id="admin-username-help">Your PyQuiz username, not your email address.</p>
           </div>
           <div class="pq-field">
             <label for="admin-password">Password</label>
@@ -34,6 +35,7 @@
               <input class="pq-input" type="password" id="admin-password" autocomplete="current-password" required />
               <button type="button" id="toggle-admin-password" class="pq-password__toggle pq-iconbtn" aria-pressed="false" aria-controls="admin-password">Show</button>
             </div>
+            <p class="pq-help admin-capslock" id="caps-lock-note" hidden>Caps Lock is on.</p>
           </div>
           <p id="login-error" class="pq-form-message pq-status error-message" role="alert"></p>
           <button type="submit" class="primary-btn pq-form__submit">Sign in</button>

@@ -72,7 +72,10 @@
     <main id="main-content" class="admin-main admin-main--wide" tabindex="-1">
       <header class="pq-page-head">
         <div>
-          <h1>Questions</h1>
+          <div class="admin-title-row">
+            <h1>Questions</h1>
+            <span id="list-count" class="admin-count" hidden></span>
+          </div>
           <p class="pq-muted">Filter the question bank, open a question by its id, edit or delete it.</p>
         </div>
         <a class="primary-btn" href="/admin_dashboard.html">Add a question</a>
@@ -95,12 +98,13 @@
               <option value="hard">Hard</option>
             </select>
           </div>
-          <button type="button" id="filter-btn" class="secondary-btn">Filter</button>
+          <button type="button" id="filter-btn" class="secondary-btn">Apply</button>
+          <button type="button" id="clear-filters-btn" class="admin-linkbtn" hidden>Clear filters</button>
         </div>
         <form id="find-question-form" class="admin-toolbar__group find-question">
           <div class="pq-field">
             <label for="find-question-id">Find by id</label>
-            <input type="text" id="find-question-id" class="admin-mono" placeholder="67e2f3bff5addb214fc6a82d" spellcheck="false" autocomplete="off" />
+            <input type="text" id="find-question-id" class="admin-mono" placeholder="Paste a 24-character id" spellcheck="false" autocomplete="off" />
           </div>
           <button type="submit" class="secondary-btn">Open</button>
           <span id="find-question-status" class="find-question__status pq-help" role="status"></span>
@@ -129,7 +133,7 @@
         </div>
         <div id="pagination-controls" class="admin-pager">
           <button type="button" id="prev-page-btn" class="secondary-btn">Previous</button>
-          <span id="page-label">Page 1</span>
+          <span class="admin-pager__label"><span id="page-label">Page 1</span> <span id="page-total"></span></span>
           <button type="button" id="next-page-btn" class="secondary-btn">Next</button>
         </div>
       </section>
@@ -162,8 +166,9 @@
           </div>
           <div class="pq-field">
             <label for="edit-answer">Correct answer</label>
-            <p class="pq-help" id="edit-answer-help">Must match one of the options exactly.</p>
+            <p class="pq-help" id="edit-answer-help">Click one of the options below, or type it exactly.</p>
             <input type="text" id="edit-answer" class="admin-mono" spellcheck="false" aria-describedby="edit-answer-help" required />
+            <div id="edit-answer-picker" class="answer-picker"></div>
           </div>
           <fieldset class="pq-field distractor-fieldset">
             <legend>Wrong options <span class="admin-optional">optional</span></legend>
@@ -184,11 +189,12 @@
               <select id="edit-primary-topic" required></select>
             </div>
           </div>
-          <div class="pq-field">
-            <label for="edit-secondary-topics">Secondary topics <span class="admin-optional">optional</span></label>
-            <select id="edit-secondary-topics" multiple size="6" aria-describedby="edit-secondary-help"></select>
-            <p class="pq-help" id="edit-secondary-help">Hold Ctrl (Cmd on a Mac) to select several.</p>
-          </div>
+          <fieldset class="pq-field topic-fieldset" aria-describedby="edit-secondary-help">
+            <legend>Secondary topics <span class="admin-optional">optional</span></legend>
+            <p class="pq-help" id="edit-secondary-help">Other concepts the question touches. Used for filtering only.</p>
+            <div id="edit-secondary-topic-chips" class="topic-chips"></div>
+            <select id="edit-secondary-topics" multiple aria-label="Secondary topics"></select>
+          </fieldset>
           <div class="pq-field">
             <label for="edit-explanation">Explanation</label>
             <textarea id="edit-explanation" required></textarea>

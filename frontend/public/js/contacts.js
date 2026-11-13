@@ -1,4 +1,5 @@
 import { api } from "./api.js";
+import { showListCount, showPageTotal } from "./adminLists.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
@@ -29,7 +30,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function formatDate(dateString) {
         const date = new Date(dateString);
-        return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
+        return Number.isNaN(date.getTime())
+            ? ""
+            : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
     }
 
     // Next is enabled only when the server says another page exists (a
@@ -53,10 +56,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (load !== latestLoad) return;
             hasNextPage = Boolean(meta.hasNextPage);
             pageLabel.textContent = `Page ${currentPage}`;
+            showPageTotal(meta);
+            showListCount(meta.total, ["message", "messages"]);
             updatePager();
 
             if (!contacts.length) {
-                tableBody.innerHTML = `<tr><td colspan="4">No messages yet.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="4"><div class="admin-empty">No messages yet.</div></td></tr>`;
                 return;
             }
 
@@ -64,10 +69,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                 .map(
                     (contact) => `
                 <tr>
-                    <td>${escapeHTML(contact.name)}</td>
-                    <td>${escapeHTML(contact.email)}</td>
-                    <td>${escapeHTML(contact.message)}</td>
-                    <td>${escapeHTML(formatDate(contact.createdAt))}</td>
+                    <td class="admin-person__name">${escapeHTML(contact.name)}</td>
+                    <td><a class="admin-mail" href="mailto:${encodeURIComponent(contact.email).replace(/%40/g, "@")}" title="Reply by email">${escapeHTML(contact.email)}</a></td>
+                    <td><div class="admin-message">${escapeHTML(contact.message)}</div></td>
+                    <td class="admin-muted-cell admin-nowrap">${escapeHTML(formatDate(contact.createdAt))}</td>
                 </tr>
             `
                 )
@@ -77,7 +82,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             hasNextPage = false;
             updatePager();
             console.error("Error loading contact messages:", error);
-            tableBody.innerHTML = `<tr><td colspan="4">Error: ${escapeHTML(error.message)}</td></tr>`;
+            showListCount(null);
+            tableBody.innerHTML = `<tr><td colspan="4"><div class="admin-empty is-error">Couldn't load the messages: ${escapeHTML(error.message)}</div></td></tr>`;
         }
     }
 

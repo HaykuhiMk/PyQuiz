@@ -102,8 +102,9 @@
             </div>
             <div class="pq-field">
               <label for="answer">Correct answer</label>
-              <p class="pq-help" id="answer-help">Must match one of the options exactly.</p>
+              <p class="pq-help" id="answer-help">Click one of your options below, or type it exactly.</p>
               <input type="text" id="answer" class="admin-mono" spellcheck="false" aria-describedby="answer-help" required />
+              <div id="answer-picker" class="answer-picker"></div>
             </div>
             <fieldset class="pq-field distractor-fieldset">
               <legend>Wrong options <span class="admin-optional">optional</span></legend>
@@ -129,11 +130,12 @@
                 <p class="pq-help" id="primary-topic-help">The concept a learner must understand to answer correctly.</p>
               </div>
             </div>
-            <div class="pq-field">
-              <label for="secondary-topics">Secondary topics <span class="admin-optional">optional</span></label>
-              <select id="secondary-topics" multiple size="6" aria-describedby="secondary-topics-help"></select>
-              <p class="pq-help" id="secondary-topics-help">For filtering and search only. Hold Ctrl (Cmd on a Mac) to select several.</p>
-            </div>
+            <fieldset class="pq-field topic-fieldset" aria-describedby="secondary-topics-help">
+              <legend>Secondary topics <span class="admin-optional">optional</span></legend>
+              <p class="pq-help" id="secondary-topics-help">Other concepts the question touches. Used for filtering only; tick as many as fit.</p>
+              <div id="secondary-topic-chips" class="topic-chips"></div>
+              <select id="secondary-topics" multiple aria-label="Secondary topics"></select>
+            </fieldset>
             <div class="pq-field">
               <label for="explanation">Explanation</label>
               <p class="pq-help" id="explanation-help">One point per line. Write code as `code` to show it as code.</p>

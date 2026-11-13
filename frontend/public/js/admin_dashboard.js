@@ -1,6 +1,7 @@
 import { api } from "./api.js";
 import { getTopicTaxonomy } from "./topics.js";
 import { createDistractorFields } from "./distractorFields.js";
+import { createAnswerPicker, createTopicChips } from "./adminFormHelpers.js";
 
 // Option values are stable topic ids; the visible text is the display name.
 function populateTopicOptions(select, topics) {
@@ -38,6 +39,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         container: document.getElementById("distractor-fields"),
         optionsInput: document.getElementById("options"),
         answerInput: document.getElementById("answer"),
+    });
+    const answerPicker = createAnswerPicker({
+        container: document.getElementById("answer-picker"),
+        optionsInput: document.getElementById("options"),
+        answerInput: document.getElementById("answer"),
+    });
+    const topicChips = createTopicChips({
+        container: document.getElementById("secondary-topic-chips"),
+        select: secondaryTopicsSelect,
+        primarySelect: primaryTopicSelect,
     });
 
     if (questionForm) {
@@ -77,9 +88,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             };
             try {
                 await api.addQuestion(questionData);
-                setStatus("Question added.");
+                setStatus("Question added. The form is ready for the next one.");
                 questionForm.reset();
                 distractorFields.setValue([]);
+                answerPicker.refresh();
+                topicChips.refresh();
+                document.getElementById("question-text").focus();
             } catch (error) {
                 console.error("Error submitting question:", error);
                 setStatus(`Couldn't add the question. ${error.message || ""}`.trim(), true);

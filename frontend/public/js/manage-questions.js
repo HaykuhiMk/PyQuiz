@@ -1,6 +1,8 @@
 import { api } from "./api.js";
 import { getTopicTaxonomy, getTopicNamer } from "./topics.js";
 import { createDistractorFields } from "./distractorFields.js";
+import { createAnswerPicker, createTopicChips } from "./adminFormHelpers.js";
+import { showListCount, showPageTotal } from "./adminLists.js";
 
 // Option values are stable topic ids; the visible text is the display name.
 function populateTopicOptions(select, topics) {
@@ -53,6 +55,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         optionsInput: document.getElementById("edit-options"),
         answerInput: document.getElementById("edit-answer"),
     });
+    const answerPicker = createAnswerPicker({
+        container: document.getElementById("edit-answer-picker"),
+        optionsInput: document.getElementById("edit-options"),
+        answerInput: document.getElementById("edit-answer"),
+    });
+    const topicChips = createTopicChips({
+        container: document.getElementById("edit-secondary-topic-chips"),
+        select: editSecondaryTopicsSelect,
+        primarySelect: editPrimaryTopicSelect,
+    });
+    const clearFiltersBtn = document.getElementById("clear-filters-btn");
 
     function escapeHTML(str = "") {
         return String(str).replace(/[&<>"']/g, (match) => ({
@@ -88,6 +101,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         editingId = null;
         editForm.reset();
         distractorFields.setValue([]);
+        answerPicker.refresh();
+        topicChips.refresh();
         editSection.hidden = true;
         editBackdrop.hidden = true;
         document.body.classList.remove("admin-panel-open");
@@ -133,10 +148,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             hasNextPage = Boolean(meta.hasNextPage);
             pageLabel.textContent = `Page ${currentPage}`;
+            showPageTotal(meta);
+            const filtered = Boolean(filterTopic.value || filterDifficulty.value);
+            showListCount(meta.total, filtered ? ["question matches", "questions match"] : ["question", "questions"]);
+            clearFiltersBtn.hidden = !filtered;
             updatePager();
 
             if (!questions.length) {
-                tableBody.innerHTML = `<tr><td colspan="6">No questions found.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="6"><div class="admin-empty">${filtered ? "No questions match these filters." : "No questions yet."}</div></td></tr>`;
                 return;
             }
 
@@ -144,7 +163,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 .map(
                     (q) => `
                 <tr>
-                    <td><code class="question-id">${escapeHTML(String(q._id))}</code></td>
+                    <td><div class="question-id-cell"><code class="question-id">${escapeHTML(String(q._id))}</code><button type="button" class="admin-iconbtn copy-id-btn" data-id="${escapeHTML(String(q._id))}" aria-label="Copy id ${escapeHTML(String(q._id))}" title="Copy id"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="11" height="11"/><path d="M5 15V4h11"/></svg></button></div></td>
                     <td class="question-text">${escapeHTML(q.question)}</td>
                     <td><code class="question-code-line" title="${escapeHTML(firstCodeLine(q.code, Infinity))}">${escapeHTML(firstCodeLine(q.code))}</code></td>
                     <td><span class="badge admin-diff admin-diff--${escapeHTML(q.difficulty)}">${escapeHTML(q.difficulty)}</span></td>
@@ -171,12 +190,30 @@ document.addEventListener("DOMContentLoaded", async () => {
             tableBody.querySelectorAll(".delete-btn").forEach((btn) => {
                 btn.addEventListener("click", () => handleDelete(btn.dataset.id));
             });
+            tableBody.querySelectorAll(".copy-id-btn").forEach((btn) => {
+                btn.addEventListener("click", () => copyId(btn));
+            });
         } catch (error) {
             if (load !== latestLoad) return;
             console.error("Error loading questions:", error);
             hasNextPage = false;
             updatePager();
-            tableBody.innerHTML = `<tr><td colspan="6">Error: ${escapeHTML(error.message)}</td></tr>`;
+            showListCount(null);
+            tableBody.innerHTML = `<tr><td colspan="6"><div class="admin-empty is-error">Couldn't load the questions: ${escapeHTML(error.message)}</div></td></tr>`;
+        }
+    }
+
+    async function copyId(btn) {
+        try {
+            await navigator.clipboard.writeText(btn.dataset.id);
+            btn.classList.add("is-done");
+            btn.title = "Copied";
+            setTimeout(() => {
+                btn.classList.remove("is-done");
+                btn.title = "Copy id";
+            }, 1500);
+        } catch {
+            setStatus(listStatus, "Couldn't copy the id: select it and copy it by hand.", true);
         }
     }
 
@@ -208,6 +245,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
             document.getElementById("edit-explanation").value = question.explanation;
             distractorFields.setValue(question.distractors || []);
+            answerPicker.refresh();
+            topicChips.refresh();
             setStatus(editStatus, "");
             if (editSection.hidden) openEditPanel();
             return true;
@@ -300,9 +339,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     closeEditBtn.addEventListener("click", closeEditPanel);
     editBackdrop.addEventListener("click", closeEditPanel);
 
-    filterBtn.addEventListener("click", () => {
+    // Filters apply as soon as they change; the Apply button stays for
+    // keyboard users and as a reload.
+    function applyFilters() {
         currentPage = 1;
         loadQuestions();
+    }
+    filterBtn.addEventListener("click", applyFilters);
+    filterTopic.addEventListener("change", applyFilters);
+    filterDifficulty.addEventListener("change", applyFilters);
+    clearFiltersBtn.addEventListener("click", () => {
+        filterTopic.value = "";
+        filterDifficulty.value = "";
+        applyFilters();
     });
 
     prevBtn.addEventListener("click", () => {
